@@ -3,26 +3,12 @@ from datetime import datetime
 import time
 import json
 from bitmex_websocket import BitMEXWebsocket
+from datetime import datetime
+import calendar, requests
 
 '''
-https://public.bitmex.com/?prefix=data/
+https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution=1&from=1555771700&to=1555858100
 
-timestamp,symbol,bidSize,bidPrice,askPrice,askSize
-2019-04-19D00:00:05.759343000,ADAM19,159977,1.58e-05,1.581e-05,185957
-2019-04-19D00:00:08.754300000,ADAM19,154354,1.58e-05,1.581e-05,185957
-2019-04-19D00:00:08.792447000,ADAM19,124354,1.58e-05,1.581e-05,185957
-2019-04-19D00:00:09.141532000,ADAM19,111575,1.58e-05,1.581e-05,185957
-2019-04-19D00:00:09.496339000,ADAM19,111575,1.58e-05,1.581e-05,206760
-2019-04-19D00:00:09.867536000,ADAM19,77576,1.58e-05,1.581e-05,206760
-2019-04-19D00:00:10.303366000,ADAM19,77576,1.58e-05,1.581e-05,240760
-2019-04-19D00:00:10.473032000,ADAM19,111576,1.58e-05,1.581e-05,240760
-2019-04-19D00:00:10.615971000,ADAM19,77576,1.58e-05,1.581e-05,240760
-2019-04-19D00:00:10.619206000,ADAM19,77576,1.58e-05,1.581e-05,206760
-2019-04-19D00:00:22.902119000,ADAM19,71949,1.58e-05,1.581e-05,206760
-2019-04-19D00:00:24.392009000,ADAM19,71949,1.58e-05,1.581e-05,176760
-2019-04-19D00:00:24.751056000,ADAM19,71949,1.58e-05,1.581e-05,210760
-2019-04-19D00:00:25.757368000,ADAM19,71949,1.58e-05,1.581e-05,215244
-2019-04-19D00:00:27.311674000,ADAM19,72701,1.58e-05,1.581e-05,215244
 '''
 
 
@@ -64,6 +50,35 @@ class MarketData:
                 time.sleep(0.1)
         except:
             cls.ws.exit()
+
+    @classmethod
+    def download_hist_ohlc(cls, symbol, period, from_ut, to_ut):
+        # 現在時刻のUTC naiveオブジェクト
+        now = datetime.utcnow()
+
+        # UTC naiveオブジェクト -> Unix time
+        unixtime = calendar.timegm(now.utctimetuple())
+
+        # 60分前のUnixTime
+        since = unixtime - 60 * 60
+
+        # APIリクエスト(1時間前から現在までの5m足OHLCVデータを取得)
+        param = {"period": 5, "from": since, "to": unixtime}
+        url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(
+            **param)
+        res = requests.get(url)
+        data = res.json()
+
+        # レスポンスのjsonデータからOHLCVのDataFrameを作成
+        df = pd.DataFrame({
+            "timestamp": data["t"],
+            "open": data["o"],
+            "high": data["h"],
+            "low": data["l"],
+            "close": data["c"],
+            "volume": data["v"],
+        }, columns=["timestamp", "open", "high", "low", "close", "volume"])
+
 
 
 if __name__ == '__main__':
