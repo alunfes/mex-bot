@@ -53,23 +53,16 @@ class MarketData:
 
     @classmethod
     def download_hist_ohlc(cls, symbol, period, from_ut, to_ut):
-        # 現在時刻のUTC naiveオブジェクト
         now = datetime.utcnow()
-
-        # UTC naiveオブジェクト -> Unix time
         unixtime = calendar.timegm(now.utctimetuple())
-
-        # 60分前のUnixTime
         since = unixtime - 60 * 60
-
-        # APIリクエスト(1時間前から現在までの5m足OHLCVデータを取得)
-        param = {"period": 5, "from": since, "to": unixtime}
-        url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(
-            **param)
+        print(unixtime)
+        print(since)
+        param = {"period": 1, "from": since, "to": unixtime}
+        url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(**param)
         res = requests.get(url)
         data = res.json()
 
-        # レスポンスのjsonデータからOHLCVのDataFrameを作成
         df = pd.DataFrame({
             "timestamp": data["t"],
             "open": data["o"],
@@ -78,9 +71,11 @@ class MarketData:
             "close": data["c"],
             "volume": data["v"],
         }, columns=["timestamp", "open", "high", "low", "close", "volume"])
+        print(df)
 
 
 
 if __name__ == '__main__':
-    MarketData.initialize()
-    MarketData.read_quote_from_csv()
+    MarketData.download_hist_ohlc('XBTUSD',1,1,1)
+    #MarketData.initialize()
+    #MarketData.read_quote_from_csv()
