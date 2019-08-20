@@ -31,9 +31,6 @@ class Account:
             else:
                 self.remove_order(order_id)
 
-
-
-
     def __calc_pnl(self, exec_side, exec_price, exec_size):
         if self.posi_side != exec_side:
             self.realized_pnl += (exec_price - self.posi_price) * exec_size if self.posi_side == 'Buy' else (self.posi_price - exec_price) * exec_size
@@ -42,6 +39,18 @@ class Account:
 
 
     def __update_position(self, side, price, size):
+        if self.posi_side =='':
+            self.posi_side = side
+            self.posi_price = price
+            self.posi_size = size
+        elif self.posi_side == side:
+            self.posi_price = ((self.posi_price * self.posi_size) + (price * size)) / (self.posi_size + size)
+            self.posi_size += size
+        else:
+            
+
+
+
 
 
 
