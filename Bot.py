@@ -1,34 +1,48 @@
-from Trade import  Trade
+from Trade import Trade
+from OneMinMarketData import OneMinMarketData
+from DownloadMexOhlc import DownloadMexOhlc
+from LgbModel import LgbModel
 import pytz
 import time
-from numba import jit
+import pickle
+
+
+'''
+initialize class
+load model
+start ws
+download ohlc
+calc all index
+downlod ohlc for latest (after last donwload till completion of calc, maybe few minutes data)
+calc index only for last downloaded data
+predict bpsp
+
+'''
 
 
 class Bot:
-    @jit
     def initialize(self, pl_kijun):
-        self.pl_kijun = pl_kijun
-        self.posi_initialzie()
-        self.order_initailize()
-        self.initial_collateral = Trade.get_collateral()['btc']['free']
-        self.collateral_change = 0
-        self.pl = 0
-        self.holding_pl = 0
-        self.pl_log = []
-        self.num_trade = 0
-        self.num_win = 0
-        self.win_rate = 0
-        self.pl_per_min = 0
-        self.elapsed_time = 0
-        self.margin_rate = 120.0
-        self.leverage = 15.0
-        self.initial_asset = Trade.get_collateral()
-        self.JST = pytz.timezone('Asia/Tokyo')
-        Trade.cancel_all_orders()
-        time.sleep(5)
-        self.sync_position_order()
+        #initalize and read model
+        lgb = LgbModel()
+        #detect max term
+        max_term = OneMinMarketData.detect_max_term()
+        print('max_term='+str(max_term))
+        #download ohlc, update ohlc csv
+        DownloadMexOhlc.initial_data_download(max_term)
+        #initialize OneMinMarketData
+        OneMinMarketData.initialize_for_bot()
+        #start ws
+        
 
-    @jit
+
+
+
+
+
+
+    def __initialize_class_instances(self):
+
+
     def combine_status_data(self, status):
         side = ''
         size = 0
@@ -40,7 +54,6 @@ class Bot:
         price = round(price / size)
         return side, round(size, 8), round(price)
 
-    @jit
     def sync_position_order(self):
         position = Trade.get_positions()
         orders = Trade.get_orders()

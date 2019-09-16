@@ -1,5 +1,6 @@
 /ignore/
 /mex-bot/
 /Data/
+/.venv_bakp/
 *.csv
 *.dat

@@ -1,35 +1,30 @@
 import websocket
 import json
 import time
+import threading
 #from WSData import WSData
 
-
-class RealtimeWSAPIData:
-    @classmethod
-    def initialize(cls):
-        cls.rwsapi = RealtimeWSAPI()
-        cls.trade_1m_data = []
-        cls.
 
 
 class RealtimeWSAPI:
     def __init__(self):
+        TickData.initialize()
+        websocket.enableTrace(False)
         # 接続先URLと各コールバック関数を引数に指定して、WebSocketAppのインスタンスを作成
         self.ws_pub = websocket.WebSocketApp(url='wss://www.bitmex.com/realtime',
                                     on_open=self.on_open,
                                     on_message=self.on_message,
                                     on_close=self.on_close,
                                     on_error=self.on_error)
-        self.ws_pub.run_forever()
+        self.thread = threading.Thread(target=lambda: self.ws_pub.run_forever())
+        self.thread.daemon = True
+        self.thread.start()
+
 
 
     #tradeBin1m
     '''
-    {"table":"tradeBin5m","action":"partial","keys":[],"types":
-    {"timestamp":"timestamp","symbol":"symbol","open":"float","high":"float","low":"float","close":"float","trades":"long","volume":"long","vwap":"float","lastSize":"long","turnover":"long","homeNotional":"float","foreignNotional":"float"},
-    "foreignKeys":{"symbol":"instrument"},
-    "attributes":{"timestamp":"sorted","symbol":"grouped"},"filter":{"symbol":"XBTUSD"},
-    "data":[{"timestamp":"2019-05-02T05:20:00.000Z","symbol":"XBTUSD","open":5319,"high":5319,"low":5318.5,"close":5319,"trades":293,"volume":1165985,"vwap":5318.866,"lastSize":25,"turnover":21921810872,"homeNotional":219.21810872,"foreignNotional":1165985}]}
+    {"table":"tradeBin1m","action":"insert","data":[{"timestamp":"2019-08-23T14:34:00.000Z","symbol":"XBTUSD","open":10394,"high":10394,"low":10388.5,"close":10388.5,"trades":413,"volume":1204198,"vwap":10390.6899,"lastSize":1000,"turnover":11589499007,"homeNotional":115.89499006999998,"foreignNotional":1204198}]}
     '''
     #trade
     '''
@@ -53,15 +48,28 @@ class RealtimeWSAPI:
         channels = {
             'op': 'subscribe',
             'args': [
-                #'tradeBin1m:XBTUSD',
-                'trade:XBTUSD',
+                'tradeBin1m:XBTUSD',
+                #'trade:XBTUSD',
                 #'quote:XBTUSD',
             ]
         }
         ws.send(json.dumps(channels))
 
     def on_message(self, ws, message):
-        #print(message)
+        #message = dict(message)
+        message = json.loads(message)
+        if message['table'] == 'tradeBin1m':
+            d = message['data'][-1]
+            print(d['open'], d['high'], d['low'], d['close'])
+            pass
+        elif message['table'] == 'trade':
+            TickData.set_ltp(message['data'][-1]['price'])
+        elif message['table'] == 'quote':
+            TickData.set_bid(message['data'][-1]['bidPrice'])
+            TickData.set_ask(message['data'][-1]['askPrice'])
+
+
+        '''
         if 'table' in message:
             if message['table'] == 'trade':
                 if message['action'] == 'insert':
@@ -72,7 +80,7 @@ class RealtimeWSAPI:
                     #    print(d)
             elif message['table'] == 'quote':
                 pass
-
+        '''
         #WSData.add_trades()
 
 
@@ -83,11 +91,49 @@ class RealtimeWSAPI:
     def on_error(self, ws, error):
         print(error)
 
-    def tradeBin1m_processor(self, ):
-        pass
 
 
 
+class TickData:
+    @classmethod
+    def initialize(cls):
+        cls.lock_data = threading.Lock()
+        cls.ltp = 0
+        cls.bidprice = 0
+        cls.askprice = 0
+
+    @classmethod
+    def set_bid(cls, p):
+        with cls.lock_data:
+            cls.bidprice = p
+
+    @classmethod
+    def get_bid(cls):
+        with cls.lock_data:
+            return cls.bidprice
+
+    @classmethod
+    def set_ask(cls, p):
+        with cls.lock_data:
+            cls.askprice = p
+
+    @classmethod
+    def get_ask(cls):
+        with cls.lock_data:
+            return cls.askprice
+
+    @classmethod
+    def set_ltp(cls, p):
+        with cls.lock_data:
+            cls.ltp = p
+
+    @classmethod
+    def get_ltp(cls):
+        with cls.lock_data:
+            return cls.ltp
 
 if __name__ == '__main__':
     rwa = RealtimeWSAPI()
+    while True:
+        print(TickData.get_ltp(),TickData.get_bid(),TickData.get_ask())
+        time.sleep(1)

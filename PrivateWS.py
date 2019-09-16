@@ -1,15 +1,20 @@
 import websocket
+import threading
 import json
 import urllib
 import hmac
 import hashlib
 import time
 import pprint
+from Account import Account
+from Trade import Trade
+
 
 class PrivateWSData:
     @classmethod
-    def initialize(cls):
+    def initialize(cls, ac:Account):
         cls.message = ''
+        cls.ac = ac
         pws = PrivateWS()
 
 class PrivateWS:
@@ -22,9 +27,9 @@ class PrivateWS:
                                     on_message=self.on_message,
                                     on_close=self.on_close,
                                     on_error=self.on_error)
-        self.ws_pub.run_forever()
-
-
+        self.thread = threading.Thread(target=lambda: self.ws_pub.run_forever())
+        self.thread.daemon = True
+        self.thread.start()
 
 
     def signature(self, api_secret: str, verb: str, url: str, nonce: int) -> str:
@@ -64,9 +69,12 @@ class PrivateWS:
         ws.send(json.dumps(channels))
 
     def on_message(self, ws, message):
-        pprint.pprint(message)
-        PrivateWSData.message = message
-
+        message = json.loads(message)
+        #pprint.pprint(message)
+        print(message)
+        if message['table'] == 'execution':
+            d = message['data']
+            PrivateWSData.ac.execute_order(d['orderID'], d['execID'], d['side'], d['price'], d['leavesQty'])
 
 
     def on_close(self, ws):
@@ -101,18 +109,30 @@ class PrivateWS:
 '''
 #order
 '''
-('{"table":"execution","action":"insert","data":[{"execID":"82952ee5-d25d-5b53-b0e6-9be1c45098e7","orderID":"788f34e5-d9d4-4db5-3701-e02da6a52637","clOrdID":"","clOrdLinkID":"","account":243795,"symbol":"XBTUSD","side":"Buy","lastQty":null,"lastPx":null,"underlyingLastPx":null,"lastMkt":"","lastLiquidityInd":"","simpleOrderQty":null,"orderQty":10000,"price":10714.5,"displayQty":null,"stopPx":null,"pegOffsetValue":null,"pegPriceType":"","currency":"USD","settlCurrency":"XBt","execType":"New","ordType":"Limit","timeInForce":"GoodTillCancel","execInst":"","contingencyType":"","exDestination":"XBME","ordStatus":"New","triggered":"","workingIndicator":true,"ordRejReason":"","simpleLeavesQty":null,"leavesQty":10000,"simpleCumQty":null,"cumQty":0,"avgPx":null,"commission":null,"tradePublishIndicator":"","multiLegReportingType":"SingleSecurity","text":"Submission '
- 'from '
+{'table': 'order', 'action': 'insert', 'data': [{'orderID': '0315ec82-5c97-5a9e-857a-c4dc22d1b725', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10310.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'New', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 100000, 'simpleCumQty': None, 'cumQty': 0, 'avgPx': None, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'transactTime': '2019-08-26T13:15:37.800Z', 'timestamp': '2019-08-26T13:15:37.800Z'}]}
+{'table': 'order', 'action': 'update', 'data': [{'orderID': '0315ec82-5c97-5a9e-857a-c4dc22d1b725', 'workingIndicator': True, 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD', 'timestamp': '2019-08-26T13:15:37.800Z'}]}
+{'table': 'order', 'action': 'update', 'data': [{'orderID': '0315ec82-5c97-5a9e-857a-c4dc22d1b725', 'ordStatus': 'Filled', 'workingIndicator': False, 'leavesQty': 0,'cumQty': 100000, 'avgPx': 10310.5, 'timestamp': '2019-08-26T13:16:01.495Z', 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD'}]}
+ {'table': 'order', 'action': 'insert', 'data': [{'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10330.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'New', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 100000, 'simpleCumQty': None, 'cumQty': 0, 'avgPx': None, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'transactTime': '2019-08-26T13:16:49.182Z', 'timestamp': '2019-08-26T13:16:49.182Z'}]}
+ {'table': 'order', 'action': 'update', 'data': [{'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'workingIndicator': True, 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD', 'timestamp': '2019-08-26T13:16:49.182Z'}]}
+ {'table': 'order', 'action': 'update', 'data': [{'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'ordStatus': 'PartiallyFilled', 'leavesQty': 92246, 'cumQty': 7754, 'avgPx': 10330.5, 'timestamp': '2019-08-26T13:19:52.162Z', 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD'}]}
+ {'table': 'order', 'action': 'update', 'data': [{'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'leavesQty': 91746, 'cumQty': 8254, 'timestamp': '2019-08-26T13:19:52.172Z', 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD'}]}
 '''
 
 #execution
 '''
-('{"table":"execution","action":"insert","data":[{"execID":"e104aace-9148-15bb-a754-31001e32a20d","orderID":"598b64bd-b5ef-e623-d58c-2c8466824c0a","clOrdID":"","clOrdLinkID":"","account":243795,"symbol":"XBTUSD","side":"Sell","lastQty":7598,"lastPx":10720.5,"underlyingLastPx":null,"lastMkt":"XBME","lastLiquidityInd":"AddedLiquidity","simpleOrderQty":null,"orderQty":10000,"price":10720.5,"displayQty":null,"stopPx":null,"pegOffsetValue":null,"pegPriceType":"","currency":"USD","settlCurrency":"XBt","execType":"Trade","ordType":"Limit","timeInForce":"GoodTillCancel","execInst":"","contingencyType":"","exDestination":"XBME","ordStatus":"Filled","triggered":"","workingIndicator":false,"ordRejReason":"","simpleLeavesQty":null,"leavesQty":0,"simpleCumQty":null,"cumQty":10000,"avgPx":10720.5,"commission":-0.00025,"tradePublishIndicator":"PublishTrade","multiLegReportingType":"SingleSecurity","text":"Submission '
- 'from '
+{'table': 'execution', 'action': 'insert', 'data': [{'execID': 'dce57cf2-373c-0361-521a-04032ab65eb3', 'orderID': '0315ec82-5c97-5a9e-857a-c4dc22d1b725', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'lastQty': None, 'lastPx': None, 'underlyingLastPx': None, 'lastMkt': '', 'lastLiquidityInd': '', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10310.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'New', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'New', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 100000, 'simpleCumQty': None, 'cumQty': 0, 'avgPx': None, 'commission': None, 'tradePublishIndicator': '', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '00000000-0000-0000-0000-000000000000', 'execCost': None, 'execComm': None, 'homeNotional': None, 'foreignNotional': None, 'transactTime': '2019-08-26T13:15:37.800Z', 'timestamp': '2019-08-26T13:15:37.800Z'}]}
+{'table': 'execution', 'action': 'insert', 'data': [{'execID': 'b57cbd25-0bae-b9dd-b087-2a16cdb64d34', 'orderID': '0315ec82-5c97-5a9e-857a-c4dc22d1b725', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'lastQty': 100000, 'lastPx': 10310.5, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10310.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 100000, 'avgPx': 10310.5, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '6d5b58f0-6f92-7778-cc35-63e0f8bf8ffc', 'execCost': -969900000, 'execComm': -242475, 'homeNotional': 9.699, 'foreignNotional': -100000, 'transactTime': '2019-08-26T13:16:01.495Z', 'timestamp': '2019-08-26T13:16:01.495Z'}]}
+{'table': 'execution', 'action': 'insert', 'data': [{'execID': 'ef28f5e6-3c4f-42cd-fe35-5ad22369b35a', 'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': None, 'lastPx': None, 'underlyingLastPx': None, 'lastMkt': '', 'lastLiquidityInd': '', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10330.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'New', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'New', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 100000, 'simpleCumQty': None, 'cumQty': 0, 'avgPx': None, 'commission': None, 'tradePublishIndicator': '', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '00000000-0000-0000-0000-000000000000', 'execCost': None, 'execComm': None, 'homeNotional': None, 'foreignNotional': None, 'transactTime': '2019-08-26T13:16:49.182Z', 'timestamp': '2019-08-26T13:16:49.182Z'}]}
+{'table': 'execution', 'action': 'insert', 'data': [{'execID': '66bc1ab7-f700-56bd-ef0a-8f6ff4c4759c', 'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 500, 'lastPx': 10330.5, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10330.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 91746, 'simpleCumQty': None, 'cumQty': 8254, 'avgPx': 10330.5, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '051e3631-b7d0-c4a8-6e4b-2694b3dfc982', 'execCost': 4840000, 'execComm': -1210, 'homeNotional': -0.0484, 'foreignNotional': 500, 'transactTime': '2019-08-26T13:19:52.172Z', 'timestamp': '2019-08-26T13:19:52.172Z'}]}
+{'table': 'execution', 'action': 'insert', 'data': [{'execID': '9027d184-42fd-ab23-7d3b-0f1c9f0a4606', 'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 3500, 'lastPx': 10330.5, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10330.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 88246, 'simpleCumQty': None, 'cumQty': 11754, 'avgPx': 10330.5, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '3a918fad-9653-6ac1-c34a-6156e5c5e46a', 'execCost': 33880000, 'execComm': -8470, 'homeNotional': -0.3388, 'foreignNotional': 3500, 'transactTime': '2019-08-26T13:19:52.181Z', 'timestamp': '2019-08-26T13:19:52.181Z'}]}
+{'table': 'execution', 'action': 'insert', 'data': [{'execID': '6f88732c-4f32-0034-2978-136da1d0208a', 'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 88246, 'lastPx': 10330.5, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10330.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 100000, 'avgPx': 10330.5, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '03fe30ea-e658-b79d-a4f1-2a24aa7332ce', 'execCost': 854221280, 'execComm': -213555, 'homeNotional': -8.5422128, 'foreignNotional': 88246, 'transactTime': '2019-08-26T13:19:52.259Z', 'timestamp': '2019-08-26T13:19:52.259Z'}]}
 '''
 
 if __name__ == '__main__':
-    PrivateWSData.initialize()
+    ac = Account()
+    PrivateWSData.initialize(ac)
+    Trade.initialize()
+    order_id = Trade.order()
     while True:
         #print(PrivateWSData.message)
         time.sleep(1)

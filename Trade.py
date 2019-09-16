@@ -622,7 +622,7 @@ class Trade:
 
 if __name__ == '__main__':
     Trade.initialize()
-    order = Trade.order('buy', 6267.0, 1)
+    order = Trade.order('buy', 10300.0, 100000)
     print(order)
     #pprint.pprint(Trade.get_orders())
     #pprint.pprint(Trade.get_positions())
