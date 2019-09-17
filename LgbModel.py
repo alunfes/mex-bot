@@ -8,7 +8,7 @@ import pickle
 class LgbModel:
     def __init__(self):
         self.model = None
-        with open('./Model/lgb_bpsp.dat', mode='rb') as f:
+        with open('./Model/lgb_bpsp_model.dat', mode='rb') as f:
             self.model = pickle.load(f)
 
 

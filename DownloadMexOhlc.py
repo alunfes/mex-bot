@@ -25,7 +25,7 @@ class DownloadMexOhlc:
             df = cls.download_data_since_to(since, tmp_to)
             since = since + 10080 * 60
             if loop_flg:
-                df.to_csv('./Data/mex_data.csv', index=False)
+                df.to_csv('./Data/bot_ohlc.csv', index=False)
                 break
         print('completed download')
 
@@ -36,12 +36,13 @@ class DownloadMexOhlc:
         now = datetime.utcnow()
         unixtime = calendar.timegm(now.utctimetuple())
         if to <= unixtime:
-            if to - since <= 10080:
+            if to - since <= 10080 * 60:
                 try:
                     param = {"period": 1, "from": since, "to": to}
                     url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(
                         **param)
                     res = requests.get(url)
+                    #print(res)
                     data = res.json()
                     dt = []
                     for d in data['t']:

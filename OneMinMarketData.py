@@ -53,11 +53,13 @@ class OneMinMarketData:
         #cls.num_term = num_term
         #cls.__initialize_func_name_list()
         #cls.term_list = cls.generate_term_list(num_term)
-        cls.ohlc = cls.read_from_csv('/content/drive/My Drive/bot_ohlc.csv')
+        cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
         #cls.ohlc.del_data(initial_data_vol)
+        cls.term_list = cls.generate_term_list(10)
         cls.__generate_all_func_dict()
         cls.__read_func_dict()
         cls.__calc_all_index_dict()
+
 
 
     @classmethod
@@ -542,7 +544,7 @@ class OneMinMarketData:
                                            np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
 
 
-@classmethod
+    @classmethod
     def check_matched_index(cls, test_x):
         test = list(test_x['open'])
         op = cls.ohlc.open

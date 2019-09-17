@@ -19,9 +19,18 @@ predict bpsp
 
 '''
 
+#ohlc data
+'''
+最初はその時点のutまで普通にapiでohlc dataを最低必要なデータ数ダウンロード(数秒かかる）
+その後index計算（数秒かかる）
+bot稼働中のohlcはws経由で取得
+・最初のohlc取得計算後にbot稼働する際のohlcは1分データ以上の間隔が開く可能性がある。
+->
+'''
+
 
 class Bot:
-    def initialize(self, pl_kijun):
+    def initialize(self):
         #initalize and read model
         lgb = LgbModel()
         #detect max term
@@ -32,15 +41,6 @@ class Bot:
         #initialize OneMinMarketData
         OneMinMarketData.initialize_for_bot()
         #start ws
-        
-
-
-
-
-
-
-
-    def __initialize_class_instances(self):
 
 
     def combine_status_data(self, status):
@@ -80,3 +80,11 @@ class Bot:
                 self.order_size) + ', price=' + str(self.order_price))
         else:
             self.order_initailize()
+
+
+
+if __name__ == '__main__':
+    bot = Bot()
+    bot.initialize()
+    df = OneMinMarketData.generate_df_from_dict()
+    df.to_csv('./Data/df.csv')
