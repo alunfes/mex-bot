@@ -1,10 +1,14 @@
 from OneMinData import OneMinData
 from datetime import datetime, timedelta, timezone
 from DownloadMexOhlc import DownloadMexOhlc
+import threading
 import numpy as np
 import talib as ta
 import pandas as pd
 import csv
+import pytz
+import time
+from SystemFlg import SystemFlg
 
 '''
 data download and calc for bot
@@ -53,14 +57,37 @@ class OneMinMarketData:
         #cls.num_term = num_term
         #cls.__initialize_func_name_list()
         #cls.term_list = cls.generate_term_list(num_term)
+        cls.lock_tmp_ohlc = threading.Lock()
+        cls.tmp_ohlc = OneMinData()
+        cls.JST = pytz.timezone('Asia/Tokyo')
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
+        print('length=',len(cls.ohlc.close))
         #cls.ohlc.del_data(initial_data_vol)
         cls.term_list = cls.generate_term_list(10)
         cls.__generate_all_func_dict()
         cls.__read_func_dict()
         cls.__calc_all_index_dict()
+        th = threading.Thread(target=cls.__main_thread())
+        th.start()
+
+    @classmethod
+    def __main_thread(cls):
+        while SystemFlg.get_system_flg():
+            #
+            pass
 
 
+
+    @classmethod
+    def add_tmp_ohlc(cls, ut, dt, o, h, l, c, v):
+        with cls.lock_tmp_ohlc:
+            cls.tmp_ohlc.open.append(o)
+            cls.tmp_ohlc.high.append(h)
+            cls.tmp_ohlc.low.append(l)
+            cls.tmp_ohlc.close.append(c)
+            cls.tmp_ohlc.size.append(v)
+            cls.tmp_ohlc.dt.append(dt)
+            cls.tmp_ohlc.unix_time.append(ut)
 
     @classmethod
     def detect_max_term(cls):
@@ -94,11 +121,6 @@ class OneMinMarketData:
             func_obj[col] = cls.ohlc.func_dict[col]
         #replace ohlc.func_dict
         cls.ohlc.func_dict = func_obj
-
-
-    @classmethod
-    def add_ohlc(cls, dt, o, h, l, c, v):
-        pass
 
 
     @classmethod
@@ -140,7 +162,7 @@ class OneMinMarketData:
             cls.ohlc.func_dict['rsi:' + str(term)] = (OneMinMarketData.calc_rsi, term)
             cls.ohlc.func_dict['williams_R:' + str(term)] = (OneMinMarketData.calc_williams_R, term)
             cls.ohlc.func_dict['beta:' + str(term)] = (OneMinMarketData.calc_beta, term)
-            cls.ohlc.func_dict['tsf:' + str(term)] = (OneMinMarketData.calc_time_series_forecast, term)
+            cls.ohlc.func_dict['time_series_forecast:' + str(term)] = (OneMinMarketData.calc_time_series_forecast, term)
             cls.ohlc.func_dict['correl:' + str(term)] = (OneMinMarketData.calc_correl, term)
             cls.ohlc.func_dict['linear_reg:' + str(term)] = (OneMinMarketData.calc_linear_reg, term)
             cls.ohlc.func_dict['linear_reg_angle:' + str(term)] = (OneMinMarketData.calc_linear_reg_angle, term)
@@ -166,7 +188,7 @@ class OneMinMarketData:
             OneMinMarketData.generate_makairi, OneMinMarketData.calc_williams_R, term)
             cls.ohlc.func_dict['makairi_beta:' + str(term)] = (
             OneMinMarketData.generate_makairi, OneMinMarketData.calc_beta, term)
-            cls.ohlc.func_dict['makairi_tsf:' + str(term)] = (
+            cls.ohlc.func_dict['makairi_time_series_forecast:' + str(term)] = (
             OneMinMarketData.generate_makairi, OneMinMarketData.calc_time_series_forecast, term)
             cls.ohlc.func_dict['makairi_correl:' + str(term)] = (
             OneMinMarketData.generate_makairi, OneMinMarketData.calc_correl, term)
@@ -201,7 +223,7 @@ class OneMinMarketData:
             OneMinMarketData.generate_diff, OneMinMarketData.calc_williams_R, term)
             cls.ohlc.func_dict['diff_beta:' + str(term)] = (
             OneMinMarketData.generate_diff, OneMinMarketData.calc_beta, term)
-            cls.ohlc.func_dict['diff_tsf:' + str(term)] = (
+            cls.ohlc.func_dict['diff_time_series_forecast:' + str(term)] = (
             OneMinMarketData.generate_diff, OneMinMarketData.calc_time_series_forecast, term)
             cls.ohlc.func_dict['diff_correl:' + str(term)] = (
             OneMinMarketData.generate_diff, OneMinMarketData.calc_correl, term)
@@ -259,6 +281,7 @@ class OneMinMarketData:
     @classmethod
     def __calc_all_index_dict(cls):
         print('calculating index..')
+        start = time.time()
         for k in cls.ohlc.func_dict:
             if k.split('_')[0] == 'makairi':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
@@ -270,7 +293,7 @@ class OneMinMarketData:
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
             else:
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
-        print('completed ')
+        print('completed index calc, time consumption=',time.time() - start)
 
     @classmethod
     def generate_df_from_dict(cls):
@@ -293,7 +316,7 @@ class OneMinMarketData:
 
     @classmethod
     def generate_diff(cls, data):
-        return cls.calc_rate_of_change(1, data)
+        return list(ta.ROC(np.array(data, dtype='f8'), timeperiod=1))
 
 
     # higher pl in next 1m for bp sp
@@ -328,7 +351,7 @@ class OneMinMarketData:
         for i, cor in enumerate(corrs):
             if i not in tmp_remo:  # 3. 該当indexを除いて次のindexを対象に1の操作を実行
                 # 2. 該当したindexをtmp_remoに記録
-                tmp_remo.extend(check_corr_kijun(cor, i, 0.9))
+                tmp_remo.extend(check_corr_kijun(cor, i, corr_kijun))
         # 4. tmp_remoに記録されたindexのcolumnをdfから削除
         target_col = []
         cols = list(df2.columns)
@@ -366,6 +389,7 @@ class OneMinMarketData:
     def calc_dema(cls, term):
         return list(ta.DEMA(np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
 
+    #termの2倍くらいnanが続く
     @classmethod
     def calc_adx(cls, term):
         return list(
@@ -444,7 +468,7 @@ class OneMinMarketData:
         return list(ta.BETA(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), timeperiod=term))
 
     @classmethod
-    def calc_tsf(cls, term):
+    def calc_time_series_forecast(cls, term):
         return list(ta.TSF(np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
 
     @classmethod
