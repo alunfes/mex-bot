@@ -78,8 +78,6 @@ class RealtimeWSAPI:
         elif message['table'] == 'trade':
             TickData.set_ltp(message['data'][-1]['price'])
             TickData.add_tmp_exec_data(message['data'])
-            TickData.add_exec_data(message['data'])
-            # print(list(map(lambda x: x['price'], (message['data']))))
         elif message['table'] == 'quote':
             TickData.set_bid(message['data'][-1]['bidPrice'])
             TickData.set_ask(message['data'][-1]['askPrice'])
@@ -92,6 +90,8 @@ class RealtimeWSAPI:
 
     def on_error(self, ws, error):
         print(error)
+        print('Error occurred in public webscoket! restart the ws thread.')
+        self.__init__()
 
 
 class TickData:
@@ -105,10 +105,10 @@ class TickData:
         cls.bidprice = 0
         cls.askprice = 0
         cls.JST = pytz.timezone('Asia/Tokyo')
-        cls.last_ohlc_min = int(datetime.now(cls.JST).minute)+1 if datetime.now(cls.JST).minute != 59 else 0
-        th = threading.Thread(target=cls.__calc_ohlc_thread())
+        #cls.last_ohlc_min = int(datetime.now(cls.JST).minute)+1 if datetime.now(cls.JST).minute != 59 else 0
+        cls.last_ohlc_min = int(datetime.now(cls.JST).minute)
+        th = threading.Thread(target=cls.__calc_ohlc_thread)
         th.start()
-        print('last ohlc min=', cls.last_ohlc_min)
 
     @classmethod
     def set_bid(cls, p):
@@ -183,51 +183,55 @@ class TickData:
     def __calc_ohlc_thread(cls):
         while SystemFlg.get_system_flg():
             if datetime.now(cls.JST).second == 0: #00秒からohlc計算を開始
+                cls.target_ohlc_min = int(datetime.now(cls.JST).minute) #set target minutes
                 while SystemFlg.get_system_flg():
                     flg = False
                     open = 0
                     high = 0
-                    low = 0
+                    low = 9999999
                     close = 0
                     volume = 0
-                    next_min = cls.last_ohlc_min+1 if cls.last_ohlc_min !=59 else 0
+                    next_min = cls.target_ohlc_min+1 if cls.target_ohlc_min !=59 else 0
                     dt = datetime.now(cls.JST)
                     #dt.second=59
                     ut =dt.timestamp()
-                    while True:
+                    loop_flg = True
+                    while loop_flg:
                         data = cls.get_tmp_exec_data()
-
                         #dataに対象の分以外のデータが入っていることがありうる。次の分のデータがある場合は、使わずにtmp_exec_dataに追加、前の分は捨てる。
                         target = []
-                        next_min = []
+                        next_target = []
                         for d in data:
-                            min = int(d['timestamp'].split('T')[1].split(':')[1])
-                            if  min == cls.last_ohlc_min:
+                            minut = int(d['timestamp'].split('T')[1].split(':')[1])
+                            if minut == cls.target_ohlc_min:
                                 target.append(d)
-                            elif min == next_min:
-                                next_min.append(d)
-                        cls.add_tmp_exec_data(next_min)
-                        p = [d.get('price') for d in target]
-                        size = [d.get('size') for d in target]
-                        if open == 0:
-                            open = p[0]
-                        m = max(p)
-                        l = min(p)
-                        high = m if m > high else high
-                        low = l if l < low else low
-                        size += sum(size)
-
+                            #elif minut == next_min:
+                            #    next_target.append(d)
+                        cls.add_tmp_exec_data(next_target)
+                        if len(target) > 0:
+                            p = [d.get('price') for d in target]
+                            size = [d.get('size') for d in target]
+                            if open == 0:
+                                opendt = [d.get('timestamp') for d in target]
+                                condt = list(map(lambda x: float(x.split(':')[2][:-1]), opendt))
+                                open = p[condt.index(min(condt))]
+                            m = max(p)
+                            lw = min(p)
+                            high = m if m > high else high
+                            low = lw if lw < low else low
+                            volume += sum(size)
                         #次の00秒でohlcを確定させる
-                        if flg == True and datetime.now(cls.JST).second > 1:
+                        if flg == False and datetime.now(cls.JST).second > 5:
                             flg = True
-                        if flg and datetime.now(cls.JST).second == 0:
+                        if flg and datetime.now(cls.JST).second <= 4:
                             close = p[-1]
-                            print(open, high, low, close, size)
+                            print(datetime.now(cls.JST), dt, open, high, low, close, volume)
                             #OneMinMarketData.add_tmp_ohlc(ut,dt,open,high,low,close,volume)
-                            cls.last_ohlc_min = next_min
+                            cls.target_ohlc_min = next_min
+                            loop_flg = False
                             break
                         time.sleep(0.1)
-            time.sleep(0.1)
+                    time.sleep(0.1)
 
 
 

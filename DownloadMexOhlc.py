@@ -1,9 +1,51 @@
+from SystemFlg import SystemFlg
 from datetime import datetime
+from OneMinData import OneMinData
+import time
 import calendar, requests
 import pandas as pd
 import os
+import threading
+
 
 class DownloadMexOhlc:
+    @classmethod
+    def initialize(cls):
+        cls.__initialize_ohlc()
+        th = threading.Thread(target=cls.__onemin_data_download_thread)
+        th.start()
+
+
+    @classmethod
+    def __initialize_ohlc(cls):
+        cls.ohlc_ut = 0
+        cls.ohlc_dt = ''
+        cls.ohlc_open = 0
+        cls.ohlc_high = 0
+        cls.ohlc_low = 0
+        cls.ohlc_close = 0
+        cls.ohlc_volume = 0
+
+    @classmethod
+    def __onemin_data_download_thread(cls):
+        while SystemFlg.get_system_flg():
+            if datetime.now().second == 0:
+                time.sleep(1)
+                df = cls.download_latest_ohlc()
+                if df is not None:
+                    cls.ohlc_ut = df[0]
+                    cls.ohlc_dt = df[1]
+                    cls.ohlc_open = df[2]
+                    cls.ohlc_high = df[3]
+                    cls.ohlc_low = df[4]
+                    cls.ohlc_close = df[5]
+                    cls.ohlc_volume = df[6]
+                    print(cls.ohlc_dt, cls.ohlc_open, cls.ohlc_high, cls.ohlc_low, cls.ohlc_close, cls.ohlc_volume)
+                else:
+                    print('failed download ohlc in __onemin_data_download_thread !')
+            time.sleep(0.1)
+
+
     #download data for initial calc
     @classmethod
     def initial_data_download(cls, max_term):
@@ -33,10 +75,10 @@ class DownloadMexOhlc:
     #download data for specific period and return processed df
     @classmethod
     def download_data_since_to(cls, since, to):
-        now = datetime.utcnow()
-        unixtime = calendar.timegm(now.utctimetuple())
+        unixtime = int(time.time())
         if to <= unixtime:
-            if to - since <= 10080 * 60:
+            #if to - since <= 10080 * 60:
+            if to != 0:
                 try:
                     param = {"period": 1, "from": since, "to": to}
                     url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(
@@ -67,14 +109,31 @@ class DownloadMexOhlc:
             print('to should be lower than time.now()!')
 
 
+    #for bot ohlc download when websocket tmp ohlc is not available
+    @classmethod
+    def download_latest_ohlc(cls):
+        target_min = datetime.now().minute -1 if datetime.now().minute > 0 else 59
+        df = None
+        max_try = 10
+        i = 0
+        while df is None:
+            df = DownloadMexOhlc.download_data_since_to(int(time.time()) - 180, int(time.time()) - 1)
+            if df is not None:
+                for i,dt in enumerate(df['dt']):
+                    if int(str(dt).split(':')[1]) == target_min:
+                        return (df['timestamp'].iloc[i], dt, df['open'].iloc[i], df['high'].iloc[i], df['low'].iloc[i], df['close'].iloc[i], df['volume'].iloc[i])
+            time.sleep(1)
+            i += 1
+            if i >= max_try:
+                print('download_latest_ohlc was failed!')
+                return None
+
 
     @classmethod
     def download_data(cls):
         # 現在時刻のUTC naiveオブジェクト
-        now = datetime.utcnow()
-
         since = cls.__check_current_data_latest_ut()
-        unixtime = calendar.timegm(now.utctimetuple())
+        unixtime = int(time.time())
         flg = True
         if since == 0:
             # UTC naiveオブジェクト -> Unix time
@@ -125,4 +184,6 @@ class DownloadMexOhlc:
 
 
 if __name__ == '__main__':
-    DownloadMexOhlc.download_data()
+    SystemFlg.initialize()
+    DownloadMexOhlc.initialize()
+

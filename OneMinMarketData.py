@@ -67,14 +67,42 @@ class OneMinMarketData:
         cls.__generate_all_func_dict()
         cls.__read_func_dict()
         cls.__calc_all_index_dict()
-        th = threading.Thread(target=cls.__main_thread())
+        th = threading.Thread(target=cls.__main_thread)
         th.start()
 
     @classmethod
+    def initialize_for_marketdata_test(cls):
+        DownloadMexOhlc.initial_data_download(5000)
+        cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
+
+    '''
+    1.毎分00秒からws ohlcの更新を確認。
+    2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
+    3.2秒経過してもohlc更新がない場合は、download ohlcを使用 (download ohlcは毎分動かして最新のohlcと取得する）
+    '''
+    @classmethod
     def __main_thread(cls):
         while SystemFlg.get_system_flg():
-            #
-            pass
+            if datetime.now(cls.JST).second == 0: #1.毎分00秒からws ohlcの更新を確認。
+                target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes
+                tmp_ohlc_loop_flg = True
+                while tmp_ohlc_loop_flg:
+                    if cls.tmp_ohlc.dt[-1].minute == target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
+                        cls.ohlc.add_and_pop(cls.tmp_ohlc.unix_time[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1], cls.tmp.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1], cls.tmp_ohl.size[-1])
+                        print('ws ohlc', cls.ohlc.dt[-1], cls.ohlc.open[-1], cls.ohlc.high[-1], cls.ohlc.low[-1], cls.ohlc.close[-1], cls.ohlc.size[-1])
+                        '''
+                        calc all index
+                        model prediction
+                        '''
+                        tmp_ohlc_loop_flg = False
+                        break
+                    else:
+                        if datetime.now(cls.JST).second >= 2: #3.2秒経過してもohlc更新がない場合は、download ohlcを使用
+                            time.sleep(1)
+                            DownloadMexOhlc.download_data_since_to(cls.ohlc.ut)
+                        time.sleep(0.1)
+
+            time.sleep(0.1)
 
 
 
@@ -88,6 +116,9 @@ class OneMinMarketData:
             cls.tmp_ohlc.size.append(v)
             cls.tmp_ohlc.dt.append(dt)
             cls.tmp_ohlc.unix_time.append(ut)
+            if len(cls.tmp_ohlc.open) > 100:
+                cls.tmp_ohlc = OneMinData()
+
 
     @classmethod
     def detect_max_term(cls):
