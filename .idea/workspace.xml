@@ -4,7 +4,6 @@
     <list default="true" id="549546f5-9711-4611-b5a7-af5500ed94e2" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/DownloadMexOhlc.py" beforeDir="false" afterPath="$PROJECT_DIR$/DownloadMexOhlc.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OneMinMarketData.py" beforeDir="false" afterPath="$PROJECT_DIR$/OneMinMarketData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RealtimeWSAPI.py" beforeDir="false" afterPath="$PROJECT_DIR$/RealtimeWSAPI.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -18,7 +17,7 @@
         <entry file="file://$PROJECT_DIR$/PrivateWS.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="420">
-              <caret line="28" column="59" lean-forward="true" selection-start-line="28" selection-start-column="59" selection-end-line="28" selection-end-column="59" />
+              <caret line="28" column="59" selection-start-line="28" selection-start-column="59" selection-end-line="28" selection-end-column="59" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -29,8 +28,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/RealtimeWSAPI.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-2192">
-              <caret line="93" column="23" lean-forward="true" selection-start-line="93" selection-start-column="23" selection-end-line="93" selection-end-column="23" />
+            <state relative-caret-position="178">
+              <caret line="151" column="37" selection-start-line="151" selection-start-column="37" selection-end-line="151" selection-end-column="37" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -38,11 +37,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="405">
-              <caret line="69" column="8" selection-start-line="69" selection-start-column="8" selection-end-line="70" selection-end-column="18" />
+            <state relative-caret-position="1508">
+              <caret line="155" selection-start-line="155" selection-end-line="155" />
               <folding>
                 <element signature="e#0#33#0" expanded="true" />
               </folding>
@@ -53,17 +52,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/OneMinData.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="193">
+            <state relative-caret-position="386">
               <caret line="51" column="19" selection-start-line="51" selection-start-column="8" selection-end-line="51" selection-end-column="19" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DownloadMexOhlc.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="175">
-              <caret line="123" column="45" selection-start-line="123" selection-start-column="45" selection-end-line="123" selection-end-column="45" />
+            <state relative-caret-position="491">
+              <caret line="191" selection-start-line="191" selection-end-line="196" selection-end-column="35" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
               </folding>
@@ -75,7 +74,7 @@
         <entry file="file://$PROJECT_DIR$/Bot.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="75">
-              <caret line="5" column="11" lean-forward="true" selection-start-line="5" selection-start-column="11" selection-end-line="5" selection-end-column="11" />
+              <caret line="5" column="11" selection-start-line="5" selection-start-column="11" selection-end-line="5" selection-end-column="11" />
             </state>
           </provider>
         </entry>
@@ -126,6 +125,7 @@
       <find>last_ohlc_min</find>
       <find>min</find>
       <find>calc_adx</find>
+      <find>read</find>
     </findStrings>
     <replaceStrings>
       <replace>term</replace>
@@ -162,8 +162,8 @@
         <option value="$PROJECT_DIR$/LgbModel.py" />
         <option value="$PROJECT_DIR$/Bot.py" />
         <option value="$PROJECT_DIR$/RealtimeWSAPI.py" />
-        <option value="$PROJECT_DIR$/OneMinMarketData.py" />
         <option value="$PROJECT_DIR$/DownloadMexOhlc.py" />
+        <option value="$PROJECT_DIR$/OneMinMarketData.py" />
       </list>
     </option>
   </component>
@@ -218,7 +218,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.DownloadMexOhlc">
+  <component name="RunManager" selected="Python.OneMinMarketData">
     <configuration name="Bot" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="mex-bot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -253,6 +253,27 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DownloadMexOhlc.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="OneMinMarketData" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="mex-bot" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/OneMinMarketData.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -303,41 +324,20 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="TestAsync" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <module name="mex-bot" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/TestAsync.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <list>
       <item itemvalue="Python.PrivateWS" />
       <item itemvalue="Python.RealtimeWSAPI" />
       <item itemvalue="Python.DownloadMexOhlc" />
-      <item itemvalue="Python.TestAsync" />
       <item itemvalue="Python.Bot" />
+      <item itemvalue="Python.OneMinMarketData" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.OneMinMarketData" />
         <item itemvalue="Python.DownloadMexOhlc" />
         <item itemvalue="Python.RealtimeWSAPI" />
         <item itemvalue="Python.Bot" />
         <item itemvalue="Python.PrivateWS" />
-        <item itemvalue="Python.TestAsync" />
       </list>
     </recent_temporary>
   </component>
@@ -356,7 +356,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1440" height="825" extended-state="0" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" weight="0.15574348" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -563,14 +562,14 @@
     <entry file="file://$PROJECT_DIR$/Bot.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
-          <caret line="5" column="11" lean-forward="true" selection-start-line="5" selection-start-column="11" selection-end-line="5" selection-end-column="11" />
+          <caret line="5" column="11" selection-start-line="5" selection-start-column="11" selection-end-line="5" selection-end-column="11" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/PrivateWS.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="420">
-          <caret line="28" column="59" lean-forward="true" selection-start-line="28" selection-start-column="59" selection-end-line="28" selection-end-column="59" />
+          <caret line="28" column="59" selection-start-line="28" selection-start-column="59" selection-end-line="28" selection-end-column="59" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
           </folding>
@@ -595,8 +594,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/RealtimeWSAPI.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2192">
-          <caret line="93" column="23" lean-forward="true" selection-start-line="93" selection-start-column="23" selection-end-line="93" selection-end-column="23" />
+        <state relative-caret-position="178">
+          <caret line="151" column="37" selection-start-line="151" selection-start-column="37" selection-end-line="151" selection-end-column="37" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
           </folding>
@@ -605,27 +604,27 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/OneMinData.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="193">
+        <state relative-caret-position="386">
           <caret line="51" column="19" selection-start-line="51" selection-start-column="8" selection-end-line="51" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="405">
-          <caret line="69" column="8" selection-start-line="69" selection-start-column="8" selection-end-line="70" selection-end-column="18" />
-          <folding>
-            <element signature="e#0#33#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/DownloadMexOhlc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="175">
-          <caret line="123" column="45" selection-start-line="123" selection-start-column="45" selection-end-line="123" selection-end-column="45" />
+        <state relative-caret-position="491">
+          <caret line="191" selection-start-line="191" selection-end-line="196" selection-end-column="35" />
           <folding>
             <element signature="e#0#31#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1508">
+          <caret line="155" selection-start-line="155" selection-end-line="155" />
+          <folding>
+            <element signature="e#0#33#0" expanded="true" />
           </folding>
         </state>
       </provider>

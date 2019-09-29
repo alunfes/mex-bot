@@ -57,16 +57,20 @@ class OneMinMarketData:
         #cls.num_term = num_term
         #cls.__initialize_func_name_list()
         #cls.term_list = cls.generate_term_list(num_term)
+
         cls.lock_tmp_ohlc = threading.Lock()
         cls.tmp_ohlc = OneMinData()
         cls.JST = pytz.timezone('Asia/Tokyo')
+        DownloadMexOhlc.download_data()
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
         print('length=',len(cls.ohlc.close))
         #cls.ohlc.del_data(initial_data_vol)
+        start = time.time()
         cls.term_list = cls.generate_term_list(10)
         cls.__generate_all_func_dict()
         cls.__read_func_dict()
         cls.__calc_all_index_dict()
+        print('time=',time.time() - start)
         th = threading.Thread(target=cls.__main_thread)
         th.start()
 
@@ -614,3 +618,9 @@ class OneMinMarketData:
         print('no matche index found!')
         return -1
 
+
+
+
+if __name__ == '__main__':
+    SystemFlg.initialize()
+    OneMinMarketData.initialize_for_bot()

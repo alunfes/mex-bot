@@ -10,8 +10,9 @@ import threading
 
 class DownloadMexOhlc:
     @classmethod
-    def initialize(cls):
+    def start_ohlc_download_thread(cls):
         cls.__initialize_ohlc()
+        cls.lock_ohlc = threading.Lock()
         th = threading.Thread(target=cls.__onemin_data_download_thread)
         th.start()
 
@@ -27,19 +28,26 @@ class DownloadMexOhlc:
         cls.ohlc_volume = 0
 
     @classmethod
+    def set_ohlc(cls, ut, dt, o, h, l, c, v):
+        with cls.lock_ohlc:
+            cls.ohlc_ut = ut
+            cls.ohlc_dt = dt
+            cls.ohlc_open = o
+            cls.ohlc_high = h
+            cls.ohlc_low = l
+            cls.ohlc_close = c
+            cls.ohlc_volume = v
+
+
+
+    @classmethod
     def __onemin_data_download_thread(cls):
         while SystemFlg.get_system_flg():
             if datetime.now().second == 0:
                 time.sleep(1)
                 df = cls.download_latest_ohlc()
                 if df is not None:
-                    cls.ohlc_ut = df[0]
-                    cls.ohlc_dt = df[1]
-                    cls.ohlc_open = df[2]
-                    cls.ohlc_high = df[3]
-                    cls.ohlc_low = df[4]
-                    cls.ohlc_close = df[5]
-                    cls.ohlc_volume = df[6]
+                    cls.set_ohlc(df[0], df[1], df[2], df[3], df[4], df[5], df[6])
                     print(cls.ohlc_dt, cls.ohlc_open, cls.ohlc_high, cls.ohlc_low, cls.ohlc_close, cls.ohlc_volume)
                 else:
                     print('failed download ohlc in __onemin_data_download_thread !')
@@ -184,6 +192,7 @@ class DownloadMexOhlc:
 
 
 if __name__ == '__main__':
-    SystemFlg.initialize()
-    DownloadMexOhlc.initialize()
+    #SystemFlg.initialize()
+    #DownloadMexOhlc.initialize()
+    DownloadMexOhlc.download_data()
 
