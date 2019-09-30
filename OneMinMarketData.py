@@ -71,8 +71,8 @@ class OneMinMarketData:
         cls.__read_func_dict()
         cls.__calc_all_index_dict()
         print('time=',time.time() - start)
-        th = threading.Thread(target=cls.__main_thread)
-        th.start()
+        #th = threading.Thread(target=cls.__main_thread)
+        #th.start()
 
     @classmethod
     def initialize_for_marketdata_test(cls):
@@ -153,7 +153,8 @@ class OneMinMarketData:
         #copy matched key func val
         func_obj= {}
         for col in cols[0]:
-            func_obj[col] = cls.ohlc.func_dict[col]
+            if col not in ['open', 'high', 'low', 'close']:
+                func_obj[col] = cls.ohlc.func_dict[col]
         #replace ohlc.func_dict
         cls.ohlc.func_dict = func_obj
 
@@ -316,7 +317,8 @@ class OneMinMarketData:
     @classmethod
     def __calc_all_index_dict(cls):
         print('calculating index..')
-        start = time.time()
+        start_time = time.time()
+        postponed_funcs = {}
         for k in cls.ohlc.func_dict:
             if k.split('_')[0] == 'makairi':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
@@ -325,10 +327,16 @@ class OneMinMarketData:
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
             elif int(k.split(':')[1]) > 0:
-                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
+                if k.split(':')[0] in ['ema_kairi', 'ema_gra', 'dema_kairi', 'dema_gra']:
+                    postponed_funcs[k] = cls.ohlc.func_dict[k]
+                else:
+                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
             else:
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
-        print('completed index calc, time consumption=',time.time() - start)
+        for k in postponed_funcs:
+            cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
+        print('completed calc all index. time=', time.time() - start_time)
+
 
     @classmethod
     def generate_df_from_dict(cls):
