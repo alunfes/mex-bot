@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="549546f5-9711-4611-b5a7-af5500ed94e2" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/DownloadMexOhlc.py" beforeDir="false" afterPath="$PROJECT_DIR$/DownloadMexOhlc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LgbModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/LgbModel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OneMinMarketData.py" beforeDir="false" afterPath="$PROJECT_DIR$/OneMinMarketData.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -36,11 +38,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-795">
-              <caret line="329" column="89" lean-forward="true" selection-start-line="329" selection-start-column="89" selection-end-line="329" selection-end-column="89" />
+            <state relative-caret-position="338">
+              <caret line="329" lean-forward="true" selection-start-line="329" selection-end-line="329" />
               <folding>
                 <element signature="e#0#33#0" expanded="true" />
               </folding>
@@ -51,8 +53,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/OneMinData.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="386">
-              <caret line="51" column="19" selection-start-line="51" selection-start-column="8" selection-end-line="51" selection-end-column="19" />
+            <state relative-caret-position="45">
+              <caret line="3" column="28" selection-start-line="3" selection-start-column="13" selection-end-line="3" selection-end-column="28" />
             </state>
           </provider>
         </entry>
@@ -60,8 +62,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DownloadMexOhlc.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="137" selection-start-line="137" selection-end-line="137" />
+            <state relative-caret-position="121">
+              <caret line="15" column="8" selection-start-line="15" selection-start-column="8" selection-end-line="16" selection-end-column="18" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
               </folding>
@@ -78,11 +80,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/LgbModel.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="120">
-              <caret line="8" column="23" selection-start-line="8" selection-start-column="23" selection-end-line="8" selection-end-column="23" />
+            <state relative-caret-position="-2914">
+              <caret line="34" column="54" selection-start-line="34" selection-start-column="54" selection-end-line="34" selection-end-column="54" />
               <folding>
                 <element signature="e#0#22#0" expanded="true" />
               </folding>
@@ -127,6 +129,7 @@
       <find>func_dict</find>
       <find>min</find>
       <find>__generate_all_func_dict</find>
+      <find>index_data_dict</find>
     </findStrings>
     <replaceStrings>
       <replace>term</replace>
@@ -160,11 +163,11 @@
         <option value="$PROJECT_DIR$/PrivateWS.py" />
         <option value="$PROJECT_DIR$/data.txt" />
         <option value="$PROJECT_DIR$/OneMinData.py" />
-        <option value="$PROJECT_DIR$/LgbModel.py" />
         <option value="$PROJECT_DIR$/Bot.py" />
         <option value="$PROJECT_DIR$/RealtimeWSAPI.py" />
         <option value="$PROJECT_DIR$/DownloadMexOhlc.py" />
         <option value="$PROJECT_DIR$/OneMinMarketData.py" />
+        <option value="$PROJECT_DIR$/LgbModel.py" />
       </list>
     </option>
   </component>
@@ -527,16 +530,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/LgbModel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="23" selection-start-line="8" selection-start-column="23" selection-end-line="8" selection-end-column="23" />
-          <folding>
-            <element signature="e#0#22#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/GDriveAPI.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="195">
@@ -587,20 +580,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/OneMinData.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="386">
-          <caret line="51" column="19" selection-start-line="51" selection-start-column="8" selection-end-line="51" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydev_imps/_pydev_execfile.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="17" selection-start-line="17" selection-end-line="17" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/RealtimeWSAPI.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="178">
@@ -611,22 +590,46 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydev_imps/_pydev_execfile.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="17" selection-start-line="17" selection-end-line="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/OneMinData.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="3" column="28" selection-start-line="3" selection-start-column="13" selection-end-line="3" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="338">
+          <caret line="329" lean-forward="true" selection-start-line="329" selection-end-line="329" />
+          <folding>
+            <element signature="e#0#33#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/DownloadMexOhlc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="137" selection-start-line="137" selection-end-line="137" />
+        <state relative-caret-position="121">
+          <caret line="15" column="8" selection-start-line="15" selection-start-column="8" selection-end-line="16" selection-end-column="18" />
           <folding>
             <element signature="e#0#31#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
+    <entry file="file://$PROJECT_DIR$/LgbModel.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-795">
-          <caret line="329" column="89" lean-forward="true" selection-start-line="329" selection-start-column="89" selection-end-line="329" selection-end-column="89" />
+        <state relative-caret-position="-2914">
+          <caret line="34" column="54" selection-start-line="34" selection-start-column="54" selection-end-line="34" selection-end-column="54" />
           <folding>
-            <element signature="e#0#33#0" expanded="true" />
+            <element signature="e#0#22#0" expanded="true" />
           </folding>
         </state>
       </provider>

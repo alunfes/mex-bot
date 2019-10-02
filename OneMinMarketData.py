@@ -20,46 +20,11 @@ data download and calc for bot
 
 class OneMinMarketData:
     @classmethod
-    def __initialize_func_name_list(cls):
-        cls.funcs_normal = ['ema', 'ema_kairi', 'ema_gra', 'dema', 'dema_gra', 'momentum', 'rate_of_change', 'rsi',
-                          'williams_R', 'beta', 'time_series_forecast', 'correl', 'linear_reg', 'linear_reg_angle', 'linear_reg_intercept',
-                          'linear_reg_slope', 'stdv', 'var', 'adx', 'aroon_os', 'cci', 'dx', 'macd', 'macd_signal', 'macd_hist']
-        cls.funcs_various = ['makairi_momentum', 'makairi_rate_of_change', 'makairi_rsi', 'makairi_williams_R', 'makairi_beta',
-                             'makairi_time_series_forecast', 'makairi_correl', 'makairi_linear_reg', 'makairi_linear_reg_angle', 'makairi_linear_reg_intercept',
-                             'makairi_linear_reg_slope', 'makairi_stdv', 'makairi_var', 'makairi_adx', 'makairi_aroon_os', 'makairi_cci',
-                             'makairi_dx', 'diff_momentum', 'diff_rate_of_change', 'diff_rsi', 'diff_williams_R', 'diff_beta', 'diff_time_series_forecast',
-                             'diff_correl', 'diff_linear_reg','diff_linear_reg_angle','diff_linear_reg_intercept','diff_linear_reg_slope',
-                             'diff_stdv','diff_var','diff_adx','diff_aroon_os','diff_cci','diff_dx']
-        cls.funcs_classify = ['normalized_ave_true_range', 'three_outside_updown', 'breakway', 'dark_cloud_cover', 'dragonfly_doji', 'updown_sidebyside_white_lines',
-                              'haramisen', 'hikkake_pattern', 'neck_pattern', 'upsidedownside_gap_three_method', 'sar', 'bop']
-
-        cls.func_objs_normal = {'ema':OneMinMarketData.calc_ema, 'ema_kairi':OneMinMarketData.calc_ema_gra, 'ema_gra':OneMinMarketData.calc_ema_gra,
-                         'dema':OneMinMarketData.calc_dema, 'dema_gra':OneMinMarketData.calc_dema_gra, 'momentum':OneMinMarketData.calc_momentum,
-                         'rate_of_change':OneMinMarketData.calc_rate_of_change, 'rsi':OneMinMarketData.calc_rsi, 'williams_R':OneMinMarketData.calc_williams_R,
-                         'beta':OneMinMarketData.calc_beta, 'time_series_forecast':OneMinMarketData.calc_time_series_forecast, 'correl':OneMinMarketData.calc_correl,
-                         'linear_reg':OneMinMarketData.calc_linear_reg, 'linear_reg_angle':OneMinMarketData.calc_linear_reg_angle,'linear_reg_intercept':OneMinMarketData.calc_linear_reg_intercept,
-                         'linear_reg_slope':OneMinMarketData.calc_linear_reg_slope, 'stdv':OneMinMarketData.calc_stdv, 'var':OneMinMarketData.calc_var, 'adx':OneMinMarketData.calc_adx,
-                         'aroon_os':OneMinMarketData.calc_aroon_os, 'cci':OneMinMarketData.calc_cci, 'dx':OneMinMarketData.calc_dx, 'macd':OneMinMarketData.calc_macd,
-                         'macd_signal':OneMinMarketData.calc_macd_signal, 'macd_hist':OneMinMarketData.calc_macd_hist}
-
-
-        cls.func_objs_classify = {'normalized_ave_true_range':OneMinMarketData.calc_normalized_ave_true_range,
-                                  'three_outside_updown':OneMinMarketData.calc_three_outside_updown, 'breakway':OneMinMarketData.calc_breakway,
-                                  'dark_cloud_cover':OneMinMarketData.calc_dark_cloud_cover,
-                                  'dragonfly_doji':OneMinMarketData.calc_dragonfly_doji,
-                                  'updown_sidebyside_white_lines':OneMinMarketData.calc_updown_sidebyside_white_lines,
-                              'haramisen':OneMinMarketData.calc_haramisen, 'hikkake_pattern':OneMinMarketData.calc_hikkake_pattern,
-                                  'neck_pattern':OneMinMarketData.calc_neck_pattern, 'upsidedownside_gap_three_method':OneMinMarketData.calc_upsidedownside_gap_three_method,
-                                  'sar':OneMinMarketData.calc_sar, 'bop':OneMinMarketData.calc_bop}
-
-    @classmethod
     def initialize_for_bot(cls):
-        #cls.num_term = num_term
-        #cls.__initialize_func_name_list()
-        #cls.term_list = cls.generate_term_list(num_term)
-
         cls.lock_tmp_ohlc = threading.Lock()
         cls.tmp_ohlc = OneMinData()
+        cls.df = None
+        cls.lock_df = threading.Lock()
         cls.JST = pytz.timezone('Asia/Tokyo')
         DownloadMexOhlc.download_data()
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
@@ -67,6 +32,7 @@ class OneMinMarketData:
         #cls.ohlc.del_data(initial_data_vol)
         start = time.time()
         cls.term_list = cls.generate_term_list(10)
+        cls.max_term = cls.detect_max_term()
         cls.__generate_all_func_dict()
         cls.__read_func_dict()
         cls.__calc_all_index_dict()
@@ -91,24 +57,39 @@ class OneMinMarketData:
                 target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes
                 tmp_ohlc_loop_flg = True
                 while tmp_ohlc_loop_flg:
-                    if cls.tmp_ohlc.dt[-1].minute == target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
-                        cls.ohlc.add_and_pop(cls.tmp_ohlc.unix_time[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1], cls.tmp.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1], cls.tmp_ohl.size[-1])
-                        print('ws ohlc', cls.ohlc.dt[-1], cls.ohlc.open[-1], cls.ohlc.high[-1], cls.ohlc.low[-1], cls.ohlc.close[-1], cls.ohlc.size[-1])
-                        '''
-                        calc all index
-                        model prediction
-                        '''
-                        tmp_ohlc_loop_flg = False
+                    if len(cls.tmp_ohlc.dt) > 0:
+                        if cls.tmp_ohlc.dt[-1].minute == target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
+                            cls.ohlc.add_and_pop(cls.tmp_ohlc.unix_time[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],
+                                                 cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
+                            tmp_ohlc_loop_flg = False
+                            break
+                    if datetime.now(cls.JST).second > 2: #2秒以上経過してwsからのohlc更新がない場合は
+                        res = DownloadMexOhlc.bot_ohlc_download_latest(cls.max_term)
+                        if res is not None:
+                            cls.ohlc.add_and_pop(res[0], res[1], res[2], res[3], res[4], res[5], res[6])
+                            tmp_ohlc_loop_flg = False
                         break
-                    else:
-                        if datetime.now(cls.JST).second >= 2: #3.2秒経過してもohlc更新がない場合は、download ohlcを使用
-                            time.sleep(1)
-                            DownloadMexOhlc.download_data_since_to(cls.ohlc.ut)
-                        time.sleep(0.1)
+                    time.sleep(0.1)
 
+                if tmp_ohlc_loop_flg == False:
+                    cls.__calc_all_index_dict()
+                    #predict
+                else: #failed to update ohlc
+                    print('failed to update ohlc skil index calc !')
+                    pass
+
+                if (datetime.now(cls.JST).minute // 5) == 0 and datetime.now(cls.JST).second > 20: #5分に一回max termまでのデータをダウンロードしてcsvに記録し、market dataをrefreshする。
+                    DownloadMexOhlc.initial_data_download(cls.max_term)
+                    cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
+                    cls.__calc_all_index_dict()
+                    #predict
             time.sleep(0.1)
 
 
+    @classmethod
+    def set_df(cls, df):
+        with cls.lock_df:
+            cls.df = df
 
     @classmethod
     def add_tmp_ohlc(cls, ut, dt, o, h, l, c, v):
@@ -339,6 +320,15 @@ class OneMinMarketData:
 
 
     @classmethod
+    def generate_df_from_dict_for_bot(cls):
+        df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
+        df = df.assign(open=cls.ohlc.open)
+        df = df.assign(high=cls.ohlc.high)
+        df = df.assign(low=cls.ohlc.low)
+        df = df.assign(close=cls.ohlc.close)
+        return df.iloc[-1]
+
+    @classmethod
     def generate_df_from_dict(cls):
         cut_size = cls.term_list[-1] * 2
         end = len(cls.ohlc.close) - 10
@@ -414,11 +404,15 @@ class OneMinMarketData:
 
     @classmethod
     def calc_ema_kairi(cls, term):
-        return list(map(lambda c, e: (c - e) / e, cls.ohlc.close, cls.ohlc.index_data_dict['ema:' + str(term)]))
+        ema = cls.calc_ema(term)
+        #return list(map(lambda c, e: (c - e) / e, cls.ohlc.close, cls.ohlc.index_data_dict['ema:' + str(term)]))
+        return list(map(lambda c, e: (c - e) / e, cls.ohlc.close, ema))
 
     @classmethod
     def calc_dema_kairi(cls, term):
-        return list(map(lambda c, d: (c - d) / d, cls.ohlc.close, cls.ohlc.index_data_dict['dema:' + str(term)]))
+        dema = cls.calc_dema(term)
+        #return list(map(lambda c, d: (c - d) / d, cls.ohlc.close, cls.ohlc.index_data_dict['dema:' + str(term)]))
+        return list(map(lambda c, d: (c - d) / d, cls.ohlc.close, dema))
 
     @classmethod
     def calc_ema_gra(cls, term):

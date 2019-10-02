@@ -138,6 +138,24 @@ class DownloadMexOhlc:
 
 
     @classmethod
+    def bot_ohlc_download_latest(cls, max_term):
+        to = int(time.time())
+        since = to - (60 * max_term) - 60
+        flg = True
+        counter = 0
+        while flg:
+            df = cls.download_latest_ohlc()
+            if df is not None:
+                return df
+            else:
+                if counter > 10:
+                    print('failed download ohlc in bot !')
+                    return None
+            time.sleep(1)
+
+
+
+    @classmethod
     def download_data(cls):
         # 現在時刻のUTC naiveオブジェクト
         since = cls.__check_current_data_latest_ut()

@@ -1,15 +1,39 @@
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split
+from SystemFlg import SystemFlg
+from OneMinMarketData import OneMinMarketData
 import numpy as np
 import pandas as pd
 import pickle
+import threading
+import time
 
 
 class LgbModel:
     def __init__(self):
         self.model = None
+        self.next_min = -1
+        self.prediction = -1
+        self.lock_pred = threading.Lock()
+        self.upper_kijun = 0.5
+        self.lock_pred = threading.Lock()
         with open('./Model/lgb_bpsp_model.dat', mode='rb') as f:
             self.model = pickle.load(f)
+        th = threading.Thread(target=self.main_thread)
+        th.start()
+
+    def set_pred(self,pred):
+        with self.lock_pred:
+            self.prediction = pred
+
+    def main_thread(self):
+        while SystemFlg.get_system_flg():
+            if OneMinMarketData.ohlc.dt[-1].minute == self.next_min:
+                df = OneMinMarketData.generate_df_from_dict_for_bot()
+                self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
+                self.next_min = OneMinMarketData.ohlc.dt[-1].minute +1 if OneMinMarketData.ohlc.dt[-1].minute != 59 else 0
+                print('prediction = ', self.prediction)
+            time.sleep(0.5)
 
 
     def generate_bpsp_data(self, df: pd.DataFrame, train_size=0.6, valid_size=0.2):
