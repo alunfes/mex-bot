@@ -48,7 +48,7 @@ class DownloadMexOhlc:
                 df = cls.download_latest_ohlc()
                 if df is not None:
                     cls.set_ohlc(df[0], df[1], df[2], df[3], df[4], df[5], df[6])
-                    print(cls.ohlc_dt, cls.ohlc_open, cls.ohlc_high, cls.ohlc_low, cls.ohlc_close, cls.ohlc_volume)
+                    #print(cls.initial_data_download(), cls.ohlc_dt, cls.ohlc_open, cls.ohlc_high, cls.ohlc_low, cls.ohlc_close, cls.ohlc_volume)
                 else:
                     print('failed download ohlc in __onemin_data_download_thread !')
             time.sleep(0.1)
@@ -60,10 +60,9 @@ class DownloadMexOhlc:
         print('downloading for initial bot data...')
         if os.path.exists('./Data/bot_ohlc.csv'):
             os.remove('./Data/bot_ohlc.csv')
-        now = datetime.utcnow()
-        unixtime = calendar.timegm(now.utctimetuple())
+        unixtime = int(time.time())
         to = unixtime
-        since = to - (60 * max_term) - 1
+        since = to - (60 * max_term) - 60
 
         loop_flg = True
         df = pd.DataFrame()
@@ -85,8 +84,7 @@ class DownloadMexOhlc:
     def download_data_since_to(cls, since, to):
         unixtime = int(time.time())
         if to <= unixtime:
-            #if to - since <= 10080 * 60:
-            if to != 0:
+            if to > since:
                 try:
                     param = {"period": 1, "from": since, "to": to}
                     url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(
@@ -112,7 +110,7 @@ class DownloadMexOhlc:
                     import traceback
                     traceback.print_exc()
             else:
-                print('to should be lower than since + 10080!')
+                print('to should be larger than since')
         else:
             print('to should be lower than time.now()!')
 

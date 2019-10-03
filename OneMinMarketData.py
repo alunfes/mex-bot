@@ -23,6 +23,7 @@ class OneMinMarketData:
     def initialize_for_bot(cls):
         cls.lock_tmp_ohlc = threading.Lock()
         cls.tmp_ohlc = OneMinData()
+        cls.tmp_ohlc.initialize()
         cls.df = None
         cls.lock_df = threading.Lock()
         cls.JST = pytz.timezone('Asia/Tokyo')
@@ -37,8 +38,8 @@ class OneMinMarketData:
         cls.__read_func_dict()
         cls.__calc_all_index_dict()
         print('time=',time.time() - start)
-        #th = threading.Thread(target=cls.__main_thread)
-        #th.start()
+        th = threading.Thread(target=cls.__main_thread)
+        th.start()
 
     @classmethod
     def initialize_for_marketdata_test(cls):
@@ -62,12 +63,15 @@ class OneMinMarketData:
                             cls.ohlc.add_and_pop(cls.tmp_ohlc.unix_time[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],
                                                  cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
                             tmp_ohlc_loop_flg = False
+                            print('ws ohlc:', datetime.now(cls.JST), cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],
+                                                 cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
                             break
-                    if datetime.now(cls.JST).second > 2: #2秒以上経過してwsからのohlc更新がない場合は
+                    if datetime.now(cls.JST).second > 2: #2秒以上経過してwsからのohlc更新がない場合はdownload ohlc
                         res = DownloadMexOhlc.bot_ohlc_download_latest(cls.max_term)
                         if res is not None:
                             cls.ohlc.add_and_pop(res[0], res[1], res[2], res[3], res[4], res[5], res[6])
                             tmp_ohlc_loop_flg = False
+                            print('download ohlc:', datetime.now(cls.JST), res[0], res[1], res[2], res[3], res[4], res[5], res[6])
                         break
                     time.sleep(0.1)
 
@@ -114,8 +118,9 @@ class OneMinMarketData:
             for r in reader:
                 cols.append(r)
         for col in cols[0]:
-            if max_term < int(col.split(':')[1]):
-                max_term = int(col.split(':')[1])
+            if col not in ['open', 'high', 'low', 'close']:
+                if max_term < int(col.split(':')[1]):
+                    max_term = int(col.split(':')[1])
         return max_term
 
 
