@@ -32,7 +32,6 @@ bot稼働中のohlcはws経由で取得
 class Bot:
     def initialize(self):
         #initalize and read model
-        lgb = LgbModel()
         #detect max term
         max_term = OneMinMarketData.detect_max_term()
         print('max_term='+str(max_term))

@@ -225,8 +225,9 @@ class TickData:
                             flg = True
                         if flg and datetime.now(cls.JST).second <= 4:
                             close = p[-1]
-                            print(datetime.now(cls.JST), dt, open, high, low, close, volume)
-                            #OneMinMarketData.add_tmp_ohlc(ut,dt,open,high,low,close,volume)
+                            #print(datetime.now(cls.JST), dt, open, high, low, close, volume)
+                            print('ws add ohlc')
+                            OneMinMarketData.add_tmp_ohlc(ut,dt,open,high,low,close,volume)
                             cls.target_ohlc_min = next_min
                             loop_flg = False
                             break

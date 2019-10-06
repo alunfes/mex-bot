@@ -30,18 +30,22 @@ class LgbModel:
         ini_data_flg = False #flg for market data initialization
         while SystemFlg.get_system_flg():
 
-            while ini_data_flg == False: #wait for initial update of the market data
+            while ini_data_flg is False: #wait for initial update of the market data
                 if len(OneMinMarketData.ohlc.dt) > 0:
                     self.next_min = OneMinMarketData.ohlc.dt[-1].minute
                     ini_data_flg = True
                 time.sleep(0.5)
 
             time.sleep(0.5)
-            if OneMinMarketData.ohlc.dt[-1].minute == self.next_min:
-                df = OneMinMarketData.generate_df_from_dict_for_bot()
-                self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
-                self.next_min = int(OneMinMarketData.ohlc.dt[-1].minute) +1 if OneMinMarketData.ohlc.dt[-1].minute != 59 else 0
-                print('prediction = ', self.pred, 'next min=',self.next_min)
+            df = OneMinMarketData.get_df()
+            if df is not None:
+                dt = df['dt'].iloc[-1]
+                if dt.minute == self.next_min:
+                    df = df.drop(['dt'], axis =1)
+                    self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
+                    self.next_min = int(dt.minute) +1 if dt.minute != 59 else 0
+                    OneMinMarketData.set_pred(self.pred)
+                    print('prediction = ', self.pred, 'next min=',self.next_min)
         print('Lgb main thread ended.')
 
 

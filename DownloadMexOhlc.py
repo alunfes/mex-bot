@@ -60,23 +60,16 @@ class DownloadMexOhlc:
         print('downloading for initial bot data...')
         if os.path.exists('./Data/bot_ohlc.csv'):
             os.remove('./Data/bot_ohlc.csv')
-        unixtime = int(time.time())
-        to = unixtime
+        to = int(time.time())
+        to = to - (to % 10) - 60
         since = to - (60 * max_term) - 60
-
-        loop_flg = True
-        df = pd.DataFrame()
-        while loop_flg:
-            tmp_to = since + 10080 * 60
-            if tmp_to >= to: #check completion of download
-                loop_flg = True
-                tmp_to = to
-            df = cls.download_data_since_to(since, tmp_to)
-            since = since + 10080 * 60
-            if loop_flg:
-                df.to_csv('./Data/bot_ohlc.csv', index=False)
-                break
-        print('completed download')
+        df = cls.download_data_since_to(since, to)
+        print(df)
+        if df is not None:
+            df.to_csv('./Data/bot_ohlc.csv', index=False)
+            print('completed download')
+        else:
+            print('data is none. failed to download ohlc in initial data download !')
 
 
     #download data for specific period and return processed df
@@ -85,30 +78,41 @@ class DownloadMexOhlc:
         unixtime = int(time.time())
         if to <= unixtime:
             if to > since:
-                try:
-                    param = {"period": 1, "from": since, "to": to}
-                    url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(
-                        **param)
-                    res = requests.get(url)
-                    #print(res)
-                    data = res.json()
-                    dt = []
-                    for d in data['t']:
-                        dt.append(datetime.fromtimestamp(int(d)))
-                    df = pd.DataFrame({
-                        "timestamp": data["t"],
-                        "dt": dt,
-                        "open": data["o"],
-                        "high": data["h"],
-                        "low": data["l"],
-                        "close": data["c"],
-                        "volume": data["v"],
-                    }, columns=["timestamp", "dt", "open", "high", "low", "close", "volume"])
-                    return df
-                except:
-                    print('error in download_data_since_to!')
-                    import traceback
-                    traceback.print_exc()
+                tmp_to = since + 10080 * 60 if since + 10080 * 60 < to else to
+                tmp_df = None
+                df = None
+                while tmp_to <= to:
+                    try:
+                        param = {"period": 1, "from": since, "to": tmp_to}
+                        url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(
+                            **param)
+                        res = requests.get(url)
+                        #print(res)
+                        data = res.json()
+                        dt = []
+                        for d in data['t']:
+                            dt.append(datetime.fromtimestamp(int(d)))
+                        tmp_df = pd.DataFrame({
+                            "timestamp": data["t"],
+                            "dt": dt,
+                            "open": data["o"],
+                            "high": data["h"],
+                            "low": data["l"],
+                            "close": data["c"],
+                            "volume": data["v"],
+                        }, columns=["timestamp", "dt", "open", "high", "low", "close", "volume"])
+                        if df is None:
+                            df = tmp_df
+                            if tmp_to == to:
+                                return df
+                        else:
+                            df = df.append(tmp_df, ignore_index=True)
+                    except:
+                        print('error in download_data_since_to!')
+                        import traceback
+                        traceback.print_exc()
+                    since = tmp_to
+                return df
             else:
                 print('to should be larger than since')
         else:
@@ -138,6 +142,7 @@ class DownloadMexOhlc:
     @classmethod
     def bot_ohlc_download_latest(cls, max_term):
         to = int(time.time())
+        to = to - (to % 10) - 60
         since = to - (60 * max_term) - 60
         flg = True
         counter = 0
@@ -208,7 +213,10 @@ class DownloadMexOhlc:
 
 
 if __name__ == '__main__':
-    #SystemFlg.initialize()
-    #DownloadMexOhlc.initialize()
-    DownloadMexOhlc.download_data()
+    print(datetime.now())
+    to = int(time.time())
+    to = to - (to % 10) - 60
+    since = to - (60 * 3)
+    df = DownloadMexOhlc.download_data_since_to(since, to)
+    print(df)
 

@@ -25,18 +25,21 @@ class OneMinMarketData:
         cls.tmp_ohlc = OneMinData()
         cls.tmp_ohlc.initialize()
         cls.df = None
+        cls.pred = -1
+        cls.lock_pred=  threading.Lock()
         cls.lock_df = threading.Lock()
         cls.JST = pytz.timezone('Asia/Tokyo')
-        DownloadMexOhlc.download_data()
+        cls.term_list = cls.generate_term_list(10)
+        cls.max_term = cls.detect_max_term()
+        DownloadMexOhlc.initial_data_download(cls.max_term)
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
         print('length=',len(cls.ohlc.close))
         #cls.ohlc.del_data(initial_data_vol)
         start = time.time()
-        cls.term_list = cls.generate_term_list(10)
-        cls.max_term = cls.detect_max_term()
         cls.__generate_all_func_dict()
         cls.__read_func_dict()
         cls.__calc_all_index_dict()
+        cls.set_df(cls.generate_df_from_dict_for_bot())
         print('time=',time.time() - start)
         th = threading.Thread(target=cls.__main_thread)
         th.start()
@@ -45,6 +48,16 @@ class OneMinMarketData:
     def initialize_for_marketdata_test(cls):
         DownloadMexOhlc.initial_data_download(5000)
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
+
+    @classmethod
+    def set_pred(cls, pred):
+        with cls.lock_pred:
+            cls.pred =  pred
+
+    @classmethod
+    def get_pred(cls):
+        with cls.lock_pred:
+            return cls.pred
 
     '''
     1.毎分00秒からws ohlcの更新を確認。
@@ -77,7 +90,7 @@ class OneMinMarketData:
 
                 if tmp_ohlc_loop_flg == False:
                     cls.__calc_all_index_dict()
-                    #predict
+                    cls.set_df(cls.generate_df_from_dict_for_bot())
                 else: #failed to update ohlc
                     print('failed to update ohlc skil index calc !')
                     pass
@@ -86,7 +99,7 @@ class OneMinMarketData:
                     DownloadMexOhlc.initial_data_download(cls.max_term)
                     cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
                     cls.__calc_all_index_dict()
-                    #predict
+                    cls.set_df(cls.generate_df_from_dict_for_bot())
             time.sleep(0.1)
 
 
@@ -94,6 +107,14 @@ class OneMinMarketData:
     def set_df(cls, df):
         with cls.lock_df:
             cls.df = df
+
+    @classmethod
+    def get_df(cls):
+        with cls.lock_df:
+            if cls.df is not None:
+                return cls.df.iloc[:]
+            else:
+                return None
 
     @classmethod
     def add_tmp_ohlc(cls, ut, dt, o, h, l, c, v):
@@ -327,11 +348,12 @@ class OneMinMarketData:
     @classmethod
     def generate_df_from_dict_for_bot(cls):
         df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
+        df = df.assign(dt=cls.ohlc.dt)
         df = df.assign(open=cls.ohlc.open)
         df = df.assign(high=cls.ohlc.high)
         df = df.assign(low=cls.ohlc.low)
         df = df.assign(close=cls.ohlc.close)
-        return df.iloc[-1]
+        return df.iloc[-1:]
 
     @classmethod
     def generate_df_from_dict(cls):
