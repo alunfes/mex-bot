@@ -2,6 +2,7 @@ import lightgbm as lgb
 from sklearn.model_selection import train_test_split
 from SystemFlg import SystemFlg
 from OneMinMarketData import OneMinMarketData
+from RealtimeWSAPI import TickData
 import numpy as np
 import pandas as pd
 import pickle
@@ -19,6 +20,14 @@ class LgbModel:
         self.lock_pred = threading.Lock()
         with open('./Model/lgb_bpsp_model.dat', mode='rb') as f:
             self.model = pickle.load(f)
+
+        self.num_buy = 0
+        self.num_sell = 0
+        self.total_pl = 0
+        self.entry_price = 0
+        self.posi = ''
+        self.fee = 0.00075
+
         th = threading.Thread(target=self.main_thread)
         th.start()
 
@@ -26,10 +35,24 @@ class LgbModel:
         with self.lock_pred:
             self.pred = pred
 
+    def sim(self, pred):
+        if self.posi == '':
+            self.posi = 'buy' if pred == 1 else 'sell'
+            self.entry_price = TickData.get_ltp()
+        elif self.posi =='buy' and pred == 0:
+            self.num_buy += 1
+            self.posi = 'sell'
+            self.total_pl += TickData.get_ltp() - (self.fee+1) * self.entry_price
+        elif self.posi =='sell' and pred == 1:
+            self.num_sell += 1
+            self.posi = 'buy'
+            self.total_pl += (1-self.fee) * self.entry_price - TickData.get_ltp()
+        print('pl=', self.total_pl, 'posi=', self.posi, 'num buy=',self.num_buy, 'num sell', self.num_sell)
+
+
     def main_thread(self):
         ini_data_flg = False #flg for market data initialization
         while SystemFlg.get_system_flg():
-
             while ini_data_flg is False: #wait for initial update of the market data
                 if len(OneMinMarketData.ohlc.dt) > 0:
                     self.next_min = OneMinMarketData.ohlc.dt[-1].minute
@@ -37,6 +60,16 @@ class LgbModel:
                 time.sleep(0.5)
 
             time.sleep(0.5)
+            if OneMinMarketData.get_flg_ohlc_update():
+                df = OneMinMarketData.get_df()
+                if df is not None:
+                    df = df.drop(['dt'], axis=1)
+                    self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
+                    OneMinMarketData.set_flg_ohlc_update(False)
+                    print('prediction = ', self.pred, 'next min=', self.next_min)
+                    self.sim(self.pred)
+
+            '''
             df = OneMinMarketData.get_df()
             if df is not None:
                 dt = df['dt'].iloc[-1]
@@ -45,7 +78,10 @@ class LgbModel:
                     self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
                     self.next_min = int(dt.minute) +1 if dt.minute != 59 else 0
                     OneMinMarketData.set_pred(self.pred)
+                    OneMinMarketData.set_flg_ohlc_update(False)
                     print('prediction = ', self.pred, 'next min=',self.next_min)
+                    self.sim(self.pred)
+                    '''
         print('Lgb main thread ended.')
 
 

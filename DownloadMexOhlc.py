@@ -161,45 +161,18 @@ class DownloadMexOhlc:
     @classmethod
     def download_data(cls):
         # 現在時刻のUTC naiveオブジェクト
-        since = cls.__check_current_data_latest_ut()
         unixtime = int(time.time())
-        flg = True
-        if since == 0:
-            # UTC naiveオブジェクト -> Unix time
-            since = unixtime - 129600 * 60
-            #since = unixtime - 30000 * 60
-            flg = False
+        to = int(time.time())
+        to = to - (to % 10) - 60
+        since = to - 129600 * 60
+        df = cls.download_data_since_to(since, to)
 
-        loop_flg = True
-        while loop_flg:
-            to = since + 10080 * 60
-            if to > unixtime:
-                to = unixtime
-                loop_flg = False
-            param = {"period": 1, "from": since, "to": to}
-            url = "https://www.bitmex.com/api/udf/history?symbol=XBTUSD&resolution={period}&from={from}&to={to}".format(**param)
-            res = requests.get(url)
-            data = res.json()
-            since = to
+        if df is not None:
+            df.to_csv('./Data/mex_data.csv', index=False)
+        else:
+            df.to_csv('./Data/mex_data.csv', mode='a', header=False, index=False)
 
-            # レスポンスのjsonデータからOHLCVのDataFrameを作成
-            dt = []
-            for d in data['t']:
-                dt.append(datetime.fromtimestamp(int(d)))
-            df = pd.DataFrame({
-                "timestamp": data["t"],
-                "dt": dt,
-                "open": data["o"],
-                "high": data["h"],
-                "low": data["l"],
-                "close": data["c"],
-                "volume": data["v"],
-            }, columns=["timestamp", "dt", "open", "high", "low", "close", "volume"])
-            if flg == False:
-                df.to_csv('./Data/mex_data.csv', index=False)
-                flg = True
-            else:
-                df.to_csv('./Data/mex_data.csv', mode='a', header=False, index=False)
+
 
     @classmethod
     def __check_current_data_latest_ut(cls):
