@@ -13,7 +13,6 @@ import time
 class LgbModel:
     def __init__(self):
         self.model = None
-        self.next_min = -1
         self.pred = -1
         self.lock_pred = threading.Lock()
         self.upper_kijun = 0.5
@@ -55,7 +54,6 @@ class LgbModel:
         while SystemFlg.get_system_flg():
             while ini_data_flg is False: #wait for initial update of the market data
                 if len(OneMinMarketData.ohlc.dt) > 0:
-                    self.next_min = OneMinMarketData.ohlc.dt[-1].minute
                     ini_data_flg = True
                 time.sleep(0.5)
 
@@ -66,7 +64,7 @@ class LgbModel:
                     df = df.drop(['dt'], axis=1)
                     self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
                     OneMinMarketData.set_flg_ohlc_update(False)
-                    print('prediction = ', self.pred, 'next min=', self.next_min)
+                    print('prediction = ', self.pred)
                     self.sim(self.pred)
 
             '''

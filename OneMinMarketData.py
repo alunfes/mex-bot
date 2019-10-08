@@ -35,7 +35,6 @@ class OneMinMarketData:
         cls.max_term = cls.detect_max_term()
         DownloadMexOhlc.initial_data_download(cls.max_term)
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
-        print('length=',len(cls.ohlc.close))
         #cls.ohlc.del_data(initial_data_vol)
         start = time.time()
         cls.__generate_all_func_dict()
@@ -43,7 +42,7 @@ class OneMinMarketData:
         cls.__calc_all_index_dict()
         cls.set_df(cls.generate_df_from_dict_for_bot())
         cls.set_flg_ohlc_update(True)
-        print('time=',time.time() - start)
+        print('time for market data initialization=',time.time() - start)
         th = threading.Thread(target=cls.__main_thread)
         th.start()
 
@@ -81,16 +80,17 @@ class OneMinMarketData:
     @classmethod
     def __main_thread(cls):
         def __check_next_min(last_ohlc_min):
-            if datetime.now(cls.JST).minute > last_ohlc_min:
+            if last_ohlc_min == 59 and datetime.now(cls.JST).minute >= 1:
                 return True
-            elif last_ohlc_min == 59 and datetime.now(cls.JST).minute == 0:
-
-
+            elif datetime.now(cls.JST).minute > last_ohlc_min+1:
+                return True
+            else:
+                return False
 
         while SystemFlg.get_system_flg():
-            if __check_next_min(cls.ohlc.dt[-1].minute)
+            tmp_ohlc_loop_flg = True
+            if __check_next_min(cls.ohlc.dt[-1].minute):
                 target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes
-                tmp_ohlc_loop_flg = True
                 while tmp_ohlc_loop_flg:
                     if len(cls.tmp_ohlc.dt) > 0:
                         if cls.tmp_ohlc.dt[-1].minute == target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
@@ -109,15 +109,16 @@ class OneMinMarketData:
                         break
                     time.sleep(0.1)
 
-            if tmp_ohlc_loop_flg == False: #when download was successfull
-                cls.__calc_all_index_dict()
-                cls.set_df(cls.generate_df_from_dict_for_bot())
-                cls.set_flg_ohlc_update(True)
-            else: #failed to update ohlc
-                print('failed to update ohlc skil index calc !')
-                pass
+                if tmp_ohlc_loop_flg == False: #when download was successfull
+                    cls.__calc_all_index_dict()
+                    cls.set_df(cls.generate_df_from_dict_for_bot())
+                    cls.set_flg_ohlc_update(True)
+                else: #failed to update ohlc
+                    print('failed to update ohlc skil index calc !')
+                    pass
 
             if (datetime.now(cls.JST).minute // 5) == 0 and datetime.now(cls.JST).second > 20: #5分に一回max termまでのデータをダウンロードしてcsvに記録し、market dataをrefreshする。
+                print('5min ohlc download all')
                 DownloadMexOhlc.initial_data_download(cls.max_term)
                 cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
                 #cls.__calc_all_index_dict()
