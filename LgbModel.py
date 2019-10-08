@@ -25,6 +25,7 @@ class LgbModel:
         self.total_pl = 0
         self.entry_price = 0
         self.posi = ''
+        self.accuracy_ratio = 0
         self.fee = 0.00075
 
         th = threading.Thread(target=self.main_thread)
@@ -40,6 +41,7 @@ class LgbModel:
             self.entry_price = TickData.get_ltp()
         elif self.posi =='buy' and pred == 0:
             self.num_buy += 1
+            if 
             self.posi = 'sell'
             self.total_pl += TickData.get_ltp() - (self.fee+1) * self.entry_price
         elif self.posi =='sell' and pred == 1:

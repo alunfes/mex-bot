@@ -31,15 +31,9 @@ bot稼働中のohlcはws経由で取得
 
 class Bot:
     def initialize(self):
-        #initalize and read model
-        #detect max term
-        max_term = OneMinMarketData.detect_max_term()
-        print('max_term='+str(max_term))
-        #download ohlc, update ohlc csv
-        DownloadMexOhlc.initial_data_download(max_term)
-        #initialize OneMinMarketData
         OneMinMarketData.initialize_for_bot()
-        #start ws
+        lgb = LgbModel()
+        ws = RealtimeWSAPI()
 
 
     def combine_status_data(self, status):

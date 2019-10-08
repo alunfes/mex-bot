@@ -622,8 +622,10 @@ class Trade:
 
 if __name__ == '__main__':
     Trade.initialize()
-    order = Trade.order('buy', 10300.0, 100000)
+    LogMaster.initialize()
+    order = Trade.order('buy', 8000.0, 10000)
     print(order)
+    Trade.cancel_order(order['info']['orderID'])
     #pprint.pprint(Trade.get_orders())
     #pprint.pprint(Trade.get_positions())
     #pprint.pprint(Trade.get_balance())
