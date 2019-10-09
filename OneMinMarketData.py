@@ -117,12 +117,14 @@ class OneMinMarketData:
                     print('failed to update ohlc skil index calc !')
                     pass
 
-            if (datetime.now(cls.JST).minute // 5) == 0 and datetime.now(cls.JST).second > 20: #5分に一回max termまでのデータをダウンロードしてcsvに記録し、market dataをrefreshする。
+            '''
+            if (datetime.now(cls.JST).minute % 5) == 0 and datetime.now(cls.JST).second > 20: #5分に一回max termまでのデータをダウンロードしてcsvに記録し、market dataをrefreshする。
                 print('5min ohlc download all')
                 DownloadMexOhlc.initial_data_download(cls.max_term)
                 cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
                 #cls.__calc_all_index_dict()
                 #cls.set_df(cls.generate_df_from_dict_for_bot())
+            '''
             time.sleep(0.1)
 
 
@@ -371,11 +373,13 @@ class OneMinMarketData:
     @classmethod
     def generate_df_from_dict_for_bot(cls):
         df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
-        df = df.assign(dt=cls.ohlc.dt)
         df = df.assign(open=cls.ohlc.open)
         df = df.assign(high=cls.ohlc.high)
         df = df.assign(low=cls.ohlc.low)
         df = df.assign(close=cls.ohlc.close)
+        cols = list(df.columns)
+        cols.sort()
+        df = df.loc[:,cols]
         return df.iloc[-1:]
 
     @classmethod

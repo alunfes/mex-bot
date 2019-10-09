@@ -26,6 +26,9 @@ class LgbModel:
         self.entry_price = 0
         self.posi = ''
         self.accuracy_ratio = 0
+        self.pre_pred = -1
+        self.num = 0
+        self.num_pred_correct = 0
         self.fee = 0.00075
 
         th = threading.Thread(target=self.main_thread)
@@ -38,17 +41,26 @@ class LgbModel:
     def sim(self, pred):
         if self.posi == '':
             self.posi = 'buy' if pred == 1 else 'sell'
-            self.entry_price = TickData.get_ltp()
+            self.entry_price = OneMinMarketData.ohlc.close[-1]
         elif self.posi =='buy' and pred == 0:
             self.num_buy += 1
-            if 
             self.posi = 'sell'
-            self.total_pl += TickData.get_ltp() - (self.fee+1) * self.entry_price
+            self.total_pl += float(TickData.get_ltp()) - ((self.fee+1) * self.entry_price)
+            self.entry_price = float(TickData.get_ltp())
         elif self.posi =='sell' and pred == 1:
             self.num_sell += 1
             self.posi = 'buy'
-            self.total_pl += (1-self.fee) * self.entry_price - TickData.get_ltp()
-        print('pl=', self.total_pl, 'posi=', self.posi, 'num buy=',self.num_buy, 'num sell', self.num_sell)
+            self.total_pl += (1-self.fee) * self.entry_price - float(TickData.get_ltp())
+            self.entry_price = float(TickData.get_ltp())
+
+        if self.pre_pred == 1 and OneMinMarketData.ohlc.close[-1] >= OneMinMarketData.ohlc.close[-2]:
+            self.num_pred_correct +=1
+        elif self.pre_pred == 0 and OneMinMarketData.ohlc.close[-1] <= OneMinMarketData.ohlc.close[-2]:
+            self.num_pred_correct += 1
+        self.num += 1
+        self.accuracy_ratio = self.num_pred_correct / self.num
+        self.pre_pred = pred
+        print('pl=', self.total_pl, 'posi=', self.posi, 'num buy=',self.num_buy, 'num sell', self.num_sell, 'entry price=', self.entry_price, 'accuracy=', round(self.accuracy_ratio,4))
 
 
     def main_thread(self):
@@ -63,7 +75,6 @@ class LgbModel:
             if OneMinMarketData.get_flg_ohlc_update():
                 df = OneMinMarketData.get_df()
                 if df is not None:
-                    df = df.drop(['dt'], axis=1)
                     self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
                     OneMinMarketData.set_flg_ohlc_update(False)
                     print('prediction = ', self.pred)
