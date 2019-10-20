@@ -1,116 +1,16 @@
 import lightgbm as lgb
+from sklearn import datasets
 from sklearn.model_selection import train_test_split
-from SystemFlg import SystemFlg
-from OneMinMarketData import OneMinMarketData
-from RealtimeWSAPI import TickData
 import numpy as np
 import pandas as pd
 import pickle
-import threading
-import time
-import os
-import datetime
 
+from SimOneMinMarketData import OneMinMarketData
 
 class LgbModel:
-    def __init__(self):
-        self.model = None
-        self.pred = -1
-        self.lock_pred = threading.Lock()
-        self.upper_kijun = 0.5
-        self.lock_pred = threading.Lock()
-        with open('./Model/lgb_bpsp_model.dat', mode='rb') as f:
+    def load_model(self):
+        with open('/.Model/sim_lgb_bpsp_model.dat', mode='rb') as f:
             self.model = pickle.load(f)
-
-        self.num_buy = 0
-        self.num_sell = 0
-        self.total_pl = 0
-        self.entry_price = 0
-        self.posi = ''
-        self.accuracy_ratio = 0
-        self.pre_pred = -1
-        self.num = 0
-        self.num_pred_correct = 0
-        self.fee = 0.00075
-
-        if os.path.exists('./Data/data.csv'):
-            os.remove('./Data/data.csv')
-
-
-        th = threading.Thread(target=self.main_thread)
-        th.start()
-
-    def set_pred(self,pred):
-        with self.lock_pred:
-            self.pred = pred
-
-    def write_df_pred(self, df, pred):
-        df = df.assign(dt=datetime.datetime.now())
-        df = df.assign(prediction=pred)
-        if os.path.exists('./Data/data.csv'):
-            df.to_csv('./Data/data.csv', mode='a', header=False, index=False)
-        else:
-            df.to_csv('./Data/data.csv',index=False)
-
-
-    def sim(self, pred):
-        if self.posi == '':
-            self.posi = 'buy' if pred == 1 else 'sell'
-            self.entry_price = OneMinMarketData.ohlc.close[-1]
-        elif self.posi =='buy' and pred == 0:
-            self.num_buy += 1
-            self.posi = 'sell'
-            self.total_pl += float(TickData.get_ltp()) - ((self.fee+1) * self.entry_price)
-            self.entry_price = float(TickData.get_ltp())
-        elif self.posi =='sell' and pred == 1:
-            self.num_sell += 1
-            self.posi = 'buy'
-            self.total_pl += (1-self.fee) * self.entry_price - float(TickData.get_ltp())
-            self.entry_price = float(TickData.get_ltp())
-
-        if self.pre_pred == 1 and OneMinMarketData.ohlc.close[-1] >= OneMinMarketData.ohlc.close[-2]:
-            self.num_pred_correct +=1
-        elif self.pre_pred == 0 and OneMinMarketData.ohlc.close[-1] <= OneMinMarketData.ohlc.close[-2]:
-            self.num_pred_correct += 1
-        self.num += 1
-        self.accuracy_ratio = self.num_pred_correct / self.num
-        self.pre_pred = pred
-        print('pl=', self.total_pl, 'posi=', self.posi, 'num buy=',self.num_buy, 'num sell', self.num_sell, 'entry price=', self.entry_price, 'accuracy=', round(self.accuracy_ratio,4))
-
-
-    def main_thread(self):
-        ini_data_flg = False #flg for market data initialization
-        while SystemFlg.get_system_flg():
-            while ini_data_flg is False: #wait for initial update of the market data
-                if len(OneMinMarketData.ohlc.dt) > 0:
-                    ini_data_flg = True
-                time.sleep(0.5)
-
-            time.sleep(0.5)
-            if OneMinMarketData.get_flg_ohlc_update():
-                df = OneMinMarketData.get_df()
-                if df is not None:
-                    self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
-                    OneMinMarketData.set_flg_ohlc_update(False)
-                    print('prediction = ', self.pred)
-                    self.sim(self.pred)
-                    self.write_df_pred(df, self.pred)
-
-            '''
-            df = OneMinMarketData.get_df()
-            if df is not None:
-                dt = df['dt'].iloc[-1]
-                if dt.minute == self.next_min:
-                    df = df.drop(['dt'], axis =1)
-                    self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
-                    self.next_min = int(dt.minute) +1 if dt.minute != 59 else 0
-                    OneMinMarketData.set_pred(self.pred)
-                    OneMinMarketData.set_flg_ohlc_update(False)
-                    print('prediction = ', self.pred, 'next min=',self.next_min)
-                    self.sim(self.pred)
-                    '''
-        print('Lgb main thread ended.')
-
 
     def generate_bpsp_data(self, df: pd.DataFrame, train_size=0.6, valid_size=0.2):
         dfx = None
@@ -146,6 +46,9 @@ class LgbModel:
         print('valid_x', valid_x.shape)
         print('valid_y', valid_y.shape)
         return train_x, test_x, train_y, test_y, valid_x, valid_y
+
+    def genrate_col_removed_data(self, train_x, test_x, valid_x, cols):
+        return train_x[cols], test_x[cols], valid_x[cols]
 
     def generate_bsp_data_no_random(self, df: pd.DataFrame, side, train_size=0.6, valid_size=0.2):
         dfx = None
@@ -194,6 +97,33 @@ class LgbModel:
         print('valid_y', valid_y.shape)
         return train_xx, test_x, train_yy, test_y, valid_x, valid_y
 
+    def select_important_cols(self, model, train_xb):
+        importance = pd.DataFrame(model.feature_importance(), index=list(train_xb.columns), columns=['importance'])
+        data = importance.sort_values('importance', ascending=False)
+
+        col = list(data.columns)[0]
+        indicies = list(data.index)
+        kijun = 0.9 * data[col].sum()
+
+        cols = []
+        current_sum = 0
+        target = kijun
+        i = 0
+        while current_sum < target:
+            current_sum += data[col].iloc[i]
+            cols.append(indicies[i])
+            i += 1
+        return cols
+
+    def select_important_cols2(self, model, train_xb):
+        importance = pd.DataFrame(model.feature_importance(), index=list(train_xb.columns), columns=['importance'])
+        data = importance.sort_values('importance', ascending=False)
+
+        col = list(data.columns)[0]
+        indicies = list(data.index)
+        print('selected 200 cols, total importance =', data[col].iloc[:200].sum())
+        return indicies[:200]
+
     def train(self, train_x, train_y):
         # print('training data description')
         # print('train_x:',train_x.shape)
@@ -225,9 +155,9 @@ class LgbModel:
     def load_model(self):
         model_buy = None
         model_sell = None
-        with open('/content/drive/My Drive/Model/lgb_model_buy.dat', 'rb') as f:
+        with open('./Model/sim_lgb_model_buy.dat', 'rb') as f:
             model_buy = pickle.load(f)
-        with open('/content/drive/My Drive/Model/lgb_model_sell.dat', 'rb') as f:
+        with open('./Model/sim_lgb_model_sell.dat', 'rb') as f:
             model_sell = pickle.load(f)
         return model_buy, model_sell
 

@@ -90,7 +90,7 @@ class DownloadMexOhlc:
                         res = requests.get(url)
                         data = res.json()
                         dt = []
-                        print(len(data['t']), data['t'][0], data['t'][-1])
+                        #print(len(data['t']), data['t'][0], data['t'][-1])
                         for d in data['t']:
                             dt.append(datetime.fromtimestamp(int(d)))
                         tmp_df = pd.DataFrame({

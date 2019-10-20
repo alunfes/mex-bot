@@ -21,6 +21,7 @@ data download and calc for bot
 class OneMinMarketData:
     @classmethod
     def initialize_for_bot(cls):
+        print('OneMinMarketData started:', datetime.now(cls.JST))
         cls.lock_tmp_ohlc = threading.Lock()
         cls.tmp_ohlc = OneMinData()
         cls.tmp_ohlc.initialize()
@@ -48,8 +49,19 @@ class OneMinMarketData:
 
     @classmethod
     def initialize_for_marketdata_test(cls):
-        DownloadMexOhlc.initial_data_download(5000)
-        cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
+        DownloadMexOhlc.download_data()
+        cls.term_list = cls.generate_term_list(10)
+        cls.max_term = cls.detect_max_term()
+        cls.ohlc = cls.read_from_csv('./Data/mex_data.csv')
+        start = time.time()
+        cls.__generate_all_func_dict()
+        cls.__read_func_dict()
+        cls.__calc_all_index_dict()
+        df = cls.generate_df_from_dict_for_bot()
+        print(df)
+        df.to_csv('./Data/test_df.csv')
+        print('time for market data initialization=', time.time() - start)
+
 
     @classmethod
     def set_pred(cls, pred):
@@ -70,6 +82,7 @@ class OneMinMarketData:
     def get_flg_ohlc_update(cls):
         with cls.lock_flg_ohlc:
             return cls.flg_update_ohlc
+
 
 
     '''
@@ -101,7 +114,7 @@ class OneMinMarketData:
                                                  cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
                             break
                     if datetime.now(cls.JST).second > 2: #2秒以上経過してwsからのohlc更新がない場合はdownload ohlc、latest dt.minuteから
-                        res = DownloadMexOhlc.bot_ohlc_download_latest(cls.max_term)
+                        res = DownloadMexOhlc.bot_ohlc_download_latest(cls.max_term) #latest ohlc dtからdatetime.now().minute-1分までのデータを取得すべき。
                         if res is not None:
                             cls.ohlc.add_and_pop(res[0], res[1], res[2], res[3], res[4], res[5], res[6])
                             tmp_ohlc_loop_flg = False
@@ -114,7 +127,7 @@ class OneMinMarketData:
                     cls.set_df(cls.generate_df_from_dict_for_bot())
                     cls.set_flg_ohlc_update(True)
                 else: #failed to update ohlc
-                    print('failed to update ohlc skil index calc !')
+                    print('failed to update ohlc skill index calc !')
                     pass
 
             '''
@@ -679,4 +692,4 @@ class OneMinMarketData:
 
 if __name__ == '__main__':
     SystemFlg.initialize()
-    OneMinMarketData.initialize_for_bot()
+    OneMinMarketData.initialize_for_marketdata_test()
