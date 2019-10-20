@@ -145,6 +145,7 @@ class Sim:
 
 if __name__ == '__main__':
 
+    '''
     num_term = 10
     corr_kijun = 0.9
     upper_kijun = 0.5
@@ -163,7 +164,7 @@ if __name__ == '__main__':
 
     lgbmodel = LgbModel()
     train_xb, test_xb, train_yb, test_yb, valid_xb, valid_yb = lgbmodel.generate_bpsp_data(df, train_size, valid_size)
-    lgbmodel.load_model()
+    model = lgbmodel.load_model()
     # OneMinMarketData.write_all_func_dict()
 
     tp = lgbmodel.bp_prediciton(model, train_xb, upper_kijun)
@@ -171,16 +172,6 @@ if __name__ == '__main__':
     predictions = lgbmodel.bp_prediciton(model, test_xb, upper_kijun)
     print('test accuracy={}'.format(lgbmodel.calc_bp_accuracy(predictions, test_yb)))
     print('pred num buy=' + str(sum(predictions)))
-
-    # importanceの上位200colだけ使って再学習
-    cols = lgbmodel.select_important_cols2(model, train_xb)
-    cols.extend(['open', 'high', 'low', 'close'])
-    cols.sort()
-
-    with open('./Model/sim_bpsp_cols.csv', 'w') as file:
-        writer = csv.writer(file, lineterminator='\n')
-        writer.writerow(cols)
-    print('completed write bpsp columns')
 
     train_xb, test_xb, valid_xb = train_xb[cols], test_xb[cols], valid_xb[cols]
     train_xb = train_xb.loc[:, cols]
@@ -217,6 +208,7 @@ if __name__ == '__main__':
     plt.show()
 
     '''
+
     num_term = 10
     corr_kijun = 0.9
     upper_kijun = 0.5
@@ -289,4 +281,3 @@ if __name__ == '__main__':
     ax2 = ax1.twinx()
     ax2.plot(OneMinMarketData.ohlc.close[start_ind:])
     plt.show()
-    '''

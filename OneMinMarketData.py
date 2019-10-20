@@ -21,6 +21,7 @@ data download and calc for bot
 class OneMinMarketData:
     @classmethod
     def initialize_for_bot(cls):
+        cls.JST = pytz.timezone('Asia/Tokyo')
         print('OneMinMarketData started:', datetime.now(cls.JST))
         cls.lock_tmp_ohlc = threading.Lock()
         cls.tmp_ohlc = OneMinData()
@@ -31,7 +32,6 @@ class OneMinMarketData:
         cls.pred = -1
         cls.lock_pred=  threading.Lock()
         cls.lock_df = threading.Lock()
-        cls.JST = pytz.timezone('Asia/Tokyo')
         cls.term_list = cls.generate_term_list(10)
         cls.max_term = cls.detect_max_term()
         DownloadMexOhlc.initial_data_download(cls.max_term)

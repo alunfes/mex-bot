@@ -153,13 +153,10 @@ class LgbModel:
         return model
 
     def load_model(self):
-        model_buy = None
-        model_sell = None
-        with open('./Model/sim_lgb_model_buy.dat', 'rb') as f:
-            model_buy = pickle.load(f)
-        with open('./Model/sim_lgb_model_sell.dat', 'rb') as f:
-            model_sell = pickle.load(f)
-        return model_buy, model_sell
+        model = None
+        with open('./Model/sim_lgb_bpsp_model.dat', 'rb') as f:
+            model = pickle.load(f)
+        return model
 
     def train_params_with_validations(self, train_x, train_y, valid_x, valid_y, params):
         # print('training data description')
