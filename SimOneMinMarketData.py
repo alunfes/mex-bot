@@ -28,9 +28,11 @@ class OneMinMarketData:
     def initialize_for_load_sim(cls, num_term, initial_data_vol):
         cls.num_term = num_term
         cls.term_list = cls.generate_term_list(num_term)
+        cls.max_term = cls.detect_max_term()
         cls.ohlc = cls.read_from_csv('./Data/mex_data.csv')
         cls.ohlc.del_data(initial_data_vol)
-        cls.read_func_dict()
+        cls.__generate_all_func_dict()
+        cls.__read_func_dict()
         cls.__calc_all_index_dict()
 
     @classmethod
@@ -59,17 +61,18 @@ class OneMinMarketData:
         print('completed write bpsp columns')
 
     @classmethod
-    def read_func_dict(cls):
+    def __read_func_dict(cls):
         # read from func / term list
         cols = []
-        with open('./Model/sim_bpsp_cols.csv', 'r') as f:
+        with open("./Model/bpsp_cols.csv", "r") as f:
             reader = csv.reader(f)
             for r in reader:
                 cols.append(r)
         # copy matched key func val
         func_obj = {}
         for col in cols[0]:
-            func_obj[col] = cls.ohlc.func_dict[col]
+            if col not in ['open', 'high', 'low', 'close']:
+                func_obj[col] = cls.ohlc.func_dict[col]
         # replace ohlc.func_dict
         cls.ohlc.func_dict = func_obj
 
@@ -205,8 +208,14 @@ class OneMinMarketData:
     def __calc_all_index_dict(cls):
         print('calculating all index dict')
         start_time = time.time()
+        calculated_key = []
 
-        postponed_funcs = {}
+        for k in cls.ohlc.func_dict:
+            if int(k.split(':')[1]) > 0:
+                if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and  k.split(':')[0] not in ['ema_kairi', 'ema_gra', 'dema_kairi', 'dema_gra']:
+                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
+            else:
+                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
 
         for k in cls.ohlc.func_dict:
             if k.split('_')[0] == 'makairi':
@@ -215,21 +224,15 @@ class OneMinMarketData:
             elif k.split('_')[0] == 'diff':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
-            elif int(k.split(':')[1]) > 0:
-                if k.split(':')[0] in ['ema_kairi', 'ema_gra', 'dema_kairi', 'dema_gra']:
-                    postponed_funcs[k] = cls.ohlc.func_dict[k]
-                else:
-                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
             else:
-                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
-        for k in postponed_funcs:
-            cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
+                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
         print('completed calc all index. time=', time.time() - start_time)
+
 
     @classmethod
     def genrate_df_from_dict(cls):
-        cut_size = cls.term_list[-1] * 2
-        end = len(cls.ohlc.close) - 10
+        cut_size = cls.term_list[-1] + 1
+        end = len(cls.ohlc.close) - 1 #due to bpsp
         df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
         df = df.assign(dt=cls.ohlc.dt)
         df = df.assign(open=cls.ohlc.open)
@@ -239,6 +242,22 @@ class OneMinMarketData:
         df = df.assign(size=cls.ohlc.size)
         df = df.assign(bpsp=cls.ohlc.bpsp)
         return df.iloc[cut_size:end]
+
+    @classmethod
+    def remove_cols_contains_nan(cls,  df):
+        remove_cols = []
+        tmp = df.copy()
+        for col in tmp.columns:
+            for ind,d in enumerate(tmp[col]):
+                if str(d) =='nan':
+                    remove_cols.append(col)
+                    break
+        if len(remove_cols) > 0:
+            df.drop(remove_cols, axis=1, inplace=True)
+            print('removed ', len(remove_cols), ' cols contains nan.')
+        return df
+
+
 
     @classmethod
     def __calc_all_index(cls):
@@ -482,6 +501,20 @@ class OneMinMarketData:
                         category_n[2] + (category_n[1] * num) + category_n[2] * num), num)))
         return list(map(int, term_list))
 
+    @classmethod
+    def detect_max_term(cls):
+        max_term = 0
+        cols = []
+        with open("./Model/bpsp_cols.csv", "r") as f:
+            reader = csv.reader(f)
+            for r in reader:
+                cols.append(r)
+        for col in cols[0]:
+            if col not in ['open', 'high', 'low', 'close']:
+                if max_term < int(col.split(':')[1]):
+                    max_term = int(col.split(':')[1])
+        return max_term
+
     # kairi of data
     @classmethod
     def generate_makairi(cls, data, ma_term):
@@ -703,7 +736,7 @@ class OneMinMarketData:
     def calc_macd_signal(cls, term):
         slowperiod = term
         fastperiod = int(term / 2.0)
-        signalperiod = int(fastperiod / 3.0)
+        signalperiod = int(term / 3.0)
         macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'),
                                      np.array(slowperiod, dtype='i8'),
                                      np.array(signalperiod, dtype='i8'))
@@ -713,7 +746,7 @@ class OneMinMarketData:
     def calc_macd_hist(cls, term):
         slowperiod = term
         fastperiod = int(term / 2.0)
-        signalperiod = int(fastperiod / 3.0)
+        signalperiod = int(term / 3.0)
         macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'),
                                      np.array(slowperiod, dtype='i8'),
                                      np.array(signalperiod, dtype='i8'))

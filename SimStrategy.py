@@ -42,6 +42,27 @@ class Strategy:
                                 'market', False, 10)  # exit and re-entry
         return dd
 
+
+
+    @classmethod
+    def index_val_kijun_comparison(cls, start_ind, index_key, kijun_val, kijun_contrarian, i, ac):
+        dd = DecisionData()
+        val = OneMinMarketData.index_data_dict[index_key][i]
+        side = ''
+        if kijun_contrarian == False:
+            side = 'buy' if val > kijun_val else 'sell'
+        else:
+            side = 'sell' if val > kijun_val else 'buy'
+
+        if ac.holding_side != side:
+            if ac.holding_side == '' (side == 'buy' or side == 'sell'):  # no position no order
+                dd.set_decision(side, 0, cls.__calc_opt_size(OneMinMarketData.ohlc.open[start_ind + i], ac), 'market', False, 10)
+            elif (ac.holding_side == 'buy' or ac.holding_side == 'sell') and (side == 'buy' or side == 'sell') and ac.holding_side != side:
+                dd.set_decision(side, 0, ac.holding_size + cls.__calc_opt_size(OneMinMarketData.ohlc.open[start_ind + i], ac),'market', False, 10)  # exit and re-entry
+        return dd
+
+
+
     @classmethod
     def model_prediction_opt(cls, time_exit, zero_three_exit_loss, zero_three_exit_profit, stdata, i, ac: SimAccount):
         dd = DecisionData()

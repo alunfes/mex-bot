@@ -12,19 +12,32 @@ class LgbModel:
         with open('/.Model/sim_lgb_bpsp_model.dat', mode='rb') as f:
             self.model = pickle.load(f)
 
+
+    def check_train_test_index_duplication(self, train_x, test_x):
+        train_list = list(train_x.index.values)
+        test_list = list(test_x.index.values)
+        dupli = set(train_list) & set(test_list)
+        if len(dupli) > 0:
+            print('Index duplication in train and test df was found!')
+            print(dupli)
+
     def generate_bpsp_data(self, df: pd.DataFrame, train_size=0.6, valid_size=0.2):
+        '''
         dfx = None
         dfy = None
         dfx = df.drop(['dt', 'size', 'bpsp'], axis=1)
         dfy = df['bpsp']
         dfy.columns = ['bpsp']
         train_x, test_x, train_y, test_y = train_test_split(dfx, dfy, train_size=train_size, shuffle=False)
+        '''
 
+        train_ind = int(len(df) * train_size)
+        train_df = df.iloc[:train_ind]
+        test_df = df.iloc[train_ind:]
         # generate training data to include same num of buy / sell bpsp
-        ndf = df.iloc[:len(train_x)]
-        buy_df = ndf[ndf.bpsp == 1]
-        sell_df = ndf[ndf.bpsp == 0]
-        new_train_df = df.copy()
+        buy_df = train_df[train_df.bpsp == 1]
+        sell_df = train_df[train_df.bpsp == 0]
+        new_train_df = train_df.copy()
         if len(buy_df) > len(sell_df):
             selected = sell_df.sample(n=len(buy_df) - len(sell_df))
             new_train_df = new_train_df.append(selected)
@@ -32,12 +45,15 @@ class LgbModel:
             selected = buy_df.sample(n=len(sell_df) - len(buy_df))
             new_train_df = new_train_df.append(selected)
 
-        train_x, valid_x, train_y, valid_y = train_test_split(new_train_df.drop(['dt', 'size', 'bpsp'], axis=1),
-                                                              new_train_df['bpsp'], train_size=train_size,
-                                                              shuffle=False)
+        #new_train_df = new_train_df.sample(frac=1)
+        train_x, valid_x, train_y, valid_y = train_test_split(new_train_df.drop(['dt', 'size', 'bpsp'], axis=1), new_train_df['bpsp'], train_size=(1.0-valid_size), shuffle=True)
         train_y.columns = ['bpsp']
         valid_y.columns = ['bpsp']
+        test_x = test_df.drop(['dt', 'size', 'bpsp'], axis=1)
+        test_y = test_df['bpsp']
+        test_y.columns = ['bpsp']
 
+        self.check_train_test_index_duplication(train_x, test_x)
         print('buy sell point data description:')
         print('train_x', train_x.shape)
         print('train_y', train_y.shape)

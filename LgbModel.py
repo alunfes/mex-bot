@@ -29,7 +29,7 @@ class LgbModel:
         self.posi = ''
         self.accuracy_ratio = 0
         self.pre_pred = -1
-        self.num = 0
+        self.num = -1
         self.num_pred_correct = 0
         self.fee = 0.00075
 
@@ -73,7 +73,8 @@ class LgbModel:
         elif self.pre_pred == 0 and OneMinMarketData.ohlc.close[-1] <= OneMinMarketData.ohlc.close[-2]:
             self.num_pred_correct += 1
         self.num += 1
-        self.accuracy_ratio = self.num_pred_correct / self.num
+        if self.num > 0:
+            self.accuracy_ratio = self.num_pred_correct / self.num
         self.pre_pred = pred
         print('pl=', self.total_pl, 'posi=', self.posi, 'num buy=',self.num_buy, 'num sell', self.num_sell, 'entry price=', self.entry_price, 'accuracy=', round(self.accuracy_ratio,4))
 

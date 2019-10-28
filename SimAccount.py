@@ -9,7 +9,7 @@ class SimAccount:
         self.base_margin_rate = 1.2
         self.leverage = 4.0
         self.slip_page = 50
-        self.fee = 0.0000
+        self.fee = 0.0015
         self.force_loss_cut_rate = 0.5
         self.initial_asset = 15000
         self.order_cancel_delay = 1
@@ -255,9 +255,7 @@ class SimAccount:
                                           self.pl_kijun, self.ls_kijun, i, dt)
 
     def __calc_executed_pl(self, exec_price, size, i):  # assume all order size was executed
-        pl = (exec_price - self.holding_price * (self.fee + 1)) * size if self.holding_side == 'buy' else (
-                                                                                                                      self.holding_price * (
-                                                                                                                          self.fee + 1) - exec_price) * size
+        pl = (exec_price - self.holding_price * (self.fee + 1)) * size if self.holding_side == 'buy' else (self.holding_price * (1-self.fee) - exec_price) * size
         # pl = (exec_price - self.holding_price) * size if self.holding_side == 'buy' else (self.holding_price - exec_price) * size
         self.realized_pl += round(pl, 4)
         self.num_trade += 1

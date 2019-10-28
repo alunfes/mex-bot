@@ -171,6 +171,7 @@ class DownloadMexOhlc:
         df = cls.download_data_since_to(since, to)
         if df is not None:
             df.to_csv('./Data/mex_data.csv', index=False)
+        print('completed download data')
 
 
 

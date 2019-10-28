@@ -21,6 +21,7 @@ data download and calc for bot
 class OneMinMarketData:
     @classmethod
     def initialize_for_bot(cls):
+        cls.ohlc_buffer = 10 #download more ohlc than max_term
         cls.JST = pytz.timezone('Asia/Tokyo')
         print('OneMinMarketData started:', datetime.now(cls.JST))
         cls.lock_tmp_ohlc = threading.Lock()
@@ -34,7 +35,7 @@ class OneMinMarketData:
         cls.lock_df = threading.Lock()
         cls.term_list = cls.generate_term_list(10)
         cls.max_term = cls.detect_max_term()
-        DownloadMexOhlc.initial_data_download(cls.max_term)
+        DownloadMexOhlc.initial_data_download(cls.max_term+cls.ohlc_buffer)
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
         #cls.ohlc.del_data(initial_data_vol)
         start = time.time()
@@ -103,7 +104,7 @@ class OneMinMarketData:
         while SystemFlg.get_system_flg():
             tmp_ohlc_loop_flg = True
             if __check_next_min(cls.ohlc.dt[-1].minute):
-                target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes
+                target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes, 01分時点でもtaget min=58
                 while tmp_ohlc_loop_flg:
                     if len(cls.tmp_ohlc.dt) > 0:
                         if cls.tmp_ohlc.dt[-1].minute == target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
@@ -114,7 +115,7 @@ class OneMinMarketData:
                                                  cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
                             break
                     if datetime.now(cls.JST).second > 2: #2秒以上経過してwsからのohlc更新がない場合はdownload ohlc、latest dt.minuteから
-                        res = DownloadMexOhlc.bot_ohlc_download_latest(cls.max_term) #latest ohlc dtからdatetime.now().minute-1分までのデータを取得すべき。
+                        res = DownloadMexOhlc.bot_ohlc_download_latest(cls.max_term+cls.ohlc_buffer) #latest ohlc dtからdatetime.now().minute-1分までのデータを取得すべき。
                         if res is not None:
                             cls.ohlc.add_and_pop(res[0], res[1], res[2], res[3], res[4], res[5], res[6])
                             tmp_ohlc_loop_flg = False
@@ -361,9 +362,14 @@ class OneMinMarketData:
 
     @classmethod
     def __calc_all_index_dict(cls):
-        print('calculating index..')
+        print('calculating all index dict')
         start_time = time.time()
-        postponed_funcs = {}
+        for k in cls.ohlc.func_dict:
+            if int(k.split(':')[1]) > 0:
+                if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and k.split(':')[0] not in ['ema_kairi','ema_gra','dema_kairi','dema_gra']:
+                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
+            else:
+                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
         for k in cls.ohlc.func_dict:
             if k.split('_')[0] == 'makairi':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
@@ -371,15 +377,6 @@ class OneMinMarketData:
             elif k.split('_')[0] == 'diff':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
-            elif int(k.split(':')[1]) > 0:
-                if k.split(':')[0] in ['ema_kairi', 'ema_gra', 'dema_kairi', 'dema_gra']:
-                    postponed_funcs[k] = cls.ohlc.func_dict[k]
-                else:
-                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
-            else:
-                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
-        for k in postponed_funcs:
-            cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
         print('completed calc all index. time=', time.time() - start_time)
 
 
@@ -392,7 +389,8 @@ class OneMinMarketData:
         df = df.assign(close=cls.ohlc.close)
         cols = list(df.columns)
         cols.sort()
-        df = df.loc[:,cols]
+        #df = df.loc[:,cols]
+        df = df[cols]
         return df.iloc[-1:]
 
     @classmethod
@@ -534,7 +532,7 @@ class OneMinMarketData:
     def calc_macd_signal(cls, term):
         slowperiod = term
         fastperiod = int(term / 2.0)
-        signalperiod = int(fastperiod / 3.0)
+        signalperiod = int(term / 3.0)
         macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'),
                                      np.array(slowperiod, dtype='i8'),
                                      np.array(signalperiod, dtype='i8'))
@@ -544,7 +542,7 @@ class OneMinMarketData:
     def calc_macd_hist(cls, term):
         slowperiod = term
         fastperiod = int(term / 2.0)
-        signalperiod = int(fastperiod / 3.0)
+        signalperiod = int(term / 3.0)
         macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'),
                                      np.array(slowperiod, dtype='i8'),
                                      np.array(signalperiod, dtype='i8'))
