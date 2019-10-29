@@ -208,23 +208,25 @@ class OneMinMarketData:
     def __calc_all_index_dict(cls):
         print('calculating all index dict')
         start_time = time.time()
-        calculated_key = []
+        postponed_key = []
 
         for k in cls.ohlc.func_dict:
             if int(k.split(':')[1]) > 0:
                 if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and  k.split(':')[0] not in ['ema_kairi', 'ema_gra', 'dema_kairi', 'dema_gra']:
-                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
+                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1]) #basic functions use only term as input
+                else:
+                    postponed_key.append(k) #makairi, diff, _kairi, _diff
             else:
-                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
+                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]() #no term index
 
-        for k in cls.ohlc.func_dict:
+        for k in postponed_key:
             if k.split('_')[0] == 'makairi':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data, cls.ohlc.func_dict[k][2])
             elif k.split('_')[0] == 'diff':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
-            else:
+            else: #ema_kairi, ema_gra, dema_kairi, dema_diff
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
         print('completed calc all index. time=', time.time() - start_time)
 

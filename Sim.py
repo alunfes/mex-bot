@@ -32,20 +32,41 @@ class Sim:
                               omd.ohlc.close[start_ind + end_i])
         return ac
 
+    @classmethod
+    def sim_simple_index_kijun(cls, start_ind, key_name, kijun, contrarian, ac):
+        omd = OneMinMarketData
+        for i in range(len(omd.ohlc.index_data_dict[key_name]) - start_ind - 1):
+            if 'nan' not in str(omd.ohlc.index_data_dict[key_name][i]):
+                ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
+                                    omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
+                dd = Strategy.index_val_kijun_comparison(start_ind, key_name, kijun, contrarian, i, ac)
+                if dd.side != '':
+                    ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, 0, 0, i, omd.ohlc.dt[start_ind + i])
+                ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
+                                omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i],
+                                omd.ohlc.close[start_ind + i])
+        end_i = len(omd.ohlc.index_data_dict[key_name]) - 1
+        ac.last_day_operation(end_i, omd.ohlc.dt[start_ind + end_i], omd.ohlc.open[start_ind + end_i],
+                              omd.ohlc.high[start_ind + end_i], omd.ohlc.low[start_ind + end_i],
+                              omd.ohlc.close[start_ind + end_i])
+        return ac
+
 
     @classmethod
     def sim_ema_trend_follow(cls, start_ind, ac):
         omd = OneMinMarketData
         key_name = 'ema_gra:100'
         for i in range(len(omd.ohlc.index_data_dict[key_name])-1):
-            if str(omd.ohlc.index_data_dict[key_name][i]).isnumric():
+            if 'nan' not in str(omd.ohlc.index_data_dict[key_name][i]):
+                ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
+                                    omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
                 dd = Strategy.index_val_kijun_comparison(start_ind, key_name, 0, False, i, ac)
                 if dd.side != '':
                     ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, 0, 0, i, omd.ohlc.dt[start_ind + i])
                     ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
                                     omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i],
                                     omd.ohlc.close[start_ind + i])
-        end_i = len(omd.ohlc.index_data_dict[key_name])
+        end_i = len(omd.ohlc.index_data_dict[key_name])-1
         ac.last_day_operation(end_i, omd.ohlc.dt[start_ind + end_i], omd.ohlc.open[start_ind + end_i],
                                   omd.ohlc.high[start_ind + end_i], omd.ohlc.low[start_ind + end_i],
                                   omd.ohlc.close[start_ind + end_i])
@@ -153,8 +174,36 @@ class Sim:
 
 
 if __name__ == '__main__':
+    '''
+    ema trend follow sim
+    '''
+    num_term = 10
+    initial_data_vol = 20000
 
+    start = time.time()
+    OneMinMarketData.initialize_for_bot(num_term, initial_data_vol)
+    df = OneMinMarketData.genrate_df_from_dict()
+    # df = OneMinMarketData.remove_cols_contains_nan(df)
 
+    start_ind = 0
+    sim = Sim()
+    ac = SimAccount()
+    ac = sim.sim_ema_trend_follow(start_ind, ac)
+    print('total pl={},num trade={},win rate={}, pl_stability={}, num_buy={}, num_sell={}'.format(ac.total_pl,
+                                                                                                  ac.num_trade,
+                                                                                                  ac.win_rate,
+                                                                                                  ac.pl_stability,
+                                                                                                  ac.num_buy,
+                                                                                                  ac.num_sell))
+    print('strategy performance={}'.format(ac.total_pl * ac.pl_stability))
+
+    fig, ax1 = plt.subplots()
+    plt.figure(figsize=(30, 30), dpi=200)
+    ax1.plot(ac.performance_total_pl_log, color='red', linewidth=3.0, label='pl')
+    ax2 = ax1.twinx()
+    fromn = len(OneMinMarketData.ohlc.close) - len(ac.performance_total_pl_log)
+    ax2.plot(OneMinMarketData.ohlc.close[fromn:])
+    plt.show()
 
     #load model and sim
     '''
