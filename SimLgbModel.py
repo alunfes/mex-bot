@@ -12,7 +12,6 @@ class LgbModel:
         with open('/.Model/sim_lgb_bpsp_model.dat', mode='rb') as f:
             self.model = pickle.load(f)
 
-
     def check_train_test_index_duplication(self, train_x, test_x):
         train_list = list(train_x.index.values)
         test_list = list(test_x.index.values)
@@ -22,36 +21,48 @@ class LgbModel:
             print(dupli)
 
     def generate_bpsp_data(self, df: pd.DataFrame, train_size=0.6, valid_size=0.2):
-        '''
-        dfx = None
-        dfy = None
-        dfx = df.drop(['dt', 'size', 'bpsp'], axis=1)
-        dfy = df['bpsp']
-        dfy.columns = ['bpsp']
-        train_x, test_x, train_y, test_y = train_test_split(dfx, dfy, train_size=train_size, shuffle=False)
-        '''
-
+        df['future_side'] = df['future_side'].map({'no': 0, 'buy': 1, 'sell': 2, 'both': 3}).astype(int)
         train_ind = int(len(df) * train_size)
         train_df = df.iloc[:train_ind]
         test_df = df.iloc[train_ind:]
+        print('train / valid period=', train_df['dt'].iloc[0], ' - ', train_df['dt'].iloc[-1])
+        print('test period=', test_df['dt'].iloc[0], ' - ', test_df['dt'].iloc[-1])
+
         # generate training data to include same num of buy / sell bpsp
-        buy_df = train_df[train_df.bpsp == 1]
-        sell_df = train_df[train_df.bpsp == 0]
-        new_train_df = train_df.copy()
-        if len(buy_df) > len(sell_df):
-            selected = sell_df.sample(n=len(buy_df) - len(sell_df))
+        buy_df = train_df[train_df.future_side == 1]
+        sell_df = train_df[train_df.future_side == 2]
+        no_df = train_df[train_df.future_side == 0]
+        both_df = train_df[train_df.future_side == 3]
+        max_data = max([len(buy_df), len(sell_df), len(no_df), len(both_df)])
+        new_train_df = pd.DataFrame()
+        if max_data > len(buy_df):
+            selected = buy_df.sample(n=max_data - len(buy_df), replace=True)
             new_train_df = new_train_df.append(selected)
         else:
-            selected = buy_df.sample(n=len(sell_df) - len(buy_df))
+            new_train_df = buy_df
+        if max_data > len(sell_df):
+            selected = sell_df.sample(n=max_data - len(sell_df), replace=True)
             new_train_df = new_train_df.append(selected)
+        else:
+            new_train_df = new_train_df.append(sell_df)
+        if max_data > len(no_df):
+            selected = no_df.sample(n=max_data - len(no_df), replace=True)
+            new_train_df = new_train_df.append(selected)
+        else:
+            new_train_df = new_train_df.append(no_df)
+        if max_data > len(both_df):
+            selected = both_df.sample(n=max_data - len(both_df), replace=True)
+            new_train_df = new_train_df.append(selected)
+        else:
+            new_train_df = new_train_df.append(both_df)
 
-        #new_train_df = new_train_df.sample(frac=1)
-        train_x, valid_x, train_y, valid_y = train_test_split(new_train_df.drop(['dt', 'size', 'bpsp'], axis=1), new_train_df['bpsp'], train_size=(1.0-valid_size), shuffle=True)
-        train_y.columns = ['bpsp']
-        valid_y.columns = ['bpsp']
-        test_x = test_df.drop(['dt', 'size', 'bpsp'], axis=1)
-        test_y = test_df['bpsp']
-        test_y.columns = ['bpsp']
+        new_train_df = new_train_df.sample(frac=1)
+        train_x, valid_x, train_y, valid_y = train_test_split(new_train_df.drop(['dt', 'size', 'future_side'], axis=1), new_train_df['future_side'], train_size=(1.0-valid_size), shuffle=True)
+        train_y.columns = ['future_side']
+        valid_y.columns = ['future_side']
+        test_x = test_df.drop(['dt', 'size', 'future_side'], axis=1)
+        test_y = test_df['future_side']
+        test_y.columns = ['future_side']
 
         self.check_train_test_index_duplication(train_x, test_x)
         print('buy sell point data description:')
@@ -178,26 +189,49 @@ class LgbModel:
         # print('training data description')
         # print('train_x:',train_x.shape)
         # print('train_y:',train_y.shape)
-        train_start_ind = OneMinMarketData.check_matched_index(train_x)
+        #train_start_ind = OneMinMarketData.check_matched_index(train_x)
         # print('train period:', OneMinMarketData.ohlc.dt[train_start_ind], OneMinMarketData.ohlc.dt[train_start_ind + len(train_y)])
         train = lgb.Dataset(train_x.values.astype(np.float32), train_y.values.astype(np.float32))
         lgb_eval = lgb.Dataset(valid_x.values.astype(np.float32), valid_y.values.astype(np.float32), reference=train)
         model = lgb.train(params, train, valid_sets=lgb_eval)
         return model
 
-    def prediction(self, model, test_x, pred_kijun):
+
+    '''
+    pval=
+    array([[9.90463785e-01, 1.61031689e-04, 9.22779119e-03, 1.47391990e-04],
+       [9.87041384e-01, 1.90885626e-04, 1.25930389e-02, 1.74691478e-04],
+       [9.90247824e-01, 2.82217938e-04, 9.27889360e-03, 1.91064240e-04],
+       ...,
+    '''
+    def bpsp_prediction(self, model, test_x, uppder_kijun):
         prediction = []
         pval = model.predict(test_x, num_iteration=model.best_iteration)
         for p in pval:
-            if p[1] > pred_kijun and (p[0] < 1 - pred_kijun and p[2] < 1 - pred_kijun and p[3] < 1 - pred_kijun):
+            res = list(map(lambda x: 1.0 if x >= uppder_kijun else 0, p))
+            if (res[0] == 1 and res[1] == 0 and res[2] == 0 and res[3] == 0) or (res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 0):
+                prediction.append(0)
+            elif res[0] == 0 and res[1] == 1 and res[2] == 0 and res[3] == 0:
                 prediction.append(1)
-            elif p[2] > pred_kijun and (p[0] < 1 - pred_kijun and p[1] < 1 - pred_kijun and p[3] < 1 - pred_kijun):
+            elif res[0] == 0 and res[1] == 0 and res[2] == 1 and res[3] == 0:
                 prediction.append(2)
-            elif p[3] > pred_kijun and (p[0] < 1 - pred_kijun and p[1] < 1 - pred_kijun and p[2] < 1 - pred_kijun):
+            elif res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 1:
                 prediction.append(3)
             else:
-                prediction.append(0)
+                print('unknown output in bpsp_prediction!')
+                print(res)
         return prediction
+
+
+    def calc_bpsp_accuracy(self, prediction, test_y):
+        num = len(prediction)
+        matched = 0
+        y = np.array(test_y)
+        for i in range(len(prediction)):
+            if prediction[i] == y[i]:
+                matched += 1
+        return round(float(matched) / float(num), 4)
+
 
     def prediction2(self, model, test_x):
         prediction = []

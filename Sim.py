@@ -15,18 +15,17 @@ import time
 
 class Sim:
     @classmethod
-    def sim_model_pred_onemin(cls, start_ind, bpsp, ac):
+    def sim_model_pred_onemin(cls, start_ind, prediction, pt, lc, ac):
         omd = OneMinMarketData
-        end_i = len(bpsp)
-        for i in range(len(bpsp) - 1):
-            ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
-                                omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
-            dd = Strategy.model_prediction_onemin(start_ind, bpsp, i, ac)
+        for i in range(len(prediction) - 1):
+            ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i], omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
+            dd = Strategy.model_prediction_onemin(start_ind, prediction, i, ac)
             if dd.side != '':
-                ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, 0, 0, i, omd.ohlc.dt[start_ind + i])
+                ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pt, lc, i, omd.ohlc.dt[start_ind + i])
             ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
                             omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i],
                             omd.ohlc.close[start_ind + i])
+        end_i = len(prediction) - 1
         ac.last_day_operation(end_i, omd.ohlc.dt[start_ind + end_i], omd.ohlc.open[start_ind + end_i],
                               omd.ohlc.high[start_ind + end_i], omd.ohlc.low[start_ind + end_i],
                               omd.ohlc.close[start_ind + end_i])

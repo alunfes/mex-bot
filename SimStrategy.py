@@ -27,19 +27,16 @@ class Strategy:
         return dd
 
     @classmethod
-    def model_prediction_onemin(cls, start_ind, bpsp, i, ac):
+    def model_prediction_onemin(cls, start_ind, prediction, i, ac):
         dd = DecisionData()
-        pred_side = 'buy' if bpsp[i] == 1 else 'sell'
+        omd = OneMinMarketData
+        pred_side ={0: 'no', 1: 'buy', 2: 'sell', 3: 'both'}[prediction[i]]
 
         if ac.holding_side != pred_side:
             if ac.holding_side == '' and (pred_side == 'buy' or pred_side == 'sell'):  # no position no order
-                dd.set_decision(pred_side, 0, cls.__calc_opt_size(OneMinMarketData.ohlc.open[start_ind + i], ac),
-                                'market', False, 10)
-            elif (ac.holding_side == 'buy' or ac.holding_side == 'sell') and (
-                    pred_side == 'buy' or pred_side == 'sell') and ac.holding_side != pred_side:
-                dd.set_decision(pred_side, 0,
-                                ac.holding_size + cls.__calc_opt_size(OneMinMarketData.ohlc.open[start_ind + i], ac),
-                                'market', False, 10)  # exit and re-entry
+                dd.set_decision(pred_side, 0, cls.__calc_opt_size(OneMinMarketData.ohlc.open[start_ind + i], ac),'market', False, 10)
+            elif (ac.holding_side == 'buy' or ac.holding_side == 'sell') and (pred_side == 'buy' or pred_side == 'sell') and ac.holding_side != pred_side:
+                dd.set_decision(pred_side, 0,ac.holding_size + cls.__calc_opt_size(OneMinMarketData.ohlc.open[start_ind + i], ac),'market', False, 10)  # exit and re-entry
         return dd
 
 

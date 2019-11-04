@@ -9,7 +9,7 @@ class OneMinData:
         self.low = []
         self.close = []
         self.size = []
-        self.bpsp = []
+        self.future_side = []
 
     def cut_data(self, num_data):
         for k in self.index_data_dict:
@@ -21,7 +21,7 @@ class OneMinData:
         self.low = self.low[-num_data:]
         self.close = self.close[-num_data:]
         self.size = self.size[-num_data:]
-        self.bpsp = self.bpsp[-num_data:]
+        self.future_side = self.future_side[-num_data:]
 
     def del_data(self, num_remain_data):
         if len(self.unix_time) > num_remain_data:
@@ -34,7 +34,7 @@ class OneMinData:
             del self.low[:-num_remain_data]
             del self.close[:-num_remain_data]
             del self.size[:-num_remain_data]
-            del self.bpsp[:-num_remain_data]
+            del self.future_side[:-num_remain_data]
 
     def extract_data(self, ex_from, to):
         if len(self.unix_time) > ex_from:
@@ -47,7 +47,7 @@ class OneMinData:
             del self.low[-ex_from:-to]
             del self.close[-ex_from:-to]
             del self.size[-ex_from:-to]
-            del self.bpsp[-ex_from:-to]
+            del self.future_side[-ex_from:-to]
 
     def add_and_pop(self, unix_time, dt, open, high, low, close, size):
         self.unix_time.append(unix_time)

@@ -15,9 +15,12 @@ from SystemFlg import SystemFlg
 
 class OneMinMarketData:
     @classmethod
-    def initialize_for_bot(cls, num_term, initial_data_vol):
+    def initialize_for_bot(cls, num_term, initial_data_vol, kijun_val, kijun_period):
         cls.num_term = num_term
+        cls.kijun_val = kijun_val
+        cls.kijun_period = kijun_period
         cls.term_list = cls.generate_term_list(num_term)
+        cls.max_term = cls.detect_max_term()
         cls.ohlc = cls.read_from_csv('./Data/mex_data.csv')
         cls.ohlc.del_data(initial_data_vol)
         cls.__generate_all_func_dict()
@@ -202,7 +205,7 @@ class OneMinMarketData:
         cls.ohlc.func_dict['sar:' + str(0)] = (OneMinMarketData.calc_sar, 0)
         cls.ohlc.func_dict['bop:' + str(0)] = (OneMinMarketData.calc_bop, 0)
 
-        cls.ohlc.bpsp = cls.calc_bpsp_points()
+
 
     @classmethod
     def __calc_all_index_dict(cls):
@@ -228,13 +231,15 @@ class OneMinMarketData:
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
             else: #ema_kairi, ema_gra, dema_kairi, dema_diff
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
+
+        cls.ohlc.future_side = cls.calc_future_side()
         print('completed calc all index. time=', time.time() - start_time)
 
 
     @classmethod
     def genrate_df_from_dict(cls):
-        cut_size = cls.term_list[-1] + 1
-        end = len(cls.ohlc.close) - 1 #due to bpsp
+        cut_size = cls.max_term + 1
+        end = len(cls.ohlc.close) - cls.kijun_period #due to bpsp
         df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
         df = df.assign(dt=cls.ohlc.dt)
         df = df.assign(open=cls.ohlc.open)
@@ -242,8 +247,9 @@ class OneMinMarketData:
         df = df.assign(low=cls.ohlc.low)
         df = df.assign(close=cls.ohlc.close)
         df = df.assign(size=cls.ohlc.size)
-        df = df.assign(bpsp=cls.ohlc.bpsp)
-        return df.iloc[cut_size:end]
+        df = df.iloc[cut_size:end]
+        df = df.assign(future_side=cls.ohlc.future_side[cut_size:])
+        return df
 
     @classmethod
     def remove_cols_contains_nan(cls,  df):
@@ -327,7 +333,7 @@ class OneMinMarketData:
                                                                                             cls.ohlc.close)
         cls.ohlc.sar = cls.calc_sar(cls.ohlc.high, cls.ohlc.low, 0.02, 0.2)
         cls.ohlc.bop = cls.calc_bop(cls.ohlc.open, cls.ohlc.high, cls.ohlc.low, cls.ohlc.close)
-        cls.ohlc.bpsp = cls.calc_bpsp_points()
+        cls.ohlc.future_side = cls.calc_future_side()
         # cls.ohlc.bp, cls.ohlc.sp = cls.calc_pl_ls_points()
 
         # generate various index
@@ -563,6 +569,62 @@ class OneMinMarketData:
                 j += 1
         return buy_points, sell_points
 
+
+    @classmethod
+    def calc_bpsp_points2(cls):
+        bp = []
+        sp = []
+        for i in range(len(cls.ohlc.close) - cls.kijun_period):
+            flg_buy = 0
+            flg_sell = 0
+            entry_p = cls.ohlc.close[i]
+            j = 0
+            for j in range(cls.kijun_period):
+                if i+j < len(cls.ohlc.close):
+                    if cls.ohlc.close[i+j] - entry_p >= cls.kijun_val:
+                        flg_buy = 1
+                    if entry_p - cls.ohlc.close[i+j] >= cls.kijun_val:
+                        flg_sell = 1
+                else:
+                    break
+            bp.append(flg_buy)
+            sp.append(flg_sell)
+        return bp, sp
+
+    @classmethod
+    def calc_future_side(cls):
+        future_side = []
+        num_buy = 0
+        num_sell = 0
+        num_no = 0
+        num_both = 0
+        for i in range(len(cls.ohlc.close) - cls.kijun_period):
+            buy_max = 0
+            sell_max = 0
+            entry_p = cls.ohlc.close[i]
+            for j in range(cls.kijun_period):
+                buy_max = max(buy_max, cls.ohlc.close[i+j] - entry_p)
+                sell_max = max(sell_max, entry_p - cls.ohlc.close[i+j])
+            if buy_max >= cls.kijun_val and sell_max >= cls.kijun_val:
+                future_side.append('both')
+                num_both += 1
+            elif buy_max >= cls.kijun_val and sell_max < cls.kijun_val:
+                future_side.append('buy')
+                num_buy += 1
+            elif buy_max < cls.kijun_val and sell_max >= cls.kijun_val:
+                future_side.append('sell')
+                num_sell += 1
+            elif buy_max < cls.kijun_val and sell_max < cls.kijun_val:
+                future_side.append('no')
+                num_no += 1
+
+        print('future_side allocation in Market Data:')
+        tsum = float(len(future_side))
+        print('no:', round(float(num_no) / tsum, 4), 'buy:', round(float(num_buy) / tsum, 4), 'sell:', round(float(num_sell) / tsum, 4), 'both:', round(float(num_both) / tsum, 4))
+        return future_side
+                    
+
+
     # higher pl in next 1m for bp sp
     @classmethod
     def calc_bpsp_points(cls):
@@ -583,7 +645,7 @@ class OneMinMarketData:
             for i in range(len(df.columns) - 1):
                 if df.columns[i] != col_name and df.columns[i] != 'dt':
                     corr = df[col_name].corr(df[df.columns[i]])
-                    if corr > kijun and df.columns[i] not in ['open', 'high', 'low', 'close', 'size', 'bp', 'sp']:
+                    if corr > kijun and df.columns[i] not in ['open', 'high', 'low', 'close', 'size', 'future_side']:
                         num_corr += 1
                         remove_cols.append(df.columns[i])
             if len(remove_cols) > 0:
@@ -615,8 +677,7 @@ class OneMinMarketData:
         for cor in corrs:
             for i in range(len(cor)):
                 if cor[i] != 1.0 and cor[i] > corr_kijun:
-                    if cols[i] not in remove_cols and cols[i] not in ['open', 'high', 'low', 'close', 'size', 'bp',
-                                                                      'sp']:
+                    if cols[i] not in remove_cols and cols[i] not in ['open', 'high', 'low', 'close', 'size', 'future_side']:
                         remove_cols.append(cols[i])
         df3.drop(remove_cols, axis=1, inplace=True)
         print('removed ' + str(len(remove_cols)) + ' colums')
@@ -629,7 +690,7 @@ class OneMinMarketData:
         start_time = time.time()
         df2 = df.copy()
         df3 = df.copy()
-        df2.drop(['dt'], axis=1, inplace=True)
+        df2.drop(['dt','future_side'], axis=1, inplace=True)
         corrs = np.corrcoef(np.array(df2).transpose())
 
         # 1. 0番目から0.9以上のindexを検索
@@ -650,7 +711,7 @@ class OneMinMarketData:
         cols = list(df2.columns)
         for tr in tmp_remo:
             target_col.append(cols[tr])
-        excludes = ['dt', 'open', 'high', 'low', 'close', 'dt']
+        excludes = ['dt', 'open', 'high', 'low', 'close', 'dt', 'future_side']
         for ex in excludes:
             if ex in target_col:
                 target_col.remove(ex)
