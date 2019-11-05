@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="549546f5-9711-4611-b5a7-af5500ed94e2" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/Lgb_BPSP4.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Lgb_BPSP4.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OneMinData.py" beforeDir="false" afterPath="$PROJECT_DIR$/OneMinData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sim.py" beforeDir="false" afterPath="$PROJECT_DIR$/Sim.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SimLgbModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/SimLgbModel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SimOneMinMarketData.py" beforeDir="false" afterPath="$PROJECT_DIR$/SimOneMinMarketData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SimStrategy.py" beforeDir="false" afterPath="$PROJECT_DIR$/SimStrategy.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -28,11 +26,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/SimOneMinMarketData.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="224">
-              <caret line="702" lean-forward="true" selection-start-line="702" selection-end-line="702" />
+            <state relative-caret-position="403">
+              <caret line="995" column="33" selection-start-line="995" selection-start-column="33" selection-end-line="995" selection-end-column="33" />
               <folding>
                 <element signature="e#0#33#0" expanded="true" />
               </folding>
@@ -43,17 +41,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/OneMinData.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="341">
-              <caret line="48" column="39" lean-forward="true" selection-start-line="48" selection-start-column="39" selection-end-line="48" selection-end-column="39" />
+            <state relative-caret-position="281">
+              <caret line="68" column="40" lean-forward="true" selection-start-line="68" selection-start-column="40" selection-end-line="68" selection-end-column="40" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/SimLgbModel.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2207">
-              <caret line="153" column="38" lean-forward="true" selection-start-line="153" selection-start-column="38" selection-end-line="153" selection-end-column="38" />
+            <state relative-caret-position="2980">
+              <caret line="239" column="41" lean-forward="true" selection-start-line="239" selection-start-column="41" selection-end-line="239" selection-end-column="41" />
               <folding>
                 <element signature="e#0#22#0" expanded="true" />
               </folding>
@@ -129,8 +127,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>tsf</find>
-      <find>last_ohlc_min</find>
       <find>calc_adx</find>
       <find>read</find>
       <find>func_dict</find>
@@ -159,6 +155,8 @@
       <find>detect</find>
       <find>impor</find>
       <find>bpsp_points2</find>
+      <find>select_important_cols2</find>
+      <find>arg</find>
     </findStrings>
     <replaceStrings>
       <replace>term</replace>
@@ -198,11 +196,11 @@
         <option value="$PROJECT_DIR$/LgbModel.py" />
         <option value="$PROJECT_DIR$/OneMinMarketData.py" />
         <option value="$PROJECT_DIR$/SimAccount.py" />
-        <option value="$PROJECT_DIR$/OneMinData.py" />
         <option value="$PROJECT_DIR$/SimStrategy.py" />
         <option value="$PROJECT_DIR$/Sim.py" />
-        <option value="$PROJECT_DIR$/SimOneMinMarketData.py" />
         <option value="$PROJECT_DIR$/SimLgbModel.py" />
+        <option value="$PROJECT_DIR$/OneMinData.py" />
+        <option value="$PROJECT_DIR$/SimOneMinMarketData.py" />
       </list>
     </option>
   </component>
@@ -712,13 +710,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/OneMinData.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="341">
-          <caret line="48" column="39" lean-forward="true" selection-start-line="48" selection-start-column="39" selection-end-line="48" selection-end-column="39" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/SimStrategy.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="419">
@@ -739,22 +730,29 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/SimOneMinMarketData.py">
+    <entry file="file://$PROJECT_DIR$/OneMinData.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="224">
-          <caret line="702" lean-forward="true" selection-start-line="702" selection-end-line="702" />
-          <folding>
-            <element signature="e#0#33#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="281">
+          <caret line="68" column="40" lean-forward="true" selection-start-line="68" selection-start-column="40" selection-end-line="68" selection-end-column="40" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/SimLgbModel.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2207">
-          <caret line="153" column="38" lean-forward="true" selection-start-line="153" selection-start-column="38" selection-end-line="153" selection-end-column="38" />
+        <state relative-caret-position="2980">
+          <caret line="239" column="41" lean-forward="true" selection-start-line="239" selection-start-column="41" selection-end-line="239" selection-end-column="41" />
           <folding>
             <element signature="e#0#22#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/SimOneMinMarketData.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="403">
+          <caret line="995" column="33" selection-start-line="995" selection-start-column="33" selection-end-line="995" selection-end-column="33" />
+          <folding>
+            <element signature="e#0#33#0" expanded="true" />
           </folding>
         </state>
       </provider>

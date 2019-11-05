@@ -213,6 +213,8 @@ class OneMinMarketData:
         start_time = time.time()
         postponed_key = []
 
+        cls.calc_ohlc_change()
+
         for k in cls.ohlc.func_dict:
             if int(k.split(':')[1]) > 0:
                 if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and  k.split(':')[0] not in ['ema_kairi', 'ema_gra', 'dema_kairi', 'dema_gra']:
@@ -246,6 +248,10 @@ class OneMinMarketData:
         df = df.assign(high=cls.ohlc.high)
         df = df.assign(low=cls.ohlc.low)
         df = df.assign(close=cls.ohlc.close)
+        df = df.assign(open_change=cls.ohlc.open_change)
+        df = df.assign(high_change=cls.ohlc.high_change)
+        df = df.assign(low_change=cls.ohlc.low_change)
+        df = df.assign(close_change=cls.ohlc.close_change)
         df = df.assign(size=cls.ohlc.size)
         df = df.iloc[cut_size:end]
         df = df.assign(future_side=cls.ohlc.future_side[cut_size:])
@@ -523,6 +529,19 @@ class OneMinMarketData:
                     max_term = int(col.split(':')[1])
         return max_term
 
+    @classmethod
+    def calc_ohlc_change(cls):
+        cls.ohlc.open_change.append(0)
+        cls.ohlc.high_change.append(0)
+        cls.ohlc.low_change.append(0)
+        cls.ohlc.close_change.append(0)
+        for i in range(len(cls.ohlc.close)-1):
+            close = cls.ohlc.close[i]
+            cls.ohlc.open_change.append(round(cls.ohlc.open[i+1] / close,5))
+            cls.ohlc.high_change.append(round(cls.ohlc.high[i + 1] / close, 5))
+            cls.ohlc.low_change.append(round(cls.ohlc.low[i + 1] / close, 5))
+            cls.ohlc.close_change.append(round(cls.ohlc.close[i + 1] / close,5))
+
     # kairi of data
     @classmethod
     def generate_makairi(cls, data, ma_term):
@@ -711,7 +730,7 @@ class OneMinMarketData:
         cols = list(df2.columns)
         for tr in tmp_remo:
             target_col.append(cols[tr])
-        excludes = ['dt', 'open', 'high', 'low', 'close', 'dt', 'future_side']
+        excludes = ['dt', 'open', 'high', 'low', 'close','close_change', 'dt', 'future_side']
         for ex in excludes:
             if ex in target_col:
                 target_col.remove(ex)
@@ -719,6 +738,27 @@ class OneMinMarketData:
         print('removed ' + str(len(target_col)) + ' colums', 'remaining col=' + str(len(df3.columns)))
         print('time=', time.time() - start_time)
         return df3, corrs
+
+    @classmethod
+    def remove_price_dependent_cols(cls, df):
+        print('removing all price dependent columns..')
+        max_ind = np.array(list(df['close'])).argmax()
+        min_ind = np.array(list(df['close'])).argmin()
+        cols = list(df.columns)
+        target_cols = []
+        for col in cols:
+            if abs(np.array(df[col]).argmax() - max_ind) <= 10 and abs(np.array(df[col]).argmin() - min_ind) <= 10:
+                target_cols.append(col)
+        excludes = ['dt', 'open', 'high', 'low', 'close','close_change', 'dt', 'future_side']
+        for ex in excludes:
+            if ex in target_cols:
+                target_cols.remove(ex)
+        df.drop(target_cols, axis=1, inplace=True)
+        print('removed ' + str(len(target_cols)) + ' colums', 'remaining col=' + str(len(df.columns)))
+        return df
+
+
+
 
     @classmethod
     def calc_hist_high(cls, term, high, close):
@@ -940,6 +980,21 @@ class OneMinMarketData:
     def check_matched_index(cls, test_x):
         test = list(test_x['open'])
         op = cls.ohlc.open
+        for i in range(len(op)):
+            flg = True
+            for j in range(30):
+                if test[j] != op[i + j]:
+                    flg = False
+                    break
+            if flg:
+                return i
+        print('no matche index found!')
+        return -1
+
+    @classmethod
+    def check_matched_index_change(cls, test_x):
+        test = list(test_x['close_change'])
+        op = cls.ohlc.open_change
         for i in range(len(op)):
             flg = True
             for j in range(30):

@@ -8,6 +8,10 @@ class OneMinData:
         self.high = []
         self.low = []
         self.close = []
+        self.open_change = []
+        self.high_change = []
+        self.low_change = []
+        self.close_change = []
         self.size = []
         self.future_side = []
 
@@ -20,6 +24,10 @@ class OneMinData:
         self.high = self.high[-num_data:]
         self.low = self.low[-num_data:]
         self.close = self.close[-num_data:]
+        self.open_change = self.open_change[-num_data:]
+        self.high_change = self.high_change[-num_data:]
+        self.low_change = self.low_change[-num_data:]
+        self.close_change = self.close_change[-num_data:]
         self.size = self.size[-num_data:]
         self.future_side = self.future_side[-num_data:]
 
@@ -33,6 +41,10 @@ class OneMinData:
             del self.high[:-num_remain_data]
             del self.low[:-num_remain_data]
             del self.close[:-num_remain_data]
+            del self.open_change[:-num_remain_data]
+            del self.high_change[:-num_remain_data]
+            del self.low_change[:-num_remain_data]
+            del self.close_change[:-num_remain_data]
             del self.size[:-num_remain_data]
             del self.future_side[:-num_remain_data]
 
@@ -46,6 +58,10 @@ class OneMinData:
             del self.high[-ex_from:-to]
             del self.low[-ex_from:-to]
             del self.close[-ex_from:-to]
+            del self.open_change[-ex_from:-to]
+            del self.high_change[-ex_from:-to]
+            del self.low_change[-ex_from:-to]
+            del self.close_change[-ex_from:-to]
             del self.size[-ex_from:-to]
             del self.future_side[-ex_from:-to]
 
@@ -62,5 +78,13 @@ class OneMinData:
         self.low.pop(0)
         self.close.append(close)
         self.close.pop(0)
+        self.open_change.append(open)
+        self.open_change.pop(0)
+        self.high_change.append(high)
+        self.high_change.pop(0)
+        self.low_change.append(low)
+        self.low_change.pop(0)
+        self.close_change.append(close)
+        self.close_change.pop(0)
         self.size.append(size)
         self.size.pop(0)
