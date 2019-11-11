@@ -184,6 +184,7 @@ class OneMinMarketData:
         return max_term
 
 
+
     '''
     funcname_termをcsvから読み込む
     func_dictを生成
@@ -199,8 +200,10 @@ class OneMinMarketData:
         #copy matched key func val
         func_obj= {}
         for col in cols[0]:
-            if col not in ['open', 'high', 'low', 'close']:
+            if col not in ['open', 'high', 'low', 'close', 'open_change', 'high_change', 'low_change', 'close_change']:
                 func_obj[col] = cls.ohlc.func_dict[col]
+            else:
+                print('invalid func was found!', col)
         #replace ohlc.func_dict
         cls.ohlc.func_dict = func_obj
 
@@ -363,6 +366,7 @@ class OneMinMarketData:
     @classmethod
     def __calc_all_index_dict(cls):
         print('calculating all index dict')
+
         start_time = time.time()
         for k in cls.ohlc.func_dict:
             if int(k.split(':')[1]) > 0:

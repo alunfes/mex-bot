@@ -38,16 +38,19 @@ class LgbModel:
         if max_data > len(buy_df):
             selected = buy_df.sample(n=max_data - len(buy_df), replace=True)
             new_train_df = new_train_df.append(selected)
+            new_train_df = new_train_df.append(buy_df)
         else:
             new_train_df = buy_df
         if max_data > len(sell_df):
             selected = sell_df.sample(n=max_data - len(sell_df), replace=True)
             new_train_df = new_train_df.append(selected)
+            new_train_df = new_train_df.append(sell_df)
         else:
             new_train_df = new_train_df.append(sell_df)
         if max_data > len(no_df):
             selected = no_df.sample(n=max_data - len(no_df), replace=True)
             new_train_df = new_train_df.append(selected)
+            new_train_df = new_train_df.append(no_df)
         else:
             new_train_df = new_train_df.append(no_df)
         if max_data > len(both_df):
@@ -55,12 +58,15 @@ class LgbModel:
             new_train_df = new_train_df.append(selected)
         else:
             new_train_df = new_train_df.append(both_df)
+            new_train_df = new_train_df.append(both_df)
 
         new_train_df = new_train_df.sample(frac=1)
-        train_x, valid_x, train_y, valid_y = train_test_split(new_train_df.drop(['dt', 'size', 'future_side'], axis=1), new_train_df['future_side'], train_size=(1.0-valid_size), shuffle=True)
+        train_x, valid_x, train_y, valid_y = train_test_split(new_train_df.drop(['size', 'future_side'], axis=1),
+                                                              new_train_df['future_side'],
+                                                              train_size=(1.0 - valid_size), shuffle=True)
         train_y.columns = ['future_side']
         valid_y.columns = ['future_side']
-        test_x = test_df.drop(['dt', 'size', 'future_side'], axis=1)
+        test_x = test_df.drop(['size', 'future_side'], axis=1)
         test_y = test_df['future_side']
         test_y.columns = ['future_side']
 
