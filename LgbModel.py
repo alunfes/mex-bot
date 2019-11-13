@@ -148,6 +148,66 @@ class LgbModel:
         print('valid_y', valid_y.shape)
         return train_x, test_x, train_y, test_y, valid_x, valid_y
 
+
+
+    def generate_bpsp_data2(self, train_df, test_df, valid_size=0.2):
+        train_df['future_side'] = train_df['future_side'].map({'no': 0, 'buy': 1, 'sell': 2, 'both': 3}).astype(int)
+        test_df['future_side'] = test_df['future_side'].map({'no': 0, 'buy': 1, 'sell': 2, 'both': 3}).astype(int)
+        print('train / valid period=', train_df['dt'].iloc[0], ' - ', train_df['dt'].iloc[-1])
+        print('test period=', test_df['dt'].iloc[0], ' - ', test_df['dt'].iloc[-1])
+
+        # generate training data to include same num of buy / sell bpsp
+        buy_df = train_df[train_df.future_side == 1]
+        sell_df = train_df[train_df.future_side == 2]
+        no_df = train_df[train_df.future_side == 0]
+        both_df = train_df[train_df.future_side == 3]
+        max_data = max([len(buy_df), len(sell_df), len(no_df), len(both_df)])
+        new_train_df = pd.DataFrame()
+        if max_data > len(buy_df):
+            selected = buy_df.sample(n=max_data - len(buy_df), replace=True)
+            new_train_df = new_train_df.append(selected)
+            new_train_df = new_train_df.append(buy_df)
+        else:
+            new_train_df = buy_df
+        if max_data > len(sell_df):
+            selected = sell_df.sample(n=max_data - len(sell_df), replace=True)
+            new_train_df = new_train_df.append(selected)
+            new_train_df = new_train_df.append(sell_df)
+        else:
+            new_train_df = new_train_df.append(sell_df)
+        if max_data > len(no_df):
+            selected = no_df.sample(n=max_data - len(no_df), replace=True)
+            new_train_df = new_train_df.append(selected)
+            new_train_df = new_train_df.append(no_df)
+        else:
+            new_train_df = new_train_df.append(no_df)
+        if max_data > len(both_df):
+            selected = both_df.sample(n=max_data - len(both_df), replace=True)
+            new_train_df = new_train_df.append(selected)
+        else:
+            new_train_df = new_train_df.append(both_df)
+            new_train_df = new_train_df.append(both_df)
+
+        new_train_df = new_train_df.sample(frac=1)
+        train_x, valid_x, train_y, valid_y = train_test_split(new_train_df.drop(['size', 'future_side'], axis=1),
+                                                              new_train_df['future_side'],
+                                                              train_size=(1.0 - valid_size), shuffle=True)
+        train_y.columns = ['future_side']
+        valid_y.columns = ['future_side']
+        test_x = test_df.drop(['size', 'future_side'], axis=1)
+        test_y = test_df['future_side']
+        test_y.columns = ['future_side']
+
+        self.check_train_test_index_duplication(train_x, test_x)
+        print('buy sell point data description:')
+        print('train_x', train_x.shape)
+        print('train_y', train_y.shape)
+        print('test_x', test_x.shape)
+        print('test_y', test_y.shape)
+        print('valid_x', valid_x.shape)
+        print('valid_y', valid_y.shape)
+        return train_x, test_x, train_y, test_y, valid_x, valid_y
+
     def generate_bsp_data_no_random(self, df: pd.DataFrame, side, train_size=0.6, valid_size=0.2):
         dfx = None
         dfy = None

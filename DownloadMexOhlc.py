@@ -56,17 +56,17 @@ class DownloadMexOhlc:
 
     #download data for initial calc
     @classmethod
-    def initial_data_download(cls, max_term):
+    def initial_data_download(cls, data_len, file_path):
         print('downloading for initial bot data...')
-        if os.path.exists('./Data/bot_ohlc.csv'):
-            os.remove('./Data/bot_ohlc.csv')
+        if os.path.exists(file_path):
+            os.remove(file_path)
         to = int(time.time())
         to = to - (to % 10) - 60
-        since = to - (60 * max_term) - 60
+        since = to - (60 * data_len) - 60
         df = cls.download_data_since_to(since, to)
         print(df)
         if df is not None:
-            df.to_csv('./Data/bot_ohlc.csv', index=False)
+            df.to_csv(file_path, index=False)
             print('completed download')
         else:
             print('data is none. failed to download ohlc in initial data download !')

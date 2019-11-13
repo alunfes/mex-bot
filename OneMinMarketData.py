@@ -20,7 +20,7 @@ data download and calc for bot
 
 class OneMinMarketData:
     @classmethod
-    def initialize_for_bot(cls):
+    def initialize_for_bot(cls, num_term):
         cls.ohlc_buffer = 10 #download more ohlc than max_term
         cls.JST = pytz.timezone('Asia/Tokyo')
         print('OneMinMarketData started:', datetime.now(cls.JST))
@@ -33,9 +33,9 @@ class OneMinMarketData:
         cls.pred = -1
         cls.lock_pred=  threading.Lock()
         cls.lock_df = threading.Lock()
-        cls.term_list = cls.generate_term_list(10)
+        cls.term_list = cls.generate_term_list(num_term)
         cls.max_term = cls.detect_max_term()
-        DownloadMexOhlc.initial_data_download(cls.max_term+cls.ohlc_buffer)
+        DownloadMexOhlc.initial_data_download(cls.max_term+cls.ohlc_buffer, './Data/bot_ohlc.csv')
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
         #cls.ohlc.del_data(initial_data_vol)
         start = time.time()
@@ -47,6 +47,32 @@ class OneMinMarketData:
         print('time for market data initialization=',time.time() - start)
         th = threading.Thread(target=cls.__main_thread)
         th.start()
+
+    #to be used by another process
+    @classmethod
+    def initialize_for_lgbmaster(cls, kijun_val, kijun_period, num_term, train_len, valid_size, lgb_params):
+        print('initializing market data for lgb master.')
+        start = time.time()
+        cls.ohlc_path = '.Data/lgb_ohlc.csv'
+        cls.ohlc_buffer = 1
+        cls.kijun_period = kijun_period
+        cls.kijun_val = kijun_val
+        cls.ohlc = OneMinData()
+        cls.ohlc.initialize()
+        cls.term_list = cls.generate_term_list(num_term)
+        DownloadMexOhlc.initial_data_download(train_len + cls.ohlc_buffer, cls.ohlc_path)
+        cls.ohlc = cls.read_from_csv(cls.ohlc_path)
+        cls.__generate_all_func_dict()
+        cls.__calc_all_index_dict()
+
+
+
+
+
+
+
+
+
 
     @classmethod
     def initialize_for_marketdata_test(cls):
@@ -236,33 +262,34 @@ class OneMinMarketData:
     @classmethod
     def __generate_all_func_dict(cls):
         for term in cls.term_list:
-            cls.ohlc.func_dict['ema:' + str(term)] = (OneMinMarketData.calc_ema, term)
-            cls.ohlc.func_dict['ema_kairi:' + str(term)] = (OneMinMarketData.calc_ema_kairi, term)
-            cls.ohlc.func_dict['ema_gra:' + str(term)] = (OneMinMarketData.calc_ema_gra, term)
-            cls.ohlc.func_dict['dema:' + str(term)] = (OneMinMarketData.calc_dema, term)
-            cls.ohlc.func_dict['dema_kairi:' + str(term)] = (OneMinMarketData.calc_dema_kairi, term)
-            cls.ohlc.func_dict['dema_gra:' + str(term)] = (OneMinMarketData.calc_dema_gra, term)
+            #cls.ohlc.func_dict['ema:' + str(term)] = (OneMinMarketData.calc_ema, term)
+            #cls.ohlc.func_dict['ema_kairi:' + str(term)] = (OneMinMarketData.calc_ema_kairi, term)
+            #cls.ohlc.func_dict['ema_gra:' + str(term)] = (OneMinMarketData.calc_ema_gra, term)
+            #cls.ohlc.func_dict['dema:' + str(term)] = (OneMinMarketData.calc_dema, term)
+            #cls.ohlc.func_dict['dema_kairi:' + str(term)] = (OneMinMarketData.calc_dema_kairi, term)
+            #cls.ohlc.func_dict['dema_gra:' + str(term)] = (OneMinMarketData.calc_dema_gra, term)
             cls.ohlc.func_dict['momentum:' + str(term)] = (OneMinMarketData.calc_momentum, term)
-            cls.ohlc.func_dict['rate_of_change:' + str(term)] = (OneMinMarketData.calc_rate_of_change, term)
+            #cls.ohlc.func_dict['rate_of_change:' + str(term)] = (OneMinMarketData.calc_rate_of_change, term)
             cls.ohlc.func_dict['rsi:' + str(term)] = (OneMinMarketData.calc_rsi, term)
             cls.ohlc.func_dict['williams_R:' + str(term)] = (OneMinMarketData.calc_williams_R, term)
-            cls.ohlc.func_dict['beta:' + str(term)] = (OneMinMarketData.calc_beta, term)
-            cls.ohlc.func_dict['time_series_forecast:' + str(term)] = (OneMinMarketData.calc_time_series_forecast, term)
+            #cls.ohlc.func_dict['beta:' + str(term)] = (OneMinMarketData.calc_beta, term)
+            #cls.ohlc.func_dict['time_series_forecast:' + str(term)] = (OneMinMarketData.calc_time_series_forecast, term)
             cls.ohlc.func_dict['correl:' + str(term)] = (OneMinMarketData.calc_correl, term)
-            cls.ohlc.func_dict['linear_reg:' + str(term)] = (OneMinMarketData.calc_linear_reg, term)
-            cls.ohlc.func_dict['linear_reg_angle:' + str(term)] = (OneMinMarketData.calc_linear_reg_angle, term)
-            cls.ohlc.func_dict['linear_reg_intercept:' + str(term)] = (OneMinMarketData.calc_linear_reg_intercept, term)
-            cls.ohlc.func_dict['linear_reg_slope:' + str(term)] = (OneMinMarketData.calc_linear_reg_slope, term)
-            cls.ohlc.func_dict['stdv:' + str(term)] = (OneMinMarketData.calc_stdv, term)
-            cls.ohlc.func_dict['var:' + str(term)] = (OneMinMarketData.calc_var, term)
+            #cls.ohlc.func_dict['linear_reg:' + str(term)] = (OneMinMarketData.calc_linear_reg, term)
+            #cls.ohlc.func_dict['linear_reg_angle:' + str(term)] = (OneMinMarketData.calc_linear_reg_angle, term)
+            #cls.ohlc.func_dict['linear_reg_intercept:' + str(term)] = (OneMinMarketData.calc_linear_reg_intercept, term)
+            #cls.ohlc.func_dict['linear_reg_slope:' + str(term)] = (OneMinMarketData.calc_linear_reg_slope, term)
+            #cls.ohlc.func_dict['stdv:' + str(term)] = (OneMinMarketData.calc_stdv, term)
+            #cls.ohlc.func_dict['var:' + str(term)] = (OneMinMarketData.calc_var, term)
             cls.ohlc.func_dict['adx:' + str(term)] = (OneMinMarketData.calc_adx, term)
             cls.ohlc.func_dict['aroon_os:' + str(term)] = (OneMinMarketData.calc_aroon_os, term)
-            cls.ohlc.func_dict['cci:' + str(term)] = (OneMinMarketData.calc_cci, term)
+            #cls.ohlc.func_dict['cci:' + str(term)] = (OneMinMarketData.calc_cci, term)
             cls.ohlc.func_dict['dx:' + str(term)] = (OneMinMarketData.calc_dx, term)
             if term >= 10:
                 cls.ohlc.func_dict['macd:' + str(term)] = (OneMinMarketData.calc_macd, term)
-                cls.ohlc.func_dict['macd_signal:' + str(term)] = (OneMinMarketData.calc_macd_signal, term)
-                cls.ohlc.func_dict['macd_hist:' + str(term)] = (OneMinMarketData.calc_macd_hist, term)
+                #cls.ohlc.func_dict['macd_signal:' + str(term)] = (OneMinMarketData.calc_macd_signal, term)
+                #cls.ohlc.func_dict['macd_hist:' + str(term)] = (OneMinMarketData.calc_macd_hist, term)
+            '''
             cls.ohlc.func_dict['makairi_momentum:' + str(term)] = (
             OneMinMarketData.generate_makairi, OneMinMarketData.calc_momentum, term)
             cls.ohlc.func_dict['makairi_rate_of_change:' + str(term)] = (
@@ -349,6 +376,7 @@ class OneMinMarketData:
         cls.ohlc.func_dict['bop:' + str(0)] = (OneMinMarketData.calc_bop, 0)
 
         cls.ohlc.bpsp = cls.calc_bpsp_points()
+        '''
 
 
 
@@ -366,8 +394,8 @@ class OneMinMarketData:
     @classmethod
     def __calc_all_index_dict(cls):
         print('calculating all index dict')
-
         start_time = time.time()
+
         for k in cls.ohlc.func_dict:
             if int(k.split(':')[1]) > 0:
                 if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and k.split(':')[0] not in ['ema_kairi','ema_gra','dema_kairi','dema_gra']:
@@ -383,14 +411,23 @@ class OneMinMarketData:
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
         print('completed calc all index. time=', time.time() - start_time)
 
+    @classmethod
+    def calc_ohlc_change(cls):
+        cls.ohlc.open_change.append(0)
+        cls.ohlc.high_change.append(0)
+        cls.ohlc.low_change.append(0)
+        cls.ohlc.close_change.append(0)
+        for i in range(len(cls.ohlc.close) - 1):
+            close = cls.ohlc.close[i]
+            cls.ohlc.open_change.append(round(cls.ohlc.open[i + 1] / close, 5))
+            cls.ohlc.high_change.append(round(cls.ohlc.high[i + 1] / close, 5))
+            cls.ohlc.low_change.append(round(cls.ohlc.low[i + 1] / close, 5))
+            cls.ohlc.close_change.append(round(cls.ohlc.close[i + 1] / close, 5))
+
 
     @classmethod
     def generate_df_from_dict_for_bot(cls):
         df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
-        df = df.assign(open=cls.ohlc.open)
-        df = df.assign(high=cls.ohlc.high)
-        df = df.assign(low=cls.ohlc.low)
-        df = df.assign(close=cls.ohlc.close)
         cols = list(df.columns)
         cols.sort()
         #df = df.loc[:,cols]
@@ -410,6 +447,21 @@ class OneMinMarketData:
         df = df.assign(size=cls.ohlc.size)
         df = df.assign(bpsp=cls.ohlc.bpsp)
         return df.iloc[cut_size:end]
+
+    @classmethod
+    def generate_df_for_lgbmaster(cls):
+        cut_size = cls.term_list[-1] + 1
+        end = len(cls.ohlc.close) - cls.kijun_period
+        df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
+        df = df.assign(dt=cls.ohlc.dt)
+        df = df.assign(open=cls.ohlc.open)
+        df = df.assign(high=cls.ohlc.high)
+        df = df.assign(low=cls.ohlc.low)
+        df = df.assign(close=cls.ohlc.close)
+        df = df.assign(size=cls.ohlc.size)
+        df = df.assign(bpsp=cls.ohlc.bpsp)
+        return df.iloc[cut_size:end]
+
 
     @classmethod
     def generate_makairi(cls, data, ma_term):
