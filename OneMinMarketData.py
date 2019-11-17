@@ -68,12 +68,6 @@ class OneMinMarketData:
 
 
 
-
-
-
-
-
-
     @classmethod
     def initialize_for_marketdata_test(cls):
         DownloadMexOhlc.download_data()
@@ -133,7 +127,7 @@ class OneMinMarketData:
                 target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes, 01分時点でもtaget min=58
                 while tmp_ohlc_loop_flg:
                     if len(cls.tmp_ohlc.dt) > 0:
-                        if cls.tmp_ohlc.dt[-1].minute == target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
+                        if cls.tmp_ohlc.dt[-1].minute is target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
                             cls.ohlc.add_and_pop(cls.tmp_ohlc.unix_time[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],
                                                  cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
                             tmp_ohlc_loop_flg = False
@@ -262,34 +256,33 @@ class OneMinMarketData:
     @classmethod
     def __generate_all_func_dict(cls):
         for term in cls.term_list:
-            #cls.ohlc.func_dict['ema:' + str(term)] = (OneMinMarketData.calc_ema, term)
-            #cls.ohlc.func_dict['ema_kairi:' + str(term)] = (OneMinMarketData.calc_ema_kairi, term)
-            #cls.ohlc.func_dict['ema_gra:' + str(term)] = (OneMinMarketData.calc_ema_gra, term)
-            #cls.ohlc.func_dict['dema:' + str(term)] = (OneMinMarketData.calc_dema, term)
-            #cls.ohlc.func_dict['dema_kairi:' + str(term)] = (OneMinMarketData.calc_dema_kairi, term)
-            #cls.ohlc.func_dict['dema_gra:' + str(term)] = (OneMinMarketData.calc_dema_gra, term)
+            cls.ohlc.func_dict['ema:' + str(term)] = (OneMinMarketData.calc_ema, term)
+            cls.ohlc.func_dict['ema_kairi:' + str(term)] = (OneMinMarketData.calc_ema_kairi, term)
+            cls.ohlc.func_dict['ema_gra:' + str(term)] = (OneMinMarketData.calc_ema_gra, term)
+            cls.ohlc.func_dict['dema:' + str(term)] = (OneMinMarketData.calc_dema, term)
+            cls.ohlc.func_dict['dema_kairi:' + str(term)] = (OneMinMarketData.calc_dema_kairi, term)
+            cls.ohlc.func_dict['dema_gra:' + str(term)] = (OneMinMarketData.calc_dema_gra, term)
             cls.ohlc.func_dict['momentum:' + str(term)] = (OneMinMarketData.calc_momentum, term)
-            #cls.ohlc.func_dict['rate_of_change:' + str(term)] = (OneMinMarketData.calc_rate_of_change, term)
+            cls.ohlc.func_dict['rate_of_change:' + str(term)] = (OneMinMarketData.calc_rate_of_change, term)
             cls.ohlc.func_dict['rsi:' + str(term)] = (OneMinMarketData.calc_rsi, term)
             cls.ohlc.func_dict['williams_R:' + str(term)] = (OneMinMarketData.calc_williams_R, term)
-            #cls.ohlc.func_dict['beta:' + str(term)] = (OneMinMarketData.calc_beta, term)
-            #cls.ohlc.func_dict['time_series_forecast:' + str(term)] = (OneMinMarketData.calc_time_series_forecast, term)
+            cls.ohlc.func_dict['beta:' + str(term)] = (OneMinMarketData.calc_beta, term)
+            cls.ohlc.func_dict['time_series_forecast:' + str(term)] = (OneMinMarketData.calc_time_series_forecast, term)
             cls.ohlc.func_dict['correl:' + str(term)] = (OneMinMarketData.calc_correl, term)
-            #cls.ohlc.func_dict['linear_reg:' + str(term)] = (OneMinMarketData.calc_linear_reg, term)
-            #cls.ohlc.func_dict['linear_reg_angle:' + str(term)] = (OneMinMarketData.calc_linear_reg_angle, term)
-            #cls.ohlc.func_dict['linear_reg_intercept:' + str(term)] = (OneMinMarketData.calc_linear_reg_intercept, term)
-            #cls.ohlc.func_dict['linear_reg_slope:' + str(term)] = (OneMinMarketData.calc_linear_reg_slope, term)
-            #cls.ohlc.func_dict['stdv:' + str(term)] = (OneMinMarketData.calc_stdv, term)
-            #cls.ohlc.func_dict['var:' + str(term)] = (OneMinMarketData.calc_var, term)
+            cls.ohlc.func_dict['linear_reg:' + str(term)] = (OneMinMarketData.calc_linear_reg, term)
+            cls.ohlc.func_dict['linear_reg_angle:' + str(term)] = (OneMinMarketData.calc_linear_reg_angle, term)
+            cls.ohlc.func_dict['linear_reg_intercept:' + str(term)] = (OneMinMarketData.calc_linear_reg_intercept, term)
+            cls.ohlc.func_dict['linear_reg_slope:' + str(term)] = (OneMinMarketData.calc_linear_reg_slope, term)
+            cls.ohlc.func_dict['stdv:' + str(term)] = (OneMinMarketData.calc_stdv, term)
+            cls.ohlc.func_dict['var:' + str(term)] = (OneMinMarketData.calc_var, term)
             cls.ohlc.func_dict['adx:' + str(term)] = (OneMinMarketData.calc_adx, term)
             cls.ohlc.func_dict['aroon_os:' + str(term)] = (OneMinMarketData.calc_aroon_os, term)
-            #cls.ohlc.func_dict['cci:' + str(term)] = (OneMinMarketData.calc_cci, term)
+            cls.ohlc.func_dict['cci:' + str(term)] = (OneMinMarketData.calc_cci, term)
             cls.ohlc.func_dict['dx:' + str(term)] = (OneMinMarketData.calc_dx, term)
             if term >= 10:
                 cls.ohlc.func_dict['macd:' + str(term)] = (OneMinMarketData.calc_macd, term)
-                #cls.ohlc.func_dict['macd_signal:' + str(term)] = (OneMinMarketData.calc_macd_signal, term)
-                #cls.ohlc.func_dict['macd_hist:' + str(term)] = (OneMinMarketData.calc_macd_hist, term)
-            '''
+                cls.ohlc.func_dict['macd_signal:' + str(term)] = (OneMinMarketData.calc_macd_signal, term)
+                cls.ohlc.func_dict['macd_hist:' + str(term)] = (OneMinMarketData.calc_macd_hist, term)
             cls.ohlc.func_dict['makairi_momentum:' + str(term)] = (
             OneMinMarketData.generate_makairi, OneMinMarketData.calc_momentum, term)
             cls.ohlc.func_dict['makairi_rate_of_change:' + str(term)] = (
@@ -374,9 +367,6 @@ class OneMinMarketData:
         OneMinMarketData.calc_upsidedownside_gap_three_method, 0)
         cls.ohlc.func_dict['sar:' + str(0)] = (OneMinMarketData.calc_sar, 0)
         cls.ohlc.func_dict['bop:' + str(0)] = (OneMinMarketData.calc_bop, 0)
-
-        cls.ohlc.bpsp = cls.calc_bpsp_points()
-        '''
 
 
 

@@ -52,7 +52,8 @@ class LgbModel:
         else:
             df.to_csv('./Data/data.csv',index=False)
 
-
+    '''
+    #this is used only for one min pred system
     def sim(self, pred):
         if self.posi == '':
             self.posi = 'buy' if pred == 1 else 'sell'
@@ -77,7 +78,7 @@ class LgbModel:
             self.accuracy_ratio = self.num_pred_correct / self.num
         self.pre_pred = pred
         print('pl=', self.total_pl, 'posi=', self.posi, 'num buy=',self.num_buy, 'num sell', self.num_sell, 'entry price=', self.entry_price, 'accuracy=', round(self.accuracy_ratio,4))
-
+    '''
 
     def main_thread(self):
         ini_data_flg = False #flg for market data initialization
@@ -91,10 +92,10 @@ class LgbModel:
             if OneMinMarketData.get_flg_ohlc_update():
                 df = OneMinMarketData.get_df()
                 if df is not None:
-                    self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
+                    self.set_pred(self.bpsp_prediction(self.model, df, self.upper_kijun)[-1])
                     OneMinMarketData.set_flg_ohlc_update(False)
                     print('prediction = ', self.pred)
-                    self.sim(self.pred)
+                    #self.sim(self.pred)
                     self.write_df_pred(df, self.pred)
 
             '''
@@ -333,6 +334,25 @@ class LgbModel:
             else:
                 res.append(0)
         return res
+
+    def bpsp_prediction(self, model, test_x, uppder_kijun):
+        prediction = []
+        pval = model.predict(test_x, num_iteration=model.best_iteration)
+        for p in pval:
+            res = list(map(lambda x: 1.0 if x >= uppder_kijun else 0, p))
+            if (res[0] == 1 and res[1] == 0 and res[2] == 0 and res[3] == 0) or (
+                    res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 0):
+                prediction.append(0)
+            elif res[0] == 0 and res[1] == 1 and res[2] == 0 and res[3] == 0:
+                prediction.append(1)
+            elif res[0] == 0 and res[1] == 0 and res[2] == 1 and res[3] == 0:
+                prediction.append(2)
+            elif res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 1:
+                prediction.append(3)
+            else:
+                print('unknown output in bpsp_prediction!')
+                print(res)
+        return prediction
 
     def bp_buysell_prediction(self, prediction_buy, prediction_sell, upper_kijun, lower_kijun):
         if len(prediction_buy) == len(prediction_sell):
