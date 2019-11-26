@@ -6,7 +6,7 @@ import time
 
 class Test:
     def start(self):
-        OneMinMarketData.initialize_for_bot(10)
+        OneMinMarketData.initialize_for_bot(9)
         lgb = LgbModel()
         ws = RealtimeWSAPI()
         while True:

@@ -18,6 +18,7 @@ class LgbModel:
         self.pred = -1
         self.lock_pred = threading.Lock()
         self.upper_kijun = 0.5
+        self.pt_kijun = 50
         self.lock_pred = threading.Lock()
         with open('./Model/lgb_bpsp_model.dat', mode='rb') as f:
             self.model = pickle.load(f)
@@ -25,6 +26,8 @@ class LgbModel:
         self.num_buy = 0
         self.num_sell = 0
         self.total_pl = 0
+        self.num_win = 0
+        self.win_rate = 0
         self.entry_price = 0
         self.posi = ''
         self.accuracy_ratio = 0
@@ -52,33 +55,52 @@ class LgbModel:
         else:
             df.to_csv('./Data/data.csv',index=False)
 
-    '''
-    #this is used only for one min pred system
-    def sim(self, pred):
-        if self.posi == '':
+
+    def sim(self, pred, pt_kijun):
+        if self.posi == '' and (pred == 1 or pred == 2):
             self.posi = 'buy' if pred == 1 else 'sell'
             self.entry_price = OneMinMarketData.ohlc.close[-1]
-        elif self.posi =='buy' and pred == 0:
+        elif self.posi =='buy' and pred == 2:
             self.num_buy += 1
             self.posi = 'sell'
-            self.total_pl += float(TickData.get_ltp()) - ((self.fee+1) * self.entry_price)
+            pl = float(TickData.get_ltp()) - ((self.fee+1) * self.entry_price)
+            if pl > 0:
+                self.num_win += 1
+            self.total_pl += pl
             self.entry_price = float(TickData.get_ltp())
         elif self.posi =='sell' and pred == 1:
             self.num_sell += 1
             self.posi = 'buy'
-            self.total_pl += (1-self.fee) * self.entry_price - float(TickData.get_ltp())
+            pl = (1-self.fee) * self.entry_price - float(TickData.get_ltp())
+            if pl > 0:
+                self.num_win += 1
+            self.total_pl += pl
             self.entry_price = float(TickData.get_ltp())
+        elif self.posi == 'buy' and (pred == 0 or pred == 3):
+            if OneMinMarketData.ohlc.high[-1] - self.entry_price > pt_kijun:
+                self.posi == ''
+                self.num_buy += 1
+                pl = float(TickData.get_ltp()) - ((self.fee + 1) * self.entry_price)
+                if pl > 0:
+                    self.num_win += 1
+                self.total_pl += pl
+                self.entry_price = 0
+        elif self.posi == 'sell' and (pred == 0 or pred == 3):
+            if self.entry_price - OneMinMarketData.ohlc.high[-1] > pt_kijun:
+                self.posi == ''
+                self.num_sell += 1
+                pl = (1 - self.fee) * self.entry_price - float(TickData.get_ltp())
+                if pl > 0:
+                    self.num_win += 1
+                self.total_pl += pl
+                self.entry_price = 0
 
-        if self.pre_pred == 1 and OneMinMarketData.ohlc.close[-1] >= OneMinMarketData.ohlc.close[-2]:
-            self.num_pred_correct +=1
-        elif self.pre_pred == 0 and OneMinMarketData.ohlc.close[-1] <= OneMinMarketData.ohlc.close[-2]:
-            self.num_pred_correct += 1
         self.num += 1
-        if self.num > 0:
-            self.accuracy_ratio = self.num_pred_correct / self.num
+        if self.num_win > 0:
+            self.win_rate = round(self.num_win / (self.num_buy + self.num_sell), 4)
         self.pre_pred = pred
-        print('pl=', self.total_pl, 'posi=', self.posi, 'num buy=',self.num_buy, 'num sell', self.num_sell, 'entry price=', self.entry_price, 'accuracy=', round(self.accuracy_ratio,4))
-    '''
+        print('pl=', self.total_pl, 'posi=', self.posi, 'num buy=',self.num_buy, 'num sell', self.num_sell, 'entry price=', self.entry_price, 'win rate=', self.win_rate)
+
 
     def main_thread(self):
         ini_data_flg = False #flg for market data initialization
@@ -95,7 +117,7 @@ class LgbModel:
                     self.set_pred(self.bpsp_prediction(self.model, df, self.upper_kijun)[-1])
                     OneMinMarketData.set_flg_ohlc_update(False)
                     print('prediction = ', self.pred)
-                    #self.sim(self.pred)
+                    self.sim(self.pred, self.pt_kijun)
                     self.write_df_pred(df, self.pred)
 
             '''

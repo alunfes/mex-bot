@@ -183,7 +183,7 @@ class TickData:
     def __calc_ohlc_thread(cls):
         while SystemFlg.get_system_flg():
             if datetime.now(cls.JST).second == 0: #00秒からohlc計算を開始
-                cls.target_ohlc_min = int(datetime.now(cls.JST).minute) #set target minutes
+                cls.target_ohlc_min = datetime.now(cls.JST).minute #set target minutes
                 while SystemFlg.get_system_flg():
                     flg = False
                     open = 0
@@ -193,7 +193,6 @@ class TickData:
                     volume = 0
                     next_min = cls.target_ohlc_min+1 if cls.target_ohlc_min !=59 else 0
                     dt = datetime.now(cls.JST)
-                    #dt.second=59
                     ut =dt.timestamp()
                     loop_flg = True
                     while loop_flg:
@@ -227,6 +226,10 @@ class TickData:
                             close = p[-1]
                             #print(datetime.now(cls.JST), dt, open, high, low, close, volume)
                             print('ws add ohlc')
+                            if open ==0 or open > 99999:
+                                print('invalid val was detected in realtime ohlc!')
+                            if dt.minute == 0:
+                                print('ws dt=', dt)
                             OneMinMarketData.add_tmp_ohlc(ut,dt,open,high,low,close,volume)
                             cls.target_ohlc_min = next_min
                             loop_flg = False
