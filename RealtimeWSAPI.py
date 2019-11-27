@@ -3,6 +3,7 @@ import json
 import time
 import threading
 from datetime import datetime
+import dateutil
 from OneMinMarketData import OneMinMarketData
 import pytz
 from SystemFlg import SystemFlg
@@ -107,7 +108,7 @@ class TickData:
         cls.JST = pytz.timezone('Asia/Tokyo')
         #cls.last_ohlc_min = int(datetime.now(cls.JST).minute)+1 if datetime.now(cls.JST).minute != 59 else 0
         cls.last_ohlc_min = int(datetime.now(cls.JST).minute)
-        th = threading.Thread(target=cls.__calc_ohlc_thread)
+        th = threading.Thread(target=cls.__calc_ohlc_thread2)
         th.start()
 
     @classmethod
@@ -164,6 +165,48 @@ class TickData:
     @classmethod
     def get_exe_data(cls):
         return cls.exec_data[:]
+
+
+    @classmethod
+    def __calc_ohlc_thread2(cls):
+        target_min = -1
+        next_min = -1
+        while SystemFlg.get_system_flg():#計算開始の基準minuteを決定
+            data = cls.get_tmp_exec_data()
+            if len(data) > 0:
+                target_min = int(data[-1]['timestamp'].split('T')[1].split(':')[1]) #計算開始の基準minuteを決定
+                target_min = target_min +1 if target_min +1 < 60 else 0
+                next_min = target_min +1 if target_min +1 < 60 else 0
+                break
+            time.sleep(0.1)
+
+        while SystemFlg.get_system_flg():
+            data = cls.get_tmp_exec_data()
+            if len(data) > 0 and int(data[-1]['timestamp'].split('T')[1].split(':')[1]) == next_min: #次の分のデータが入り出したらohlc計算する
+                next_data = []
+                target_data = []
+                for d in data:
+                    minut = int(d['timestamp'].split('T')[1].split(':')[1])
+                    if (next_min != 59 and minut >= next_min) or (next_min == 59 and minut >= 0):
+                        next_data.append(d) #次回の分のデータは次に回す
+                    elif minut == target_min:
+                        target_data.append(d)
+                if len(next_data) > 0:
+                    cls.add_tmp_exec_data(next_data)
+                if len(target_data) == 0:
+                    print('target data len is 0!')
+                p = [d.get('price') for d in target_data]
+                size = [d.get('size') for d in target_data]
+                dt = dateutil.parser.parse(target_data[-1]['timestamp'])
+                #OneMinMarketData.add_tmp_ohlc(dt, dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
+                print(dt, dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
+                target_min = target_min + 1 if target_min + 1 < 60 else 0
+                next_min = target_min + 1 if target_min + 1 < 60 else 0
+            else:
+                cls.add_tmp_exec_data(data)
+            time.sleep(1)
+
+
 
     '''
     00:00:10 started, last_min = 00:01
