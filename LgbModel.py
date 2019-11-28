@@ -26,6 +26,8 @@ class LgbModel:
         self.num_buy = 0
         self.num_sell = 0
         self.total_pl = 0
+        self.unrealized_pl = 0
+        self.realized_pl = 0
         self.num_win = 0
         self.win_rate = 0
         self.entry_price = 0
@@ -66,7 +68,8 @@ class LgbModel:
             pl = float(TickData.get_ltp()) - ((self.fee+1) * self.entry_price)
             if pl > 0:
                 self.num_win += 1
-            self.total_pl += pl
+            self.realized_pl += pl
+            self.unrealized_pl = 0
             self.entry_price = float(TickData.get_ltp())
         elif self.posi =='sell' and pred == 1:
             self.num_sell += 1
@@ -74,7 +77,8 @@ class LgbModel:
             pl = (1-self.fee) * self.entry_price - float(TickData.get_ltp())
             if pl > 0:
                 self.num_win += 1
-            self.total_pl += pl
+            self.realized_pl += pl
+            self.unrealized_pl = 0
             self.entry_price = float(TickData.get_ltp())
         elif self.posi == 'buy' and (pred == 0 or pred == 3):
             if OneMinMarketData.ohlc.high[-1] - self.entry_price > pt_kijun:
@@ -83,8 +87,11 @@ class LgbModel:
                 pl = float(TickData.get_ltp()) - ((self.fee + 1) * self.entry_price)
                 if pl > 0:
                     self.num_win += 1
-                self.total_pl += pl
+                self.realized_pl += pl
+                self.unrealized_pl = 0
                 self.entry_price = 0
+            else:
+                self.unrealized_pl = float(TickData.get_ltp()) - ((self.fee + 1) * self.entry_price)
         elif self.posi == 'sell' and (pred == 0 or pred == 3):
             if self.entry_price - OneMinMarketData.ohlc.high[-1] > pt_kijun:
                 self.posi == ''
@@ -94,6 +101,9 @@ class LgbModel:
                     self.num_win += 1
                 self.total_pl += pl
                 self.entry_price = 0
+            else:
+                self.unrealized_pl = (1 - self.fee) * self.entry_price - float(TickData.get_ltp())
+        self.total_pl = self.realized_pl + self.unrealized_pl
 
         self.num += 1
         if self.num_win > 0:
@@ -114,11 +124,15 @@ class LgbModel:
             if OneMinMarketData.get_flg_ohlc_update():
                 df = OneMinMarketData.get_df()
                 if df is not None:
-                    self.set_pred(self.bpsp_prediction(self.model, df, self.upper_kijun)[-1])
-                    OneMinMarketData.set_flg_ohlc_update(False)
-                    print('prediction = ', self.pred)
-                    self.sim(self.pred, self.pt_kijun)
-                    self.write_df_pred(df, self.pred)
+                    if True in df.isnull().any():
+                        print('null is in df!')
+                        self.set_pred(-1)
+                    else:
+                        self.set_pred(self.bpsp_prediction(self.model, df, self.upper_kijun)[-1])
+                        OneMinMarketData.set_flg_ohlc_update(False)
+                        print('prediction = ', self.pred)
+                        self.sim(self.pred, self.pt_kijun)
+                        self.write_df_pred(df, self.pred)
 
             '''
             df = OneMinMarketData.get_df()

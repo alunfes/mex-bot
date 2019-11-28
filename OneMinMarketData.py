@@ -141,7 +141,7 @@ class OneMinMarketData:
                             tmp_ohlc_loop_flg = False
                             print('download ohlc:', datetime.now(cls.JST), res[0], res[1], res[2], res[3], res[4], res[5], res[6])
                         break
-                    time.sleep(0.1)
+                    time.sleep(0.3)
 
                 if tmp_ohlc_loop_flg == False: #when download was successfull
                     cls.__calc_all_index_dict()

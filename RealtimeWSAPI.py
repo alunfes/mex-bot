@@ -187,7 +187,8 @@ class TickData:
                 target_data = []
                 for d in data:
                     minut = int(d['timestamp'].split('T')[1].split(':')[1])
-                    if (next_min != 59 and minut >= next_min) or (next_min == 59 and minut >= 0):
+                    #if (next_min != 0 and minut >= next_min) or (next_min == 0 and minut >= 0):
+                    if minut == next_min:
                         next_data.append(d) #次回の分のデータは次に回す
                     elif minut == target_min:
                         target_data.append(d)
@@ -198,8 +199,8 @@ class TickData:
                 p = [d.get('price') for d in target_data]
                 size = [d.get('size') for d in target_data]
                 dt = dateutil.parser.parse(target_data[-1]['timestamp'])
-                #OneMinMarketData.add_tmp_ohlc(dt, dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
-                print(dt, dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
+                OneMinMarketData.add_tmp_ohlc(dt.timestamp(), dt, p[0], max(p), min(p), p[-1], sum(size))
+                #print(dt, dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
                 target_min = target_min + 1 if target_min + 1 < 60 else 0
                 next_min = target_min + 1 if target_min + 1 < 60 else 0
             else:
