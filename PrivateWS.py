@@ -5,21 +5,14 @@ import urllib
 import hmac
 import hashlib
 import time
-import pprint
-from Account import Account
+from collections import deque
 from Trade import Trade
 
 
-class PrivateWSData:
-    @classmethod
-    def initialize(cls, ac:Account):
-        cls.message = ''
-        cls.ac = ac
-        pws = PrivateWS()
-
 class PrivateWS:
     def __init__(self):
-        # サーバとのデータのやりとりを表示するため、Trueを指定する。（確認したくないのであればFalseで問題ないです）
+        PrivateWSData.initialize()
+        # サーバとのデータのやりとりを表示するため、Trueを指定する。
         websocket.enableTrace(False)
         # 接続先URLと各コールバック関数を引数に指定して、WebSocketAppのインスタンスを作成
         self.ws_pub = websocket.WebSocketApp(url='wss://www.bitmex.com/realtime',
@@ -71,17 +64,22 @@ class PrivateWS:
     def on_message(self, ws, message):
         message = json.loads(message)
         #pprint.pprint(message)
-        print(message)
         if message['table'] == 'execution':
             d = message['data']
-            PrivateWSData.ac.execute_order(d['orderID'], d['execID'], d['side'], d['price'], d['leavesQty'])
+            PrivateWSData.add_exec_data(d)
+            #PrivateWSData.add_exec_data(d['orderID'], d['execID'], d['side'], d['price'], d['leavesQty'])
+        elif message['table'] == 'order':
+            d = message['data']
+            PrivateWSData.add_order_data((d))
+            #PrivateWSData.add_order_data(d['orderID'], d['execID'], d['side'], d['price'], d['leavesQty'])
 
 
     def on_close(self, ws):
-        print('closed private ws')
+        print('closed private PrivateWS')
         self.__init__()
 
     def on_error(self, ws, error):
+        print('PrivateWS error!')
         print(error)
 
 #wallet
@@ -128,11 +126,50 @@ class PrivateWS:
 {'table': 'execution', 'action': 'insert', 'data': [{'execID': '6f88732c-4f32-0034-2978-136da1d0208a', 'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 88246, 'lastPx': 10330.5, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 100000, 'price': 10330.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 100000, 'avgPx': 10330.5, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '03fe30ea-e658-b79d-a4f1-2a24aa7332ce', 'execCost': 854221280, 'execComm': -213555, 'homeNotional': -8.5422128, 'foreignNotional': 88246, 'transactTime': '2019-08-26T13:19:52.259Z', 'timestamp': '2019-08-26T13:19:52.259Z'}]}
 '''
 
+
+
+class PrivateWSData:
+    @classmethod
+    def initialize(cls):
+        cls.lock_exec_data = threading.Lock()
+        cls.lock_order_data = threading.Lock()
+        cls.order_data = {}
+        cls.exec_data = []
+
+
+    @classmethod
+    def add_exec_data(cls, data):
+        with cls.lock_exec_data:
+            if len(data) > 0:
+                cls.exec_data.append(data[0])
+                if len(cls.exec_data) > 1000:
+                    del cls.exec_data[:900]
+
+    @classmethod
+    def get_all_order_data(cls):
+        with cls.lock_order_data:
+            return cls.order_data
+
+    @classmethod
+    def get_order_data(cls, order_id):
+        with cls.lock_order_data:
+            return cls.order_data[order_id]
+
+    @classmethod
+    def add_order_data(cls, data):
+        with cls.lock_order_data:
+            if len(data) > 0 and 'leavesQty' in data[0]:
+                cls.order_data[data[0]['orderID']] = data[0]
+                cls.order_data[cls.order_data.keys()[0]]
+
+    @classmethod
+    def remove_order_data(cls, order_id):
+        with cls.lock_order_data:
+            cls.order_data.pop(order_id)
+
+
 if __name__ == '__main__':
-    ac = Account()
-    PrivateWSData.initialize(ac)
-    Trade.initialize()
-    order_id = Trade.order()
+    pws = PrivateWS()
     while True:
         #print(PrivateWSData.message)
         time.sleep(1)

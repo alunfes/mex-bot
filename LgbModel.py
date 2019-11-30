@@ -80,7 +80,7 @@ class LgbModel:
             self.realized_pl += pl
             self.unrealized_pl = 0
             self.entry_price = float(TickData.get_ltp())
-        elif self.posi == 'buy' and (pred == 0 or pred == 3):
+        elif self.posi == 'buy' and (pred != 2):
             if OneMinMarketData.ohlc.high[-1] - self.entry_price > pt_kijun:
                 self.posi == ''
                 self.num_buy += 1
@@ -92,7 +92,7 @@ class LgbModel:
                 self.entry_price = 0
             else:
                 self.unrealized_pl = float(TickData.get_ltp()) - ((self.fee + 1) * self.entry_price)
-        elif self.posi == 'sell' and (pred == 0 or pred == 3):
+        elif self.posi == 'sell' and (pred != 1):
             if self.entry_price - OneMinMarketData.ohlc.high[-1] > pt_kijun:
                 self.posi == ''
                 self.num_sell += 1
@@ -386,8 +386,7 @@ class LgbModel:
             elif res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 1:
                 prediction.append(3)
             else:
-                print('unknown output in bpsp_prediction!')
-                print(res)
+                prediction.append(0) #複数は発火した時は0にする
         return prediction
 
     def bp_buysell_prediction(self, prediction_buy, prediction_sell, upper_kijun, lower_kijun):

@@ -114,7 +114,9 @@ class OneMinMarketData:
     @classmethod
     def __main_thread(cls):
         def __check_next_min(last_ohlc_min):
-            if last_ohlc_min == 59 and datetime.now(cls.JST).minute >= 1:
+            if last_ohlc_min == 58 and datetime.now(cls.JST).minute == 0:
+                return True
+            if last_ohlc_min == 59 and datetime.now(cls.JST).minute == 1:
                 return True
             elif datetime.now(cls.JST).minute > last_ohlc_min+1:
                 return True
@@ -127,6 +129,7 @@ class OneMinMarketData:
                 target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes, 01分時点でもtaget min=58
                 while tmp_ohlc_loop_flg:
                     if len(cls.tmp_ohlc.dt) > 0:
+                        #print('tmp=', cls.tmp_ohlc.dt[-1], ', target_min', target_min)
                         if cls.tmp_ohlc.dt[-1].minute is target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
                             cls.ohlc.add_and_pop(cls.tmp_ohlc.unix_time[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],
                                                  cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
@@ -140,6 +143,8 @@ class OneMinMarketData:
                             cls.ohlc.add_and_pop(res[0], res[1], res[2], res[3], res[4], res[5], res[6])
                             tmp_ohlc_loop_flg = False
                             print('download ohlc:', datetime.now(cls.JST), res[0], res[1], res[2], res[3], res[4], res[5], res[6])
+                        else:
+                            print('download ohlc is none!')
                         break
                     time.sleep(0.3)
 
@@ -149,7 +154,6 @@ class OneMinMarketData:
                     cls.set_flg_ohlc_update(True)
                 else: #failed to update ohlc
                     print('failed to update ohlc skill index calc !')
-                    pass
 
             '''
             if (datetime.now(cls.JST).minute % 5) == 0 and datetime.now(cls.JST).second > 20: #5分に一回max termまでのデータをダウンロードしてcsvに記録し、market dataをrefreshする。
@@ -185,8 +189,14 @@ class OneMinMarketData:
             cls.tmp_ohlc.size.append(v)
             cls.tmp_ohlc.dt.append(dt)
             cls.tmp_ohlc.unix_time.append(ut)
-            if len(cls.tmp_ohlc.open) > 100:
-                cls.tmp_ohlc = OneMinData()
+
+    @classmethod
+    def get_tmp_ohlc(cls):
+        with cls.lock_tmp_ohlc:
+            res = (cls.tmp_ohlc.open[-1], cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.high[-1], cls.tmp_ohlc.close[-1], cls.tmp_ohlc.size[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.unix_time[-1])
+            cls.tmp_ohlc = OneMinData()
+            cls.tmp_ohlc.initialize()
+            return (res)
 
 
     @classmethod

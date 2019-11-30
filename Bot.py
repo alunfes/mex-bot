@@ -1,7 +1,10 @@
 from Trade import Trade
 from OneMinMarketData import OneMinMarketData
-from DownloadMexOhlc import DownloadMexOhlc
+from PrivateWS import PrivateWS, PrivateWSData
+from Account import Account
+from SystemFlg import SystemFlg
 from LgbModel import LgbModel
+from RealtimeWSAPI import TickData
 import pytz
 import time
 import pickle
@@ -30,11 +33,19 @@ bot稼働中のohlcはws経由で取得
 
 
 class Bot:
-    def initialize(self):
-        OneMinMarketData.initialize_for_bot()
-        lgb = LgbModel()
-        ws = RealtimeWSAPI()
+    def __init__(self):
+        self.ac = Account()
+        pws = PrivateWS(self.ac)
+        Trade.initialize()
+        order_id = Trade.order('buy', 6000, 10000)
+        self.ac.add_order(order_id,'buy',10000,)
 
+
+
+
+
+
+    def
 
     def combine_status_data(self, status):
         side = ''
