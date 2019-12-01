@@ -40,8 +40,6 @@ class LgbModel:
 
         if os.path.exists('./Data/data.csv'):
             os.remove('./Data/data.csv')
-
-
         th = threading.Thread(target=self.main_thread)
         th.start()
 

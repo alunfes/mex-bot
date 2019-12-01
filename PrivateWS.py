@@ -67,11 +67,13 @@ class PrivateWS:
         if message['table'] == 'execution':
             d = message['data']
             PrivateWSData.add_exec_data(d)
-            #PrivateWSData.add_exec_data(d['orderID'], d['execID'], d['side'], d['price'], d['leavesQty'])
         elif message['table'] == 'order':
             d = message['data']
-            PrivateWSData.add_order_data((d))
-            #PrivateWSData.add_order_data(d['orderID'], d['execID'], d['side'], d['price'], d['leavesQty'])
+            PrivateWSData.add_order_data(d)
+        elif message['table'] == 'position':
+            d = message['data']
+            PrivateWSData.add_order_data(d)
+
 
 
     def on_close(self, ws):
@@ -114,6 +116,9 @@ class PrivateWS:
  {'table': 'order', 'action': 'update', 'data': [{'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'workingIndicator': True, 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD', 'timestamp': '2019-08-26T13:16:49.182Z'}]}
  {'table': 'order', 'action': 'update', 'data': [{'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'ordStatus': 'PartiallyFilled', 'leavesQty': 92246, 'cumQty': 7754, 'avgPx': 10330.5, 'timestamp': '2019-08-26T13:19:52.162Z', 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD'}]}
  {'table': 'order', 'action': 'update', 'data': [{'orderID': 'b9193d01-35e5-3f14-a025-8abef4c005d2', 'leavesQty': 91746, 'cumQty': 8254, 'timestamp': '2019-08-26T13:19:52.172Z', 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD'}]}
+ [{'orderID': '1d5d977d-261e-42d9-73e9-ea82376e88cc', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'simpleOrderQty': None, 'orderQty': 1000, 'price': None, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Market', 'timeInForce': 'ImmediateOrCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'New', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 1000, 'simpleCumQty': None, 'cumQty': 0, 'avgPx': None, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'transactTime': '2019-11-30T12:48:20.912Z', 'timestamp': '2019-11-30T12:48:20.912Z'}]
+[{'orderID': '1d5d977d-261e-42d9-73e9-ea82376e88cc', 'price': 7703, 'workingIndicator': True, 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD', 'timestamp': '2019-11-30T12:48:20.912Z'}]
+[{'orderID': '1d5d977d-261e-42d9-73e9-ea82376e88cc', 'ordStatus': 'Filled', 'workingIndicator': False, 'leavesQty': 0, 'cumQty': 1000, 'avgPx': 7703, 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD', 'timestamp': '2019-11-30T12:48:20.912Z'}]
 '''
 
 #execution
@@ -135,6 +140,7 @@ class PrivateWSData:
         cls.lock_order_data = threading.Lock()
         cls.order_data = {}
         cls.exec_data = []
+        cls.position_data = {}
 
 
     @classmethod
@@ -142,8 +148,14 @@ class PrivateWSData:
         with cls.lock_exec_data:
             if len(data) > 0:
                 cls.exec_data.append(data[0])
-                if len(cls.exec_data) > 1000:
-                    del cls.exec_data[:900]
+
+    @classmethod
+    def get_exec_data(cls):
+        with cls.lock_exec_data:
+            res = cls.exec_data[:]
+            cls.exec_data = []
+            return res
+
 
     @classmethod
     def get_all_order_data(cls):
@@ -158,9 +170,9 @@ class PrivateWSData:
     @classmethod
     def add_order_data(cls, data):
         with cls.lock_order_data:
-            if len(data) > 0 and 'leavesQty' in data[0]:
+            if len(data) > 0 and 'lastQty' in data[0].keys():
+                print('add_order_data:', data[0])
                 cls.order_data[data[0]['orderID']] = data[0]
-                cls.order_data[cls.order_data.keys()[0]]
 
     @classmethod
     def remove_order_data(cls, order_id):

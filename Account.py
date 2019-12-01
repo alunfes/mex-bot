@@ -3,7 +3,10 @@ from SystemFlg import SystemFlg
 from PrivateWS import PrivateWSData
 import time
 
-
+'''
+同一アカウントでbotと裁量が同時に取引しても対応できるように。
+PrivateWSからのexec dataを元に常時約定状況をモニタリングしてbotとしてのポジションを自炊する。
+'''
 
 class Account:
     def __init__(self):
@@ -12,6 +15,7 @@ class Account:
         self.posi_side = ''
         self.posi_price = 0
         self.posi_size = 0
+        self.order_ids_executed = []
         self.order_ids = []
         self.order_side = {}
         self.order_price = {}
@@ -22,13 +26,12 @@ class Account:
         self.num_trade = 0
 
 
-    def __add_order(self, order_id, side, price, size, status):
+    def add_order(self, order_id, side, price, size, status): #call from bot
         with self.lock_order:
             self.order_ids.append(order_id)
             self.order_side[order_id] = side
             self.order_price[order_id] = price
             self.order_size[order_id] = size
-            self.order_status[order_id] = status
 
     def __update_order(self, order_id, price, size, status):
         with self.lock_order:
@@ -36,29 +39,33 @@ class Account:
             self.order_size[order_id] = size
             self.order_status[order_id] = status
 
-    def remove_order(self, order_id):
+    def __remove_order(self, order_id):
         with self.lock_order:
+            self.order_ids_executed.append(order_id)
             self.order_ids.remove(order_id)
             del self.order_size[order_id]
             del self.order_price[order_id]
 
-    def execute_order(self, order_id, exec_id, exec_side, exec_price, leaves_size):
-        if order_id in self.order_ids:
-            self.exec_id.append(exec_id)
-            self.__calc_pnl(exec_side, exec_price, self.order_size[order_id] - leaves_size)
-            self.__update_position(exec_side, exec_price, self.order_size[order_id] - leaves_size)
-            if leaves_size > 0:
-                self.order_size[order_id] = leaves_size
-            else:
+    def __execute_order(self, order_id, exec_side, exec_price, last_qty, exec_comm, status):
+        if status != 'New':
+            self.__calc_pnl(exec_side, exec_price, last_qty, exec_comm)
+            self.__update_position(exec_side, exec_price, last_qty)
+            if status == 'Filled':
                 self.remove_order(order_id)
+            else:
+                self.order_size[order_id] -= last_qty
 
-    def __calc_pnl(self, exec_side, exec_price, exec_size):
-        if self.posi_side != exec_side:
+
+    def __calc_pnl(self, exec_side, exec_price, exec_size, exec_comm):
+        if self.posi_side!= '' and self.posi_side != exec_side: #position close execution
             self.realized_pnl += (exec_price - self.posi_price) * exec_size if self.posi_side == 'Buy' else (self.posi_price - exec_price) * exec_size
+            self.realized_pnl += (exec_comm * exec_price) / 100000000
+        else: #additional execution
+            pass
+
 
     def calc_unrealized_pnl(self, ltp):
         self.unrealized_pnl = (ltp - self.posi_price) * self.posi_size if self.posi_side == 'Buy' else (self.posi_price - ltp) * self.posi_size
-
 
 
     def __update_position(self, side, price, size):
@@ -93,15 +100,12 @@ class Account:
     '''
     def __account_thread(self):
         while SystemFlg.get_system_flg():
-            orders = PrivateWSData.get_all_order_data()
-            if len(orders) > 0:
-                for order in orders:
-                    if order['orderID'] not in self.order_ids:
-                        self.__add_order(order['orderID'], order['side'], order['price'], order['leavesQty'], order['ordStatus'])
-                    else:
-                        if order['leavesQty'] > 0:
-                            self.__update_order(order['orderID'], order['price'], order['leavesQty'], order['ordStatus'])
-                        else: #executed all or cancelled
+            executions = PrivateWSData.get_exec_data()
+            if len(executions) > 0:
+                for exec in executions:
+                    if exec['orderID'] in self.order_ids:
+                        self.__execute_order(exec['orderID'], exec['side'], exec['price'], exec['lastQty'], exec['execComm'], exec['ordStatus'])
+            else: #executed all or cancelled
 
             time.sleep(0.1)
 

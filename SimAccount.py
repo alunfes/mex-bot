@@ -1,19 +1,22 @@
+import pandas as pd
 import numpy as np
-
 
 class SimAccount:
     def __init__(self):
         self.__initialize_order()
         self.__initialize_holding()
 
+        self.log_data_list = []
+        self.log_data_df = pd.DataFrame()
+
         self.base_margin_rate = 1.2
         self.leverage = 4.0
-        self.slip_page = 50
-        self.fee = 0.0015
+        self.slip_page = 0
+        self.fee = 0.00015
         self.force_loss_cut_rate = 0.5
-        self.initial_asset = 15000
+        self.initial_asset = 1500
         self.order_cancel_delay = 1
-        self.ls_penalty = 50
+        self.ls_penalty = 0
 
         self.pl_kijun = 0
         self.ls_kijun = 0
@@ -122,9 +125,7 @@ class SimAccount:
         self.__add_log('Sim Finished.', i, dt)
         self.end_dt = dt
         self.__calc_pl_stability()
-        # print('from dt={}, : to_dt={}, total p={}, num trade={}, win rate={}'.format(self.start_dt, self.end_dt,
-        #                                                                             self.total_pl, self.num_trade,
-        #                                                                             self.win_rate))
+        self.log_data_df = pd.DataFrame.from_dict(self.log_data_list, orient='columns')
 
     def entry_order(self, side, price, size, type, expire, pl, ls, i, dt):
         if side == 'buy':
@@ -182,6 +183,10 @@ class SimAccount:
                     self.__del_order(k)
                     self.__add_log('order expired.', i, dt)
 
+    '''
+    直前のpredictionが反対出なければpl判定させずにholdした方が効率的
+    '''
+
     def __check_pl(self, i, dt, high, low):
         if self.holding_side != '' and self.pl_kijun > 0:
             if self.holding_side == 'buy' and self.holding_price + self.pl_kijun <= high:
@@ -195,15 +200,15 @@ class SimAccount:
                 self.__initialize_holding()
                 # self.__update_holding(self.holding_side, self.holding_price - self.pl_kijun - 100, self.holding_size, self.pl_kijun, self.ls_kijun, True, i, dt, ut)
 
-    def __check_ls(self, i, dt, ut, tick_price):
+    def __check_ls(self, i, dt, high, low):
         if self.holding_side != '' and self.ls_kijun > 0:
-            if self.holding_side == 'buy' and self.holding_price - self.ls_kijun >= tick_price:
-                self.__add_log('ls executed.', i, dt, ut, tick_price)
+            if self.holding_side == 'buy' and low - self.holding_price <= -self.ls_kijun:
+                self.__add_log('ls executed.', i, dt)
                 # self.__calc_executed_pl(self.holding_price - self.ls_kijun - self.ls_penalty, self.holding_size, i)
                 self.__calc_executed_pl(self.holding_price - self.ls_kijun, self.holding_size, i)
                 self.__initialize_holding()
-            if self.holding_side == 'sell' and self.holding_price + self.ls_kijun <= tick_price:
-                self.__add_log('ls executed.', i, dt, ut, tick_price)
+            if self.holding_side == 'sell' and self.holding_price - high <= -self.ls_kijun:
+                self.__add_log('ls executed.', i, dt)
                 # self.__calc_executed_pl(self.holding_price + self.ls_kijun + self.ls_penalty, self.holding_size, i)
                 self.__calc_executed_pl(self.holding_price + self.ls_kijun, self.holding_size, i)
                 self.__initialize_holding()
@@ -255,7 +260,9 @@ class SimAccount:
                                           self.pl_kijun, self.ls_kijun, i, dt)
 
     def __calc_executed_pl(self, exec_price, size, i):  # assume all order size was executed
-        pl = (exec_price - self.holding_price * (self.fee + 1)) * size if self.holding_side == 'buy' else (self.holding_price * (1-self.fee) - exec_price) * size
+        pl = (exec_price - self.holding_price * (self.fee + 1)) * size if self.holding_side == 'buy' else (
+                                                                                                                      self.holding_price * (
+                                                                                                                          1 - self.fee) - exec_price) * size
         # pl = (exec_price - self.holding_price) * size if self.holding_side == 'buy' else (self.holding_price - exec_price) * size
         self.realized_pl += round(pl, 4)
         self.num_trade += 1
@@ -299,8 +306,18 @@ class SimAccount:
             self.order_log.append('' + ' @' + '0' + ' x' + '0' + ' cancel=' + 'False' + ' type=' + '')
         self.i_log.append(i)
         self.dt_log.append(dt)
-        # if len(self.order_serial_list) > 0:
-        #    k=self.order_serial_list[-1]
-        # print(';i={}, dt={}, action={}, holding side={}, holding price={}, holding size={}, order side={}, order price={}, order size={}, pl={}, num_trade={}'.format(i, dt, log, self.holding_side, self.holding_price, self.holding_size, self.order_side[k], self.order_price[k], self.order_size[k], self.total_pl, self.num_trade))
-        # else:
-        # print(';i={}, dt={}, action={}, holding side={}, holding price={}, holding size={}, order side={}, order price={}, order size={}, pl={}, num_trade={}'.format(i, dt, log, self.holding_side, self.holding_price, self.holding_size, '', '0', '0', self.total_pl, self.num_trade))
+        if len(self.order_serial_list) > 0:
+            k = self.order_serial_list[-1]
+            # print(';i={}, dt={}, action={}, holding side={}, holding price={}, holding size={}, order side={}, order price={}, order size={}, pl={}, num_trade={}'
+            # .format(i, dt, log, self.holding_side, self.holding_price, self.holding_size, self.order_side[k], self.order_price[k], self.order_size[k], self.total_pl, self.num_trade))
+            self.log_data_list.append({'i': i, 'dt': dt, 'action': log, 'holding_side': self.holding_side,
+                                       'holding_price': self.holding_price, 'holding_size': self.holding_size,
+                                       'order_side': self.order_side[k], 'order_price': self.order_price[k],
+                                       'order_size': self.order_size[k],
+                                       'total_pl': self.total_pl, 'num_trade': self.num_trade})
+        else:
+            # print(';i={}, dt={}, action={}, holding side={}, holding price={}, holding size={}, order side={}, order price={}, order size={}, pl={}, num_trade={}'.format(i, dt, log, self.holding_side, self.holding_price, self.holding_size, '', '0', '0', self.total_pl, self.num_trade))
+            self.log_data_list.append({'i': i, 'dt': dt, 'action': log, 'holding_side': self.holding_side,
+                                       'holding_price': self.holding_price, 'holding_size': self.holding_size,
+                                       'order_side': 0, 'order_price': 0, 'order_size': 0,
+                                       'total_pl': self.total_pl, 'num_trade': self.num_trade})

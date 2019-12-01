@@ -35,17 +35,16 @@ bot稼働中のohlcはws経由で取得
 class Bot:
     def __init__(self):
         self.ac = Account()
+        self.lgb_model = LgbModel()
         pws = PrivateWS(self.ac)
         Trade.initialize()
         order_id = Trade.order('buy', 6000, 10000)
         self.ac.add_order(order_id,'buy',10000,)
 
 
+    def bot_thread(self):
 
 
-
-
-    def
 
     def combine_status_data(self, status):
         side = ''

@@ -6,6 +6,8 @@ loss cut, pt,
 import pickle
 import matplotlib.pyplot as plt
 import csv
+import numpy as np
+import talib as ta
 
 from SimStrategy import Strategy
 from SimOneMinMarketData import OneMinMarketData
@@ -18,13 +20,13 @@ class Sim:
     def sim_model_pred_onemin(cls, start_ind, prediction, pt, lc, ac):
         omd = OneMinMarketData
         for i in range(len(prediction) - 1):
-            ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i], omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
+            ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
+                                omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
             dd = Strategy.model_prediction_onemin(start_ind, prediction, i, ac)
             if dd.side != '':
                 ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pt, lc, i, omd.ohlc.dt[start_ind + i])
-            ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
-                            omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i],
-                            omd.ohlc.close[start_ind + i])
+            ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i], omd.ohlc.high[start_ind + i],
+                            omd.ohlc.low[start_ind + i], omd.ohlc.close[start_ind + i])
         end_i = len(prediction) - 1
         ac.last_day_operation(end_i, omd.ohlc.dt[start_ind + end_i], omd.ohlc.open[start_ind + end_i],
                               omd.ohlc.high[start_ind + end_i], omd.ohlc.low[start_ind + end_i],
@@ -32,143 +34,57 @@ class Sim:
         return ac
 
     @classmethod
-    def sim_simple_index_kijun(cls, start_ind, key_name, kijun, contrarian, ac):
+    def sim_model_pred_onemin_avert(cls, start_ind, prediction, pt, lc, ac, avert_period_kijun=120,
+                                    avert_val_kijun=-0.005):
         omd = OneMinMarketData
-        for i in range(len(omd.ohlc.index_data_dict[key_name]) - start_ind - 1):
-            if 'nan' not in str(omd.ohlc.index_data_dict[key_name][i]):
-                ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
-                                    omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
-                dd = Strategy.index_val_kijun_comparison(start_ind, key_name, kijun, contrarian, i, ac)
+        ac2 = SimAccount()
+        for i in range(len(prediction) - 1):
+            ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
+                                omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
+            ac2.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
+                                 omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
+            dd2 = Strategy.model_prediction_onemin(start_ind, prediction, i, ac2)
+            dd = Strategy.model_prediction_onemin(start_ind, prediction, i, ac)
+            if dd2.side == 'no' or dd2.side == 'both':
+                print('invalid dd2side!')
+                print(dd2.side)
+            if ac.holding_size > 0.01:
+                print('large holding!', ac.holding_size)
+            if dd2.side != '':
+                ac2.entry_order(dd2.side, dd2.price, dd2.size, dd2.type, dd2.expire, pt, lc, i,
+                                omd.ohlc.dt[start_ind + i])  # ac2は常にトレード
+            if len(ac2.performance_total_pl_log) > avert_period_kijun + 10:  # pl_check_term以上のpl logが溜まったらcheckを開始
+                # if ac2.performance_total_pl_log[-1] - ac2.performance_total_pl_log[-pl_check_term] > 0: #check pl of ac2
+                if np.gradient(ta.MA(np.array(ac2.performance_total_pl_log[-avert_period_kijun - 10:], dtype='f8'),
+                                     timeperiod=avert_period_kijun))[-1] > avert_val_kijun:
+                    if dd2.side != '':
+                        if dd2.side != ac.holding_side and ac.holding_side != '':  # ac2と同じポジションを取る
+                            ac.entry_order('buy' if ac.holding_side == 'sell' else 'sell', 0, 0.02, 'market', 10, pt,
+                                           lc, i, omd.ohlc.dt[start_ind + i])
+                        elif dd2.side != ac.holding_side and ac.holding_side == '':  # ac2と同じポジションを取る
+                            ac.entry_order(dd2.side, 0, 0.01, 'market', 10, pt, lc, i, omd.ohlc.dt[start_ind + i])
+                        else:  # ac2のddと同じときは何もしない
+                            pass
+                    else:  #
+                        pass
+                        # if ac.holding_side != '': #ac2に合わせるためにexit all
+                        #    ac.entry_order('buy' if ac.holding_side=='sell' else 'sell', 0, 0.01, 'market', 10, pt, lc, i, omd.ohlc.dt[start_ind + i])
+                else:  # ac2のpl_check_termにおけるplがマイナスの時はacでのトレードを停止
+                    if ac.holding_side != '':
+                        ac.entry_order('buy' if ac.holding_side == 'sell' else 'sell', 0, 0.01, 'market', 10, pt, lc, i,
+                                       omd.ohlc.dt[start_ind + i])
+            else:  # logがたまるまでは普通にトレード
                 if dd.side != '':
-                    ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, 0, 0, i, omd.ohlc.dt[start_ind + i])
-                ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
-                                omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i],
-                                omd.ohlc.close[start_ind + i])
-        end_i = len(omd.ohlc.index_data_dict[key_name]) - 1
+                    ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pt, lc, i,
+                                   omd.ohlc.dt[start_ind + i])
+            ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i], omd.ohlc.high[start_ind + i],
+                            omd.ohlc.low[start_ind + i], omd.ohlc.close[start_ind + i])
+            ac2.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i], omd.ohlc.high[start_ind + i],
+                             omd.ohlc.low[start_ind + i], omd.ohlc.close[start_ind + i])
+        end_i = len(prediction) - 1
         ac.last_day_operation(end_i, omd.ohlc.dt[start_ind + end_i], omd.ohlc.open[start_ind + end_i],
                               omd.ohlc.high[start_ind + end_i], omd.ohlc.low[start_ind + end_i],
                               omd.ohlc.close[start_ind + end_i])
-        return ac
-
-
-    @classmethod
-    def sim_ema_trend_follow(cls, start_ind, ac):
-        omd = OneMinMarketData
-        key_name = 'ema_gra:100'
-        for i in range(len(omd.ohlc.index_data_dict[key_name])-1):
-            if 'nan' not in str(omd.ohlc.index_data_dict[key_name][i]):
-                ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
-                                    omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
-                dd = Strategy.index_val_kijun_comparison(start_ind, key_name, 0, False, i, ac)
-                if dd.side != '':
-                    ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, 0, 0, i, omd.ohlc.dt[start_ind + i])
-                    ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
-                                    omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i],
-                                    omd.ohlc.close[start_ind + i])
-        end_i = len(omd.ohlc.index_data_dict[key_name])-1
-        ac.last_day_operation(end_i, omd.ohlc.dt[start_ind + end_i], omd.ohlc.open[start_ind + end_i],
-                                  omd.ohlc.high[start_ind + end_i], omd.ohlc.low[start_ind + end_i],
-                                  omd.ohlc.close[start_ind + end_i])
-        return ac
-
-
-    @classmethod
-    def sim_lgbmodel(cls, stdata, pl_kijun, ac):
-        print('sim length:' + str(stdata.dt[0]) + str(stdata.dt[-1]))
-        for i in range(len(stdata.prediction) - 1):
-            dd = Strategy.model_prediction(pl_kijun, stdata, i, ac)
-            if dd.cancel:
-                ac.cancel_order(i, stdata.dt[i], stdata.ut[i])
-            elif dd.side != '':
-                ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, i, stdata.dt[i], stdata.ut[i],
-                               stdata.price[i])
-            ac.move_to_next(i, stdata.dt[i], stdata.ut[i], stdata.price[i])
-        ac.last_day_operation(len(stdata.prediction) - 1, stdata.dt[len(stdata.prediction) - 1],
-                              stdata.ut[len(stdata.prediction) - 1], stdata.price[len(stdata.prediction) - 1])
-        return ac
-
-    @classmethod
-    def sim_bp(cls, stdata, pl, ls, ac):
-        print('sim length:' + str(stdata.dt[0]) + str(stdata.dt[-1]))
-        for i in range(len(stdata.prediction) - 1):
-            dd = Strategy.model_bp_prediction(pl, ls, stdata, i, ac)
-            if dd.side != '':
-                ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pl, ls, i, stdata.dt[i], stdata.ut[i],
-                               stdata.price[
-                                   i])  # ntry_order(self, side, price, size, type, expire, pl, ls, i, dt, ut, tick_price):
-            ac.move_to_next(i, stdata.dt[i], stdata.ut[i], stdata.price[i])
-        ac.last_day_operation(len(stdata.prediction) - 1, stdata.dt[len(stdata.prediction) - 1],
-                              stdata.ut[len(stdata.prediction) - 1], stdata.price[len(stdata.prediction) - 1])
-        return ac
-
-    @classmethod
-    def sim_sp(cls, stdata, pl, ls, ac):
-        print('sim length:' + str(stdata.dt[0]) + str(stdata.dt[-1]))
-        for i in range(len(stdata.prediction) - 1):
-            dd = Strategy.model_sp_prediction(pl, ls, stdata, i, ac)
-            if dd.side != '':
-                ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pl, ls, i, stdata.dt[i], stdata.ut[i],
-                               stdata.price[
-                                   i])  # ntry_order(self, side, price, size, type, expire, pl, ls, i, dt, ut, tick_price):
-            ac.move_to_next(i, stdata.dt[i], stdata.ut[i], stdata.price[i])
-        ac.last_day_operation(len(stdata.prediction) - 1, stdata.dt[len(stdata.prediction) - 1],
-                              stdata.ut[len(stdata.prediction) - 1], stdata.price[len(stdata.prediction) - 1])
-        return ac
-
-    @classmethod
-    def sim_buysell(cls, stdata, pl, ls, ac):
-        print('sim length:' + str(stdata.dt[0]) + str(stdata.dt[-1]))
-        one_min_checker = 1
-        for i in range(len(stdata.prediction) - 1):
-            if ac.suspension_flg == False:
-                dd = Strategy.model_buysell_prediction(pl, ls, stdata, i, ac)
-                if dd.side != '':
-                    ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pl, ls, i, stdata.dt[i],
-                                   stdata.ut[i], stdata.price[
-                                       i])  # ntry_order(self, side, price, size, type, expire, pl, ls, i, dt, ut, tick_price):
-            if i > one_min_checker * 60:
-                one_min_checker += 1
-                ac.suspension_flg = False
-            ac.move_to_next(i, stdata.dt[i], stdata.ut[i], stdata.price[i])
-        ac.last_day_operation(len(stdata.prediction) - 1, stdata.dt[len(stdata.prediction) - 1],
-                              stdata.ut[len(stdata.prediction) - 1], stdata.price[len(stdata.prediction) - 1])
-        return ac
-
-    @classmethod
-    def sim_lgbmodel_opt(cls, stdata, pl, losscut, time_exit, zero_three_exit_loss, zero_three_exit_profit,
-                         ac: SimAccount):
-        print('sim length:' + str(stdata.dt[0]) + str(stdata.dt[-1]))
-        one_min_checker = 1
-        for i in range(len(stdata.prediction) - 1):
-            if ac.suspension_flg == False:
-                dd = Strategy.model_prediction_opt(time_exit, zero_three_exit_loss, zero_three_exit_profit, stdata, i,
-                                                   ac)
-                if dd.cancel:
-                    ac.cancel_order(i, stdata.dt[i], stdata.ut[i])
-                elif dd.side != '':
-                    ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pl, losscut, i, stdata.dt[i],
-                                   stdata.ut[i], stdata.price[i])
-            if i > one_min_checker * 60:
-                one_min_checker += 1
-                ac.suspension_flg = False
-            ac.move_to_next(i, stdata.dt[i], stdata.ut[i], stdata.price[i])
-        ac.last_day_operation(len(stdata.prediction) - 1, stdata.dt[len(stdata.prediction) - 1],
-                              stdata.ut[len(stdata.prediction) - 1], stdata.price[len(stdata.prediction) - 1])
-        return ac
-
-
-
-    @classmethod
-    def sim_ema_trend_contrarian(cls, stdata, ac):
-        print('sim length:' + str(stdata.dt[0]) + str(stdata.dt[-1]))
-        for i in range(len(stdata.prediction) - 1):
-            dd = Strategy.ema_trend_contrarian(stdata, i, ac)
-            if dd.side != '':
-                ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, i, stdata.dt[i], stdata.ut[i],
-                               stdata.price[i])
-            ac.move_to_next(i, stdata.dt[i], stdata.ut[i], stdata.price[i])
-        ac.last_day_operation(len(stdata.prediction) - 1, stdata.dt[len(stdata.prediction) - 1],
-                              stdata.ut[len(stdata.prediction) - 1], stdata.price[len(stdata.prediction) - 1])
         return ac
 
 
