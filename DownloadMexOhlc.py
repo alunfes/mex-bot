@@ -166,7 +166,7 @@ class DownloadMexOhlc:
         unixtime = int(time.time())
         to = int(time.time())
         to = to - (to % 10) - 60
-        since = to - 144000 * 60
+        since = to - 244000 * 60
         print('download since=',since, 'to=',to)
         df = cls.download_data_since_to(since, to)
         if df is not None:

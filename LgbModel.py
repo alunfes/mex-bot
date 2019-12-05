@@ -13,11 +13,11 @@ import datetime
 
 
 class LgbModel:
-    def __init__(self):
+    def __init__(self, upper_kijun):
         self.model = None
-        self.pred = -1
+        self.pred = ""
         self.lock_pred = threading.Lock()
-        self.upper_kijun = 0.5
+        self.upper_kijun = upper_kijun
         self.pt_kijun = 50
         self.lock_pred = threading.Lock()
         with open('./Model/lgb_bpsp_model.dat', mode='rb') as f:
@@ -47,6 +47,10 @@ class LgbModel:
         with self.lock_pred:
             self.pred = pred
 
+    def get_pred(self):
+        with self.lock_pred:
+            return self.pred
+
     def write_df_pred(self, df, pred):
         df = df.assign(dt=datetime.datetime.now())
         df = df.assign(prediction=pred)
@@ -54,7 +58,6 @@ class LgbModel:
             df.to_csv('./Data/data.csv', mode='a', header=False, index=False)
         else:
             df.to_csv('./Data/data.csv',index=False)
-
 
     def sim(self, pred, pt_kijun):
         if self.posi == '' and (pred == 1 or pred == 2):
@@ -124,12 +127,12 @@ class LgbModel:
                 if df is not None:
                     if True in df.isnull().any():
                         print('null is in df!')
-                        self.set_pred(-1)
+                        self.set_pred("null")
                     else:
-                        self.set_pred(self.bpsp_prediction(self.model, df, self.upper_kijun)[-1])
+                        self.set_pred({0: 'No', 1: 'Buy', 2: 'Sell', 3: 'Both'}[self.bpsp_prediction(self.model, df, self.upper_kijun)[-1]])
                         OneMinMarketData.set_flg_ohlc_update(False)
                         print('prediction = ', self.pred)
-                        self.sim(self.pred, self.pt_kijun)
+                        #self.sim(self.pred, self.pt_kijun)
                         self.write_df_pred(df, self.pred)
 
             '''
@@ -338,44 +341,12 @@ class LgbModel:
         model = lgb.train(params, train, valid_sets=lgb_eval)
         return model
 
-    def prediction(self, model, test_x, pred_kijun):
-        prediction = []
-        pval = model.predict(test_x, num_iteration=model.best_iteration)
-        for p in pval:
-            if p[1] > pred_kijun and (p[0] < 1 - pred_kijun and p[2] < 1 - pred_kijun and p[3] < 1 - pred_kijun):
-                prediction.append(1)
-            elif p[2] > pred_kijun and (p[0] < 1 - pred_kijun and p[1] < 1 - pred_kijun and p[3] < 1 - pred_kijun):
-                prediction.append(2)
-            elif p[3] > pred_kijun and (p[0] < 1 - pred_kijun and p[1] < 1 - pred_kijun and p[2] < 1 - pred_kijun):
-                prediction.append(3)
-            else:
-                prediction.append(0)
-        return prediction
-
-    def prediction2(self, model, test_x):
-        prediction = []
-        pval = model.predict(test_x, num_iteration=model.best_iteration)
-        for p in pval:
-            prediction.append(p.argmax())
-        return prediction
-
-    def bp_prediciton(self, model, test_x, kijun):
-        pred = model.predict(test_x, num_iteration=model.best_iteration)
-        res = []
-        for i in pred:
-            if i >= kijun:
-                res.append(1)
-            else:
-                res.append(0)
-        return res
-
     def bpsp_prediction(self, model, test_x, uppder_kijun):
         prediction = []
         pval = model.predict(test_x, num_iteration=model.best_iteration)
         for p in pval:
             res = list(map(lambda x: 1.0 if x >= uppder_kijun else 0, p))
-            if (res[0] == 1 and res[1] == 0 and res[2] == 0 and res[3] == 0) or (
-                    res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 0):
+            if (res[0] == 1 and res[1] == 0 and res[2] == 0 and res[3] == 0) or (res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 0):
                 prediction.append(0)
             elif res[0] == 0 and res[1] == 1 and res[2] == 0 and res[3] == 0:
                 prediction.append(1)
@@ -387,33 +358,26 @@ class LgbModel:
                 prediction.append(0) #複数は発火した時は0にする
         return prediction
 
-    def bp_buysell_prediction(self, prediction_buy, prediction_sell, upper_kijun, lower_kijun):
-        if len(prediction_buy) == len(prediction_sell):
-            res = []
-            for i in range(len(prediction_buy)):
-                if prediction_buy[i] >= upper_kijun and prediction_sell[i] <= lower_kijun:
-                    res.append(1)
-                elif prediction_sell[i] >= upper_kijun and prediction_buy[i] <= lower_kijun:
-                    res.append(-1)
-                else:
-                    res.append(0)
-            return res
-        else:
-            print('bp_buysell_prediction - buy prediction and sell predition num is not matched!!')
-            return []
 
-    def bp_buysell_prediction2(self, model_buy, model_sell, test_x, upper_kijun, lower_kijun):
-        p_buy = model_buy.predict(test_x, num_iteration=model_buy.best_iteration)
-        p_sell = model_sell.predict(test_x, num_iteration=model_sell.best_iteration)
-        res = []
-        for i in range(len(p_buy)):
-            if p_buy[i] >= upper_kijun and p_sell[i] <= lower_kijun:
-                res.append(1)
-            elif p_sell[i] >= upper_kijun and p_buy[i] <= lower_kijun:
-                res.append(-1)
+    def bpsp_prediction2(self, model, test_x):
+        prediction = []
+        pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
+        for p in pval:
+            prediction.append(np.argmax(p))
+        return prediction
+
+    def bpsp_prediction2_kai(self, model, test_x):
+        return list(np.argmax(model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration), axis=1))
+
+    def bpsp_prediction3(self, model, test_x, pred_kijun):
+        prediction = []
+        pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
+        for p in pval:
+            if max(p) > pred_kijun:
+                prediction.append(np.argmax(p))
             else:
-                res.append(0)
-        return res
+                prediction.append(0)
+        return prediction
 
     def calc_buysell_accuracy(self, predictions, test_y):
         num = predictions.count(1) + predictions.count(2)

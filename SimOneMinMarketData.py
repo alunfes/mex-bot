@@ -93,11 +93,11 @@ class OneMinMarketData:
     def __generate_all_func_dict(cls):
         for term in cls.term_list:
             cls.ohlc.func_dict['ema:' + str(term)] = (OneMinMarketData.calc_ema, term)
-            cls.ohlc.func_dict['ema_kairi:' + str(term)] = (OneMinMarketData.calc_ema_kairi, term)
-            cls.ohlc.func_dict['ema_gra:' + str(term)] = (OneMinMarketData.calc_ema_gra, term)
+            # cls.ohlc.func_dict['ema_kairi:'+str(term)] = (OneMinMarketData.calc_ema_kairi,term)
+            # cls.ohlc.func_dict['ema_gra:'+str(term)] = (OneMinMarketData.calc_ema_gra,term)
             cls.ohlc.func_dict['dema:' + str(term)] = (OneMinMarketData.calc_dema, term)
-            cls.ohlc.func_dict['dema_kairi:' + str(term)] = (OneMinMarketData.calc_dema_kairi, term)
-            cls.ohlc.func_dict['dema_gra:' + str(term)] = (OneMinMarketData.calc_dema_gra, term)
+            # cls.ohlc.func_dict['dema_kairi:'+str(term)] = (OneMinMarketData.calc_dema_kairi,term)
+            # cls.ohlc.func_dict['dema_gra:'+str(term)] = (OneMinMarketData.calc_dema_gra,term)
             cls.ohlc.func_dict['momentum:' + str(term)] = (OneMinMarketData.calc_momentum, term)
             cls.ohlc.func_dict['rate_of_change:' + str(term)] = (OneMinMarketData.calc_rate_of_change, term)
             cls.ohlc.func_dict['rsi:' + str(term)] = (OneMinMarketData.calc_rsi, term)
@@ -119,77 +119,43 @@ class OneMinMarketData:
                 cls.ohlc.func_dict['macd:' + str(term)] = (OneMinMarketData.calc_macd, term)
                 cls.ohlc.func_dict['macd_signal:' + str(term)] = (OneMinMarketData.calc_macd_signal, term)
                 cls.ohlc.func_dict['macd_hist:' + str(term)] = (OneMinMarketData.calc_macd_hist, term)
+                '''
+            cls.ohlc.func_dict['makairi_momentum:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_momentum, term)
+            cls.ohlc.func_dict['makairi_rate_of_change:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_rate_of_change, term)
+            cls.ohlc.func_dict['makairi_rsi:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_rsi, term)
+            cls.ohlc.func_dict['makairi_williams_R:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_williams_R, term)
+            cls.ohlc.func_dict['makairi_beta:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_beta, term)
+            cls.ohlc.func_dict['makairi_time_series_forecast:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_time_series_forecast, term)
+            cls.ohlc.func_dict['makairi_correl:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_correl, term)
+            cls.ohlc.func_dict['makairi_linear_reg:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_linear_reg, term)
+            cls.ohlc.func_dict['makairi_linear_reg_angle:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_linear_reg_angle, term)
+            cls.ohlc.func_dict['makairi_linear_reg_intercept:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_linear_reg_intercept, term)
+            cls.ohlc.func_dict['makairi_linear_reg_slope:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_linear_reg_slope, term)
+            cls.ohlc.func_dict['makairi_stdv:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_stdv, term)
+            cls.ohlc.func_dict['makairi_var:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_var, term)
+            cls.ohlc.func_dict['makairi_adx:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_adx, term)
+            cls.ohlc.func_dict['makairi_aroon_os:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_aroon_os, term)
+            cls.ohlc.func_dict['makairi_cci:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_cci, term)
+            cls.ohlc.func_dict['makairi_dx:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_dx, term)
 
-            cls.ohlc.func_dict['makairi_momentum:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_momentum, term)
-            cls.ohlc.func_dict['makairi_rate_of_change:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_rate_of_change, term)
-            cls.ohlc.func_dict['makairi_rsi:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_rsi, term)
-            cls.ohlc.func_dict['makairi_williams_R:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_williams_R, term)
-            cls.ohlc.func_dict['makairi_beta:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_beta, term)
-            cls.ohlc.func_dict['makairi_time_series_forecast:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_time_series_forecast, term)
-            cls.ohlc.func_dict['makairi_correl:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_correl, term)
-            cls.ohlc.func_dict['makairi_linear_reg:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_linear_reg, term)
-            cls.ohlc.func_dict['makairi_linear_reg_angle:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_linear_reg_angle, term)
-            cls.ohlc.func_dict['makairi_linear_reg_intercept:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_linear_reg_intercept, term)
-            cls.ohlc.func_dict['makairi_linear_reg_slope:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_linear_reg_slope, term)
-            cls.ohlc.func_dict['makairi_stdv:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_stdv, term)
-            cls.ohlc.func_dict['makairi_var:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_var, term)
-            cls.ohlc.func_dict['makairi_adx:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_adx, term)
-            cls.ohlc.func_dict['makairi_aroon_os:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_aroon_os, term)
-            cls.ohlc.func_dict['makairi_cci:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_cci, term)
-            cls.ohlc.func_dict['makairi_dx:' + str(term)] = (
-            OneMinMarketData.generate_makairi, OneMinMarketData.calc_dx, term)
-
-            cls.ohlc.func_dict['diff_momentum:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_momentum, term)
-            cls.ohlc.func_dict['diff_rate_of_change:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_rate_of_change, term)
-            cls.ohlc.func_dict['diff_rsi:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_rsi, term)
-            cls.ohlc.func_dict['diff_williams_R:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_williams_R, term)
-            cls.ohlc.func_dict['diff_beta:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_beta, term)
-            cls.ohlc.func_dict['diff_time_series_forecast:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_time_series_forecast, term)
-            cls.ohlc.func_dict['diff_correl:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_correl, term)
-            cls.ohlc.func_dict['diff_linear_reg:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_linear_reg, term)
-            cls.ohlc.func_dict['diff_linear_reg_angle:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_linear_reg_angle, term)
-            cls.ohlc.func_dict['diff_linear_reg_intercept:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_linear_reg_intercept, term)
-            cls.ohlc.func_dict['diff_linear_reg_slope:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_linear_reg_slope, term)
-            cls.ohlc.func_dict['diff_stdv:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_stdv, term)
-            cls.ohlc.func_dict['diff_var:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_var, term)
-            cls.ohlc.func_dict['diff_adx:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_adx, term)
-            cls.ohlc.func_dict['diff_aroon_os:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_aroon_os, term)
-            cls.ohlc.func_dict['diff_cci:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_cci, term)
-            cls.ohlc.func_dict['diff_dx:' + str(term)] = (
-            OneMinMarketData.generate_diff, OneMinMarketData.calc_dx, term)
-
+            cls.ohlc.func_dict['diff_momentum:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_momentum, term)
+            cls.ohlc.func_dict['diff_rate_of_change:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_rate_of_change, term)
+            cls.ohlc.func_dict['diff_rsi:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_rsi, term)
+            cls.ohlc.func_dict['diff_williams_R:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_williams_R, term)
+            cls.ohlc.func_dict['diff_beta:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_beta, term)
+            cls.ohlc.func_dict['diff_time_series_forecast:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_time_series_forecast, term)
+            cls.ohlc.func_dict['diff_correl:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_correl, term)
+            cls.ohlc.func_dict['diff_linear_reg:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_linear_reg, term)
+            cls.ohlc.func_dict['diff_linear_reg_angle:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_linear_reg_angle, term)
+            cls.ohlc.func_dict['diff_linear_reg_intercept:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_linear_reg_intercept, term)
+            cls.ohlc.func_dict['diff_linear_reg_slope:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_linear_reg_slope, term)
+            cls.ohlc.func_dict['diff_stdv:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_stdv, term)
+            cls.ohlc.func_dict['diff_var:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_var, term)
+            cls.ohlc.func_dict['diff_adx:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_adx, term)
+            cls.ohlc.func_dict['diff_aroon_os:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_aroon_os, term)
+            cls.ohlc.func_dict['diff_cci:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_cci, term)
+            cls.ohlc.func_dict['diff_dx:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_dx, term)
+            '''
         cls.ohlc.func_dict['normalized_ave_true_range:' + str(0)] = (OneMinMarketData.calc_normalized_ave_true_range, 0)
         cls.ohlc.func_dict['three_outside_updown:' + str(0)] = (OneMinMarketData.calc_three_outside_updown, 0)
         cls.ohlc.func_dict['breakway:' + str(0)] = (OneMinMarketData.calc_breakway, 0)
@@ -211,31 +177,28 @@ class OneMinMarketData:
     def __calc_all_index_dict(cls):
         print('calculating all index dict')
         start_time = time.time()
-        postponed_key = []
 
-        cls.calc_ohlc_change()
+        #cls.calc_ohlc_change()
 
         for k in cls.ohlc.func_dict:
             if int(k.split(':')[1]) > 0:
                 if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and  k.split(':')[0] not in ['ema_kairi', 'ema_gra', 'dema_kairi', 'dema_gra']:
-                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1]) #basic functions use only term as input
-                else:
-                    postponed_key.append(k) #makairi, diff, _kairi, _diff
+                    cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
             else:
-                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]() #no term index
+                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
+        print('completed non makairi diff index. time=', time.time() - start_time)
 
-        for k in postponed_key:
+        start_time = time.time()
+        for k in cls.ohlc.func_dict:
             if k.split('_')[0] == 'makairi':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data, cls.ohlc.func_dict[k][2])
             elif k.split('_')[0] == 'diff':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
-            else: #ema_kairi, ema_gra, dema_kairi, dema_diff
-                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
 
         cls.ohlc.future_side = cls.calc_future_side()
-        print('completed calc all index. time=', time.time() - start_time)
+        print('completed calc makairi diff index. time=', time.time() - start_time)
 
 
     @classmethod

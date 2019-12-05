@@ -2,6 +2,7 @@ import threading
 from SystemFlg import SystemFlg
 from PrivateWS import PrivateWSData
 import time
+import pandas as pd
 
 '''
 同一アカウントでbotと裁量が同時に取引しても対応できるように。
@@ -23,7 +24,18 @@ class Account:
         self.exec_id = []
         self.realized_pnl = 0
         self.unrealized_pnl = 0
+        self.total_fee = 0
+
         self.num_trade = 0
+        self.num_buy = 0
+        self.num_sell = 0
+        self.num_win = 0
+        self.win_rate = 0
+
+        self.account_log = [] #{}
+
+        th = threading.Thread(target = self.__account_thread)
+        th.start()
 
 
     def add_order(self, order_id, side, price, size, status): #call from bot
@@ -32,6 +44,18 @@ class Account:
             self.order_side[order_id] = side
             self.order_price[order_id] = price
             self.order_size[order_id] = size
+
+    def get_orders(self):
+        return self.order_side, self.order_price, self.order_size
+
+    def get_performance(self):
+        return {'total_pl':self.realized_pnl + self.unrealized_pnl + self.total_fee, 'num_trade':self.num_trade, 'win_rate':self.win_rate, 'total_fee':self.total_fee}
+
+    def get_position(self):
+        return {'side':self.posi_side, 'price':self.posi_price, 'size':self.posi_size}
+
+    def get_ac_log(self):
+        return pd.DataFrame(self.account_log)
 
     def __update_order(self, order_id, price, size, status):
         with self.lock_order:
@@ -49,23 +73,31 @@ class Account:
     def __execute_order(self, order_id, exec_side, exec_price, last_qty, exec_comm, status):
         if status != 'New':
             self.__calc_pnl(exec_side, exec_price, last_qty, exec_comm)
-            self.__update_position(exec_side, exec_price, last_qty)
             if status == 'Filled':
                 self.remove_order(order_id)
             else:
-                self.order_size[order_id] -= last_qty
+                with self.lock_order:
+                    self.order_size[order_id] -= last_qty
+        self.__update_position(exec_side, exec_price, last_qty)
 
 
     def __calc_pnl(self, exec_side, exec_price, exec_size, exec_comm):
-        if self.posi_side!= '' and self.posi_side != exec_side: #position close execution
-            self.realized_pnl += (exec_price - self.posi_price) * exec_size if self.posi_side == 'Buy' else (self.posi_price - exec_price) * exec_size
-            self.realized_pnl += (exec_comm * exec_price) / 100000000
+        if self.posi_side!= '' and (self.posi_side != exec_side): #position close execution
+            pl = (1.0/self.posi_price - 1.0/exec_price) * exec_size if self.posi_side == 'Buy' else (1.0/exec_price - 1.0/self.posi_price) * exec_size
+            fee = exec_comm / 100000000
+            self.realized_pnl += pl + fee
+            self.total_fee += fee
         else: #additional execution
             pass
 
+    def __calc_win_rate(self, pl):
+        self.num_trade += 1
+        if pl> 0:
+            self.num_win +=1
+        self.win_rate = round(self.num_win / self.num_trade, 2)
 
     def calc_unrealized_pnl(self, ltp):
-        self.unrealized_pnl = (ltp - self.posi_price) * self.posi_size if self.posi_side == 'Buy' else (self.posi_price - ltp) * self.posi_size
+        self.unrealized_pnl = (1.0/self.posi_price - 1.0/ltp) * self.posi_size if self.posi_side == 'Buy' else (1.0/ltp - 1.0/self.posi_price) * self.posi_size
 
 
     def __update_position(self, side, price, size):
@@ -105,8 +137,6 @@ class Account:
                 for exec in executions:
                     if exec['orderID'] in self.order_ids:
                         self.__execute_order(exec['orderID'], exec['side'], exec['price'], exec['lastQty'], exec['execComm'], exec['ordStatus'])
-            else: #executed all or cancelled
-
             time.sleep(0.1)
 
 

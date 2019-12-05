@@ -4,9 +4,11 @@ from PrivateWS import PrivateWS, PrivateWSData
 from Account import Account
 from SystemFlg import SystemFlg
 from LgbModel import LgbModel
+import threading
 from RealtimeWSAPI import TickData
 import pytz
 import time
+import datetime
 import pickle
 
 
@@ -38,11 +40,32 @@ class Bot:
         self.lgb_model = LgbModel()
         pws = PrivateWS(self.ac)
         Trade.initialize()
-        order_id = Trade.order('buy', 6000, 10000)
-        self.ac.add_order(order_id,'buy',10000,)
+        self.amount = 10000
+
+        th = threading.Thread(target=self.__bot_thread)
+        th.start()
 
 
-    def bot_thread(self):
+    def __bot_thread(self):
+        next_min = datetime.now().minute +1 if datetime.now().minute +1 < 60 else 0
+        flg = False
+        while SystemFlg.get_system_flg():
+            pred = self.lgb_model.get_pred()
+            if (pred == 'Buy' or pred == 'Sell') and pred != self.ac.get_position()['side']:
+                res = Trade.order(pred, TickData.get_ask(), 'market', self.amount if self.ac.get_position()['side'] == '' else self.amount + self.ac.get_position()['size'])
+                if 'info' in res:
+                    self.ac.add_order(res['info']['orderID'], pred, 0, self.amount, 'New')
+                else:
+                    print('Trade Order Response is invalid!')
+                    print(res)
+
+            if datetime.now().minute == next_min and flg:
+                next_min = next_min + 1 if next_min + 1 < 60 else 0
+                flg = False
+            if 
+            time.sleep(0.3)
+
+
 
 
 

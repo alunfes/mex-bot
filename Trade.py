@@ -454,12 +454,12 @@ class Trade:
          'type': 'limit'}
     '''
     @classmethod
-    def order(cls, side, price, amount):
+    def order(cls, side, price, type, amount):
         order_info = ''
         try:
             order_info = cls.bm.create_order(
                 symbol='BTC/USD',
-                type='limit',
+                type=type,
                 side=side,
                 price=price,
                 amount=amount  #×0.0001btc

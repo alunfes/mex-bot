@@ -72,7 +72,8 @@ class PrivateWS:
             PrivateWSData.add_order_data(d)
         elif message['table'] == 'position':
             d = message['data']
-            PrivateWSData.add_order_data(d)
+            print(d[0])
+            #PrivateWSData.add_order_data(d)
 
 
 
@@ -147,6 +148,7 @@ class PrivateWSData:
     def add_exec_data(cls, data):
         with cls.lock_exec_data:
             if len(data) > 0:
+                print('add_exec_data:', data[0])
                 cls.exec_data.append(data[0])
 
     @classmethod
@@ -170,7 +172,7 @@ class PrivateWSData:
     @classmethod
     def add_order_data(cls, data):
         with cls.lock_order_data:
-            if len(data) > 0 and 'lastQty' in data[0].keys():
+            if len(data) > 0 and 'leavesQty' in data[0].keys():
                 print('add_order_data:', data[0])
                 cls.order_data[data[0]['orderID']] = data[0]
 
