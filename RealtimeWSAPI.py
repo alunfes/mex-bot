@@ -79,7 +79,7 @@ class RealtimeWSAPI:
             TickData.set_bid(message['data'][-1]['bidPrice'])
             TickData.set_ask(message['data'][-1]['askPrice'])
         else:
-            print('unknown message')
+            print('unknown message in RealtimeWSAPI!')
 
 
     def on_close(self, ws):
@@ -246,4 +246,5 @@ if __name__ == '__main__':
     SystemFlg.initialize()
     rwa = RealtimeWSAPI()
     while True:
+        print(TickData.get_bid(), TickData.get_ask())
         time.sleep(1)

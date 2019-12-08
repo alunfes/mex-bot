@@ -4,11 +4,12 @@ from PrivateWS import PrivateWS, PrivateWSData
 from Account import Account
 from SystemFlg import SystemFlg
 from LgbModel import LgbModel
+from BotStrategy import BotStrategy, DecisionData
 import threading
 from RealtimeWSAPI import TickData
 import pytz
 import time
-import datetime
+from datetime import datetime
 import pickle
 
 
@@ -31,18 +32,22 @@ predict bpsp
 bot稼働中のohlcはws経由で取得
 ・最初のohlc取得計算後にbot稼働する際のohlcは1分データ以上の間隔が開く可能性がある。
 ->
+
+
+戦略は複雑で、2つのACを使うものや複数モデルの運用により意思決定するものがあるため、
+Botでは戦略意思決定、トレード、口座、Line, Logなどの管理を役割とする。
 '''
+
 
 
 class Bot:
     def __init__(self):
+        pws = PrivateWS()
         self.ac = Account()
-        self.lgb_model = LgbModel()
-        pws = PrivateWS(self.ac)
+        #self.lgb_model = LgbModel()
         Trade.initialize()
-        self.amount = 10000
-
-        th = threading.Thread(target=self.__bot_thread)
+        self.amount = 10
+        th = threading.Thread(target=self.__bot_thread())
         th.start()
 
 
@@ -50,20 +55,36 @@ class Bot:
         next_min = datetime.now().minute +1 if datetime.now().minute +1 < 60 else 0
         flg = False
         while SystemFlg.get_system_flg():
-            pred = self.lgb_model.get_pred()
-            if (pred == 'Buy' or pred == 'Sell') and pred != self.ac.get_position()['side']:
-                res = Trade.order(pred, TickData.get_ask(), 'market', self.amount if self.ac.get_position()['side'] == '' else self.amount + self.ac.get_position()['size'])
-                if 'info' in res:
-                    self.ac.add_order(res['info']['orderID'], pred, 0, self.amount, 'New')
-                else:
-                    print('Trade Order Response is invalid!')
-                    print(res)
+            #pred = self.lgb_model.get_pred()
+            #dd = BotStrategy.model_prediction_onemin(pred, self.ac, self.amount)
+            dd = BotStrategy.random_pl_taker(self.ac, self.amount)
+            if dd.cancel:
+                Trade.cancel_order(self.ac.get_order_ids()[0])
+            else:
+                if (dd.side == 'Buy' or dd.side == 'Sell'):
+                    res = Trade.order(dd.side, dd.price, dd.type, dd.size)
+                    if 'info' in res:
+                        self.ac.add_order(res['info']['orderID'], dd.side, dd.price, dd.size, dd.type)
+                    else:
+                        print('Trade Order Response is invalid!')
+                        print(res)
 
+            #process for every 1min
             if datetime.now().minute == next_min and flg:
                 next_min = next_min + 1 if next_min + 1 < 60 else 0
                 flg = False
-            if 
-            time.sleep(0.3)
+                #calc unrealised pnl
+                self.ac.calc_unrealized_pnl(TickData.get_ltp())
+                #send positon / performance data to line
+                print(datetime.now())
+                print(self.ac.get_position())
+                print(self.ac.get_orders())
+                print(self.ac.get_performance())
+                #save log
+
+            if datetime.now().minute != next_min and flg==False:
+                flg = True
+            time.sleep(1)
 
 
 
