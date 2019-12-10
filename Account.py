@@ -15,6 +15,8 @@ class Account:
         self.lock_posi = threading.Lock()
         self.lock_order = threading.Lock()
         self.lock_performance = threading.Lock()
+        self.taker_fee = 0.00075
+        self.maker_fee = -0.00025
         self.posi_side = ''
         self.posi_price = 0
         self.posi_size = 0
@@ -25,7 +27,8 @@ class Account:
         self.order_price = {}
         self.order_size = {}
         self.order_dt = {}
-        self.order_type = {} #market or limit
+        self.order_type = {} #Market or Limit
+        self.order_status = {} #sent, onboarded, partiallyfilled, filled
         self.exec_id = []
         self.realized_pnl = 0
         self.unrealized_pnl = 0
@@ -51,6 +54,23 @@ class Account:
             self.order_size[order_id] = size
             self.order_dt[order_id] = datetime.now()
             self.order_type[order_id] = type
+            self.order_status[order_id] = 'sent'
+
+    #to confirm added order in actual order data from ws
+    def __confirm_order(self, order_id, side, price, size, order_type):
+        if self.order_side[order_id] != side:
+            print('order side is not matched !')
+            self.order_side[order_id] = side
+        elif self.order_price[order_id] != price:
+            print('order price is not matched !')
+            self.order_price[order_id] = price
+        elif self.order_size[order_id] != size:
+            print('order size is not matched !')
+            self.order_size[order_id] = size
+        elif self.order_type[order_id] != order_type:
+            print('order type is not matched !')
+            self.order_type[order_id] = order_type
+        self.order_status[order_type] = 'onboarded'
 
 
     def get_orders(self):
@@ -165,14 +185,34 @@ class Account:
         order data: {'orderID': '234bd7c9-862e-4245-8342-eef9b7a7af89', 'ordStatus': 'Filled', 'workingIndicator': False, 'leavesQty': 0, 'cumQty': 10, 'avgPx': 7525.5, 'clOrdID': '', 'account': 243795, 'symbol': 'XBTUSD', 'timestamp': '2019-12-08T14:08:14.609Z'}
     '''
 
+    '''
+    market orderの時は、order filledになった時にexecute_orderで約定を反映させる
+    limit orderの時は、常に同一価格の約定と想定して、order dataのleavesQty、avgPxを使う。
+    limit orderが途中でキャンセルされた場合には、status=cancelとなった時点でそれを察知してorder listから削除
+    *order出した時はlimit orderだが、約定時にmarket order扱いになった時の処置　（）
+    '''
+
     def __account_thread(self):
         while SystemFlg.get_system_flg():
-            executions = PrivateWSData.get_exec_data()
-            if len(executions) > 0:
-                for exec in executions:
-                    if exec['orderID'] in self.order_ids and exec['ordStatus'] != 'New':
-                        print(exec)
-                        self.__execute_order(exec['orderID'], exec['side'], exec['price'], exec['lastQty'], exec['execComm'], exec['ordStatus'])
+            #executions = PrivateWSData.get_exec_data()
+            for oid in self.order_ids:
+                order_data = PrivateWSData.get_order_data(oid)
+                exec_data = PrivateWSData.get_exec_data(oid)
+
+                if order_data != None:
+                    if order_data['ordStatus'] == 'New' and self.order_status[oid] == 'sent':
+                        self.__confirm_order(oid, order_data['side'],order_data['price'], order_data['orderQty'], order_data['ordType'])
+                    elif order_data['ordStatus'] == 'Filled':
+                        if exec_data is not None and exec_data['ordStatus'] == 'Filled': #exec dataにcomm情報などあるのでそれを使う
+                            self.__execute_order(exec_data['orderID'], exec_data['side'], exec_data['price'],  self.order_size[oid] - exec_data['leavesQty'], exec_data['execComm'], exec_data['ordStatus'])
+                        else:
+                            comm = (self.order_size[oid] - order_data['leavesQty']) * order_data['price'] * 100000000 * self.taker_fee if self.order_type[oid] == 'Market' else self.maker_fee
+                            self.__execute_order(order_data['orderID'], order_data['side'], order_data['price'], self.order_size[oid] - order_data['leavesQty'], comm, order_data['ordStatus'])
+                    elif order_data['ordStatus'] == 'PartiallyFilled':
+                        
+
+                    if order_data['ordStatus'] < self.order_size[oid]:
+                        self.__execute_order(order_data['orderID'], order_data['side'], order_data['price'], exec['lastQty'],exec['execComm'], exec['ordStatus'])
             time.sleep(0.1)
 
 

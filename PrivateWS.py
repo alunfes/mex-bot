@@ -63,7 +63,7 @@ class PrivateWS:
 
     def on_message(self, ws, message):
         message = json.loads(message)
-        #pprint.pprint(message)
+        #print(message)
         if message['table'] == 'execution':
             d = message['data']
             PrivateWSData.add_exec_data(d)
@@ -148,7 +148,7 @@ class PrivateWSData:
     def add_exec_data(cls, data):
         with cls.lock_exec_data:
             if len(data) > 0:
-                print('exex data:', data[0])
+                print('exec data:', data[0])
                 cls.exec_data.append(data[0])
 
     @classmethod
@@ -167,13 +167,16 @@ class PrivateWSData:
     @classmethod
     def get_order_data(cls, order_id):
         with cls.lock_order_data:
-            return cls.order_data[order_id]
+            if order_id in cls.order_data:
+                return cls.order_data[order_id]
+            else:
+                None
 
     @classmethod
     def add_order_data(cls, data):
         with cls.lock_order_data:
-            if len(data) > 0 and 'leavesQty' in data[0].keys():
-                print('order data:', data[0])
+            print('order data:', data[0])
+            if len(data) > 0 and 'ordStatus' in data[0].keys():
                 cls.order_data[data[0]['orderID']] = data[0]
 
     @classmethod

@@ -2,14 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="549546f5-9711-4611-b5a7-af5500ed94e2" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/BotStrategy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Account.py" beforeDir="false" afterPath="$PROJECT_DIR$/Account.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/Bot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Lgb_BPSP4.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Lgb_BPSP4.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PrivateWS.py" beforeDir="false" afterPath="$PROJECT_DIR$/PrivateWS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RealtimeWSAPI.py" beforeDir="false" afterPath="$PROJECT_DIR$/RealtimeWSAPI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Test.py" beforeDir="false" afterPath="$PROJECT_DIR$/Test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -70,8 +65,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Bot.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-236">
-              <caret line="48" column="24" lean-forward="true" selection-start-line="48" selection-start-column="24" selection-end-line="48" selection-end-column="24" />
+            <state relative-caret-position="-917">
+              <caret line="37" column="41" lean-forward="true" selection-start-line="37" selection-start-column="41" selection-end-line="37" selection-end-column="41" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -94,8 +89,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Account.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="283">
-              <caret line="162" column="184" selection-start-line="162" selection-start-column="184" selection-end-line="162" selection-end-column="184" />
+            <state relative-caret-position="376">
+              <caret line="211" column="24" selection-start-line="211" selection-start-column="24" selection-end-line="211" selection-end-column="24" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -106,8 +101,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/PrivateWS.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="284">
-              <caret line="150" column="33" selection-start-line="150" selection-start-column="33" selection-end-line="150" selection-end-column="33" />
+            <state relative-caret-position="219">
+              <caret line="117" column="130" selection-start-line="117" selection-start-column="115" selection-end-line="117" selection-end-column="130" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -150,12 +145,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>tmp</find>
-      <find>OneMinMarketData</find>
-      <find>dt</find>
-      <find>__calc_ohlc_thread</find>
-      <find>add_tmp_exec_data</find>
-      <find>add_tmp_ohlc</find>
       <find>__check_next_min</find>
       <find>order</find>
       <find>order(</find>
@@ -164,7 +153,6 @@
       <find>lock_order_data</find>
       <find>unre</find>
       <find>generate_df_from_dict_for_bot</find>
-      <find>leavesQty</find>
       <find>exec_siz</find>
       <find>bpsp_prediction</find>
       <find>market</find>
@@ -180,6 +168,13 @@
       <find>LOG</find>
       <find>cancel</find>
       <find>trdMatchID</find>
+      <find>Filled</find>
+      <find>db-db9a-55a5-910ebd24d4e0</find>
+      <find>PartiallyFilled</find>
+      <find>comm</find>
+      <find>leavesQty</find>
+      <find>par</find>
+      <find>parti</find>
     </findStrings>
     <replaceStrings>
       <replace>term</replace>
@@ -282,7 +277,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Test">
+  <component name="RunManager" selected="Python.PrivateWS">
     <configuration name="BotStrategy" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="mex-bot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -397,11 +392,11 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.PrivateWS" />
         <item itemvalue="Python.Test" />
         <item itemvalue="Python.RealtimeWSAPI" />
         <item itemvalue="Python.BotStrategy" />
         <item itemvalue="Python.DownloadMexOhlc" />
-        <item itemvalue="Python.PrivateWS" />
       </list>
     </recent_temporary>
   </component>
@@ -437,7 +432,7 @@
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.3287858" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.3287858" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.4802183" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.35470667" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3287858" />
@@ -792,8 +787,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Bot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-236">
-          <caret line="48" column="24" lean-forward="true" selection-start-line="48" selection-start-column="24" selection-end-line="48" selection-end-column="24" />
+        <state relative-caret-position="-917">
+          <caret line="37" column="41" lean-forward="true" selection-start-line="37" selection-start-column="41" selection-end-line="37" selection-end-column="41" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
@@ -802,8 +797,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/PrivateWS.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="284">
-          <caret line="150" column="33" selection-start-line="150" selection-start-column="33" selection-end-line="150" selection-end-column="33" />
+        <state relative-caret-position="219">
+          <caret line="117" column="130" selection-start-line="117" selection-start-column="115" selection-end-line="117" selection-end-column="130" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
           </folding>
@@ -812,8 +807,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Account.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="283">
-          <caret line="162" column="184" selection-start-line="162" selection-start-column="184" selection-end-line="162" selection-end-column="184" />
+        <state relative-caret-position="376">
+          <caret line="211" column="24" selection-start-line="211" selection-start-column="24" selection-end-line="211" selection-end-column="24" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
           </folding>
