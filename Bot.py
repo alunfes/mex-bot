@@ -43,9 +43,9 @@ Botでは戦略意思決定、トレード、口座、Line, Logなどの管理�
 class Bot:
     def __init__(self):
         pws = PrivateWS()
+        Trade.initialize()
         self.ac = Account()
         #self.lgb_model = LgbModel()
-        Trade.initialize()
         self.amount = 10
         th = threading.Thread(target=self.__bot_thread())
         th.start()
@@ -73,8 +73,6 @@ class Bot:
             if datetime.now().minute == next_min and flg:
                 next_min = next_min + 1 if next_min + 1 < 60 else 0
                 flg = False
-                #calc unrealised pnl
-                self.ac.calc_unrealized_pnl(TickData.get_ltp())
                 #send positon / performance data to line
                 print(datetime.now())
                 print(self.ac.get_position())

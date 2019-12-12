@@ -602,10 +602,12 @@ class Trade:
         return orders
 
     @classmethod
-    def get_trades(cls,count, startTime):
+    def get_trades(cls,count):
         cls.num_private_access += 1
+        trades = None
         try:
-            trades = cls.bm.fetch_my_trades(symbol='BTC/USD', since=None, limit=None,  params={'startTime':startTime,'count':count})
+            #trades = cls.bm.fetch_my_trades(symbol='BTC/USD', since=None, limit=None,  params={'startTime':startTime,'count':count})
+            trades = cls.bm.fetch_my_trades(symbol='BTC/USD', since=None, limit=None,params={'count': count, 'reverse':True})
         except Exception as e:
             print('error in get_trades ' + str(e))
         return trades
@@ -623,9 +625,13 @@ class Trade:
 if __name__ == '__main__':
     Trade.initialize()
     LogMaster.initialize()
-    order = Trade.order('buy', 8000.0, 10000)
-    print(order)
-    Trade.cancel_order(order['info']['orderID'])
+
+    for o in Trade.get_trades(10):
+        print(o)
+
+    #order = Trade.order('buy', 8000.0, 10000)
+    #print(order)
+    #Trade.cancel_order(order['info']['orderID'])
     #pprint.pprint(Trade.get_orders())
     #pprint.pprint(Trade.get_positions())
     #pprint.pprint(Trade.get_balance())
