@@ -59,7 +59,9 @@ class Bot:
             #dd = BotStrategy.model_prediction_onemin(pred, self.ac, self.amount)
             dd = BotStrategy.random_pl_taker(self.ac, self.amount)
             if dd.cancel:
-                Trade.cancel_order(self.ac.get_order_ids()[0])
+                oid = self.ac.get_order_ids()[0]
+                print('bot cancel order', oid)
+                Trade.cancel_order(oid) #accountでcancelを補足して処理する前にbotで再度cancelしてしまう。
             else:
                 if (dd.side == 'Buy' or dd.side == 'Sell'):
                     res = Trade.order(dd.side, dd.price, dd.type, dd.size)

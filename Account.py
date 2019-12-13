@@ -65,19 +65,22 @@ class Account:
 
     #to confirm added order in actual order data from ws
     def __confirm_order(self, order_id, side, price, size, order_type):
-        if self.order_side[order_id] != side:
-            print('order side is not matched !')
-            self.order_side[order_id] = side
-        elif self.order_price[order_id] != price:
-            print('order price is not matched !')
-            self.order_price[order_id] = price
-        elif self.order_size[order_id] != size:
-            print('order size is not matched !')
-            self.order_size[order_id] = size
-        elif self.order_type[order_id] != order_type:
-            print('order type is not matched !')
-            self.order_type[order_id] = order_type
-        self.order_status[order_type] = 'Onboarded'
+        if order_id in self.order_ids:
+            if self.order_side[order_id] != side:
+                print('order side is not matched !')
+                self.order_side[order_id] = side
+            elif self.order_price[order_id] != price:
+                print('order price is not matched !')
+                self.order_price[order_id] = price
+            elif self.order_size[order_id] != size:
+                print('order size is not matched !')
+                self.order_size[order_id] = size
+            elif self.order_type[order_id] != order_type:
+                print('order type is not matched !')
+                self.order_type[order_id] = order_type
+            self.order_status[order_type] = 'Onboarded'
+        else:
+            print('Order ID unmacthed in confirm order!', order_id)
 
 
     def get_orders(self):
@@ -224,9 +227,13 @@ class Account:
                         self.__execute_order(order_data['orderID'], exec_data['execID'], order_data['side'], order_data['price'], self.order_size[oid] - order_data['leavesQty'], order_data['prdStatus'])
                     elif order_data['ordStatus'] == 'Filled' or order_data['ordStatus'] == 'Canceled':
                         time.sleep(1)
-                        trades = Trade.get_trades(100)
-                        print(trades)
+                        trades = Trade.get_trades(10)
+                        print(len(trades))
+                        print(trades[0])
+                        print(trades[0]['info'])
+                        time.sleep(10)
                         api_exec_data = list(map(lambda x: x['info']['execComm'] if x['info']['orderID'] == oid and str(x['info']['execComm']) != 'None' else 0, trades))
+                        print(api_exec_data)
                         self.__calc_fee(oid,api_exec_data)
                         if order_data['ordStatus'] == 'Filled' and order_data['leavesQty'] > 0:
                             print('status is Filled but leavesQty is not 0!', order_data)
