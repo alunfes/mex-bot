@@ -140,23 +140,24 @@ class PrivateWSData:
         cls.lock_exec_data = threading.Lock()
         cls.lock_order_data = threading.Lock()
         cls.order_data = {}
-        cls.exec_data = []
+        cls.exec_data = {}
         cls.position_data = {}
 
 
     @classmethod
     def add_exec_data(cls, data):
         with cls.lock_exec_data:
-            if len(data) > 0:
-                print('exec data:', data[0])
-                cls.exec_data.append(data[0])
+            print('exec data:', data[0])
+            if len(data) > 0 and 'ordStatus' in data[0].keys():
+                cls.exec_data[data[0]['orderID']] = data[0]
 
     @classmethod
-    def get_exec_data(cls):
+    def get_exec_data(cls, order_id):
         with cls.lock_exec_data:
-            res = cls.exec_data[:]
-            cls.exec_data = []
-            return res
+            if order_id in cls.exec_data:
+                return cls.exec_data[order_id]
+            else:
+                None
 
 
     @classmethod

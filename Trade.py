@@ -626,12 +626,10 @@ if __name__ == '__main__':
     Trade.initialize()
     LogMaster.initialize()
 
-    for o in Trade.get_trades(10):
-        print(o)
-
-    #order = Trade.order('buy', 8000.0, 10000)
-    #print(order)
-    #Trade.cancel_order(order['info']['orderID'])
+    order = Trade.order('Buy', 6000.0, 'Limit', 10)
+    print(order)
+    time.sleep(3)
+    print(Trade.cancel_order(order['info']['orderID']))
     #pprint.pprint(Trade.get_orders())
     #pprint.pprint(Trade.get_positions())
     #pprint.pprint(Trade.get_balance())

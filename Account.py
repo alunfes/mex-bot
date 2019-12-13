@@ -111,7 +111,7 @@ class Account:
             PrivateWSData.remove_order_data(order_id)
 
     def __execute_order(self, order_id, exec_id, exec_side, exec_price, exec_qty, exec_comm, status):
-        if status == 'Filled' or status == 'Cancelled':
+        if status == 'Filled' or status == 'Canceled':
             self.__calc_realized_pnl(exec_side, exec_price, exec_qty)
             self.__update_position(exec_side,exec_price, exec_qty)
             self.__remove_order(order_id)
@@ -214,17 +214,19 @@ class Account:
 
     def __account_thread(self):
         while SystemFlg.get_system_flg():
-            exec_data = PrivateWSData.get_exec_data()
             for oid in self.order_ids:
                 order_data = PrivateWSData.get_order_data(oid)
+                exec_data = PrivateWSData.get_exec_data(oid)
                 if order_data is not None:
                     if order_data['ordStatus'] == 'New' and self.order_status[oid] == 'Sent':
                         self.__confirm_order(oid, order_data['side'],order_data['price'],order_data['orderQty'],order_data['ordType'])
-                    elif exec_data['ordStatus'] == 'PartiallyFilled' and order_data['ordStatus'] == 'PartiallyFIlled':
+                    elif exec_data['ordStatus'] == 'PartiallyFilled' and order_data['ordStatus'] == 'PartiallyFilled':
                         self.__execute_order(order_data['orderID'], exec_data['execID'], order_data['side'], order_data['price'], self.order_size[oid] - order_data['leavesQty'], order_data['prdStatus'])
-                    elif exec_data['ordStatus'] == 'Filled' and order_data['ordStatus'] == 'Cancelled':
+                    elif order_data['ordStatus'] == 'Filled' or order_data['ordStatus'] == 'Canceled':
                         time.sleep(1)
-                        api_exec_data = list(map(lambda x: x['info']['execComm'] if x['info']['orderID'] == oid and str(x['info']['execComm']) != 'None' else 0, Trade.get_trades(100)))
+                        trades = Trade.get_trades(100)
+                        print(trades)
+                        api_exec_data = list(map(lambda x: x['info']['execComm'] if x['info']['orderID'] == oid and str(x['info']['execComm']) != 'None' else 0, trades))
                         self.__calc_fee(oid,api_exec_data)
                         if order_data['ordStatus'] == 'Filled' and order_data['leavesQty'] > 0:
                             print('status is Filled but leavesQty is not 0!', order_data)
