@@ -82,8 +82,7 @@ class PrivateWS:
         self.__init__()
 
     def on_error(self, ws, error):
-        print('PrivateWS error!')
-        print(error)
+        print('PrivateWS error!', error)
 
 #wallet
 '''
@@ -147,7 +146,6 @@ class PrivateWSData:
     @classmethod
     def add_exec_data(cls, data):
         with cls.lock_exec_data:
-            print('exec data:', data[0])
             if len(data) > 0 and 'ordStatus' in data[0].keys():
                 cls.exec_data[data[0]['orderID']] = data[0]
 
@@ -176,7 +174,7 @@ class PrivateWSData:
     @classmethod
     def add_order_data(cls, data):
         with cls.lock_order_data:
-            print('order data:', data[0])
+            #print('order data:', data[0])
             if len(data) > 0 and 'ordStatus' in data[0].keys():
                 cls.order_data[data[0]['orderID']] = data[0]
 

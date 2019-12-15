@@ -525,7 +525,7 @@ class Trade:
         try:
             cancel = cls.bm.cancel_order(id=order_id, symbol='BTC/USD')
         except Exception as e:
-            print('error in cancel_order ' + str(e))
+            print('error in cancel_order ' + str(e), cancel)
             LogMaster.add_log({'dt': datetime.now(), 'api_error': 'Trade-get cancel_order error! ' + str(e)})
         return cancel
 
@@ -593,13 +593,43 @@ class Trade:
           'type': 'limit'}]
     '''
     @classmethod
-    def get_orders(cls):
+    def get_open_orders(cls):
         cls.num_private_access += 1
         try:
             orders = cls.bm.fetch_open_orders()
         except Exception as e:
             print('error in get_orders ' + str(e))
         return orders
+
+
+    #get historical order data of a specific order id.
+    '''
+    [{'info': {'orderID': 'ffe83f3e-10be-3d0a-fe04-22a69437b849', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'simpleOrderQty': None, 'orderQty': 10, 'price': 7219, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 10, 'avgPx': 7219, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submitted via API.', 'transactTime': '2019-12-13T13:32:39.844Z', 'timestamp': '2019-12-13T13:33:20.742Z'}, 'id': 'ffe83f3e-10be-3d0a-fe04-22a69437b849', 'timestamp': 1576244000742, 'datetime': '2019-12-13T13:33:20.742Z', 'lastTradeTimestamp': 1576243959844, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'sell', 'price': 7219.0, 'amount': 10.0, 'cost': 72190.0, 'average': 7219.0, 'filled': 10.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}, 
+    {'info': {'orderID': 'f5019d9e-f9ab-4986-59d4-6a7d0be13a5c', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'simpleOrderQty': None, 'orderQty': 50, 'price': 7224, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 50, 'avgPx': 7224, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'transactTime': '2019-12-13T13:43:38.880Z', 'timestamp': '2019-12-13T13:43:38.880Z'}, 'id': 'f5019d9e-f9ab-4986-59d4-6a7d0be13a5c', 'timestamp': 1576244618880, 'datetime': '2019-12-13T13:43:38.880Z', 'lastTradeTimestamp': 1576244618880, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'buy', 'price': 7224.0, 'amount': 50.0, 'cost': 361200.0, 'average': 7224.0, 'filled': 50.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}, 
+    {'info': {'orderID': '6dfdd402-0831-509b-1bc8-68b5e7f7443f', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'simpleOrderQty': None, 'orderQty': 10, 'price': 7241.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 10, 'avgPx': 7241.5, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submitted via API.', 'transactTime': '2019-12-14T08:09:31.044Z', 'timestamp': '2019-12-14T08:09:31.044Z'}, 'id': '6dfdd402-0831-509b-1bc8-68b5e7f7443f', 'timestamp': 1576310971044, 'datetime': '2019-12-14T08:09:31.044Z', 'lastTradeTimestamp': 1576310971044, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'buy', 'price': 7241.5, 'amount': 10.0, 'cost': 72415.0, 'average': 7241.5, 'filled': 10.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}, 
+    {'info': {'orderID': 'abeb3acb-9e75-c454-1a36-08776e241982', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'simpleOrderQty': None, 'orderQty': 10, 'price': 7178, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 10, 'avgPx': 7178.25, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submitted via API.', 'transactTime': '2019-12-14T09:06:40.720Z', 'timestamp': '2019-12-14T09:06:49.994Z'}, 'id': 'abeb3acb-9e75-c454-1a36-08776e241982', 'timestamp': 1576314409994, 'datetime': '2019-12-14T09:06:49.994Z', 'lastTradeTimestamp': 1576314400720, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'sell', 'price': 7178.0, 'amount': 10.0, 'cost': 71782.5, 'average': 7178.25, 'filled': 10.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}, 
+    {'info': {'orderID': 'c1ae867c-7a88-7584-1f32-3b6a2c49eb0c', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'simpleOrderQty': None, 'orderQty': 10, 'price': 7186.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 10, 'avgPx': 7186.5, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submitted via API.', 'transactTime': '2019-12-14T09:17:20.255Z', 'timestamp': '2019-12-14T09:17:20.255Z'}, 'id': 'c1ae867c-7a88-7584-1f32-3b6a2c49eb0c', 'timestamp': 1576315040255, 'datetime': '2019-12-14T09:17:20.255Z', 'lastTradeTimestamp': 1576315040255, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'buy', 'price': 7186.5, 'amount': 10.0, 'cost': 71865.0, 'average': 7186.5, 'filled': 10.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}, 
+    {'info': {'orderID': '890694ee-7eaa-bf36-2bbd-ec6a430eaeb9', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'simpleOrderQty': None, 'orderQty': 10, 'price': 7181.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 10, 'avgPx': 7181.5, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submitted via API.', 'transactTime': '2019-12-14T09:31:39.348Z', 'timestamp': '2019-12-14T09:31:39.348Z'}, 'id': '890694ee-7eaa-bf36-2bbd-ec6a430eaeb9', 'timestamp': 1576315899348, 'datetime': '2019-12-14T09:31:39.348Z', 'lastTradeTimestamp': 1576315899348, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'buy', 'price': 7181.5, 'amount': 10.0, 'cost': 71815.0, 'average': 7181.5, 'filled': 10.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}, 
+    {'info': {'orderID': 'e19c4273-a6ba-9a6a-f6e2-2e9a23640059', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'simpleOrderQty': None, 'orderQty': 10, 'price': 7036.5, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 10, 'avgPx': 7036.5, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submitted via API.', 'transactTime': '2019-12-15T01:01:37.654Z', 'timestamp': '2019-12-15T01:01:37.654Z'}, 'id': 'e19c4273-a6ba-9a6a-f6e2-2e9a23640059', 'timestamp': 1576371697654, 'datetime': '2019-12-15T01:01:37.654Z', 'lastTradeTimestamp': 1576371697654, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'buy', 'price': 7036.5, 'amount': 10.0, 'cost': 70365.0, 'average': 7036.5, 'filled': 10.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}, 
+    {'info': {'orderID': '40be7947-a40f-b8a0-81ef-c9939b221a08', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Buy', 'simpleOrderQty': None, 'orderQty': 10, 'price': 7040, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 10, 'avgPx': 7040, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submitted via API.', 'transactTime': '2019-12-15T01:13:50.846Z', 'timestamp': '2019-12-15T01:13:50.846Z'}, 'id': '40be7947-a40f-b8a0-81ef-c9939b221a08', 'timestamp': 1576372430846, 'datetime': '2019-12-15T01:13:50.846Z', 'lastTradeTimestamp': 1576372430846, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'buy', 'price': 7040.0, 'amount': 10.0, 'cost': 70400.0, 'average': 7040.0, 'filled': 10.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}, 
+    {'info': {'orderID': '114a7300-ece3-cfe4-17d6-2749c96f1172', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'simpleOrderQty': None, 'orderQty': 40, 'price': 7136, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 40, 'avgPx': 7136.25, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'transactTime': '2019-12-15T08:48:06.681Z', 'timestamp': '2019-12-15T08:57:45.558Z'}, 'id': '114a7300-ece3-cfe4-17d6-2749c96f1172', 'timestamp': 1576400265558, 'datetime': '2019-12-15T08:57:45.558Z', 'lastTradeTimestamp': 1576399686681, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'sell', 'price': 7136.0, 'amount': 40.0, 'cost': 285450.0, 'average': 7136.25, 'filled': 40.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}]
+    '''
+    @classmethod
+    def get_order_byid(cls, order_id):
+        cls.num_private_access += 1
+        orders = None
+        count = 50
+        try:
+            orders = cls.bm.fetch_orders(symbol='BTC/USD', since=None, limit=None, params={'count': count, 'reverse': True})
+            if len(order_id) > 0:
+                orders = map(lambda x: x['info'] if x['info']['orderID'] == order_id else {}, orders)
+                orders = [x for x in orders if x != {}]
+                if len(orders) == 0:
+                    order_id = None
+        except Exception as e:
+            print('error in get_order_byid' + str(e))
+        return orders
+
 
     @classmethod
     def get_trades(cls,count):
@@ -626,15 +656,13 @@ if __name__ == '__main__':
     Trade.initialize()
     LogMaster.initialize()
 
-    order = Trade.order('Buy', 6000.0, 'Limit', 10)
-    print(order)
-    time.sleep(3)
-    print(Trade.cancel_order(order['info']['orderID']))
+    print(Trade.bm.fetch_orders(symbol='BTC/USD', since=None, limit=None,params={'count': 10, 'reverse':True}))
+
     #pprint.pprint(Trade.get_orders())
     #pprint.pprint(Trade.get_positions())
     #pprint.pprint(Trade.get_balance())
     #pprint.pprint(Trade.get_collateral())
-    #pprint.pprint(Trade.get_trades(100, datetime(2019, 7, 1)))
+
 
     '''
     result = Trade.get_trades(100, datetime(2019, 7, 1))

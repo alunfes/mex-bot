@@ -50,6 +50,18 @@ class RealtimeWSAPI:
     {"table":"quote","action":"insert","data":[{"timestamp":"2019-05-09T07:30:35.228Z","symbol":"XBTUSD","bidSize":842266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.440Z","symbol":"XBTUSD","bidSize":848266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.523Z","symbol":"XBTUSD","bidSize":842266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.544Z","symbol":"XBTUSD","bidSize":836266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.577Z","symbol":"XBTUSD","bidSize":842266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.582Z","symbol":"XBTUSD","bidSize":848266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.752Z","symbol":"XBTUSD","bidSize":840266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.927Z","symbol":"XBTUSD","bidSize":834266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.928Z","symbol":"XBTUSD","bidSize":828266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.935Z","symbol":"XBTUSD","bidSize":822266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.944Z","symbol":"XBTUSD","bidSize":828266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.948Z","symbol":"XBTUSD","bidSize":834266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.953Z","symbol":"XBTUSD","bidSize":829266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.955Z","symbol":"XBTUSD","bidSize":823266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.956Z","symbol":"XBTUSD","bidSize":829266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.968Z","symbol":"XBTUSD","bidSize":834266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:35.991Z","symbol":"XBTUSD","bidSize":828266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:36.005Z","symbol":"XBTUSD","bidSize":834266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417}]}
     {"table":"quote","action":"insert","data":[{"timestamp":"2019-05-09T07:30:36.119Z","symbol":"XBTUSD","bidSize":840266,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:36.295Z","symbol":"XBTUSD","bidSize":840269,"bidPrice":6063,"askPrice":6063.5,"askSize":775417},{"timestamp":"2019-05-09T07:30:36.614Z","symbol":"XBTUSD","bidSize":840269,"bidPrice":6063,"askPrice":6063.5,"askSize":781417}]}
     '''
+    #orderBook10
+    '''
+    [{'symbol': 'XBTUSD', 'bids': [[7031.5, 817994], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 161285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]], 'timestamp': '2019-12-15T01:23:07.533Z', 'asks': [[7032, 1679058], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 485332], [7036, 280810], [7036.5, 161626]]}]
+    [{'symbol': 'XBTUSD', 'bids': [[7031.5, 817994], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 171285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]], 'timestamp': '2019-12-15T01:23:07.568Z', 'asks': [[7032, 1679058], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 485332], [7036, 280810], [7036.5, 161626]]}]
+    [{'symbol': 'XBTUSD', 'bids': [[7031.5, 787994], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 171285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]], 'timestamp': '2019-12-15T01:23:07.917Z', 'asks': [[7032, 1679058], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 485332], [7036, 280810], [7036.5, 161626]]}]
+    [{'symbol': 'XBTUSD', 'asks': [[7032, 1687058], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 485332], [7036, 280810], [7036.5, 161626]], 'timestamp': '2019-12-15T01:23:07.932Z', 'bids': [[7031.5, 787994], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 171285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]]}]
+    [{'symbol': 'XBTUSD', 'asks': [[7032, 1687058], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 495332], [7036, 270810], [7036.5, 161626]], 'timestamp': '2019-12-15T01:23:08.056Z', 'bids': [[7031.5, 787994], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 171285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]]}]
+    [{'symbol': 'XBTUSD', 'asks': [[7032, 1686058], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 495332], [7036, 270810], [7036.5, 161626]], 'timestamp': '2019-12-15T01:23:08.062Z', 'bids': [[7031.5, 787994], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 171285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]]}]
+    [{'symbol': 'XBTUSD', 'bids': [[7031.5, 787309], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 171285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]], 'timestamp': '2019-12-15T01:23:08.096Z', 'asks': [[7032, 1686058], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 495332], [7036, 270810], [7036.5, 161626]]}]
+    [{'symbol': 'XBTUSD', 'asks': [[7032, 1688558], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 495332], [7036, 270810], [7036.5, 161626]], 'timestamp': '2019-12-15T01:23:08.110Z', 'bids': [[7031.5, 787309], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 171285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]]}]
+    [{'symbol': 'XBTUSD', 'asks': [[7032, 1686058], [7032.5, 109328], [7033, 152753], [7033.5, 835278], [7034, 76609], [7034.5, 5819], [7035, 273119], [7035.5, 495332], [7036, 270810], [7036.5, 161626]], 'timestamp': '2019-12-15T01:23:08.132Z', 'bids': [[7031.5, 787309], [7031, 111648], [7030.5, 315645], [7030, 45546], [7029.5, 121735], [7029, 171285], [7028.5, 26876], [7028, 137289], [7027.5, 297982], [7027, 221844]]}]
+    '''
     def on_open(self, ws):
         print('opened bitmex public ws.')
         channels = {
@@ -58,6 +70,7 @@ class RealtimeWSAPI:
                 #'tradeBin1m:XBTUSD',
                 'trade:XBTUSD',
                 'quote:XBTUSD',
+                'orderBook10:XBTUSD',
             ]
         }
         ws.send(json.dumps(channels))
@@ -70,7 +83,7 @@ class RealtimeWSAPI:
             dt = datetime.dateutil.parser.parse(d['timestamp'])
             sdt = dt.strftime('%Y-%m-%d %H:%M:%S')
             ut = dt.strftime('%s')
-            print(sdt, d['open'], d['high'], d['low'], d['close'], datetime.now())
+            #print(sdt, d['open'], d['high'], d['low'], d['close'], datetime.now())
             #OneMinMarketData.add_tmp_ohlc(ut, sdt, d['open'], d['high'], d['low'], d['close'], d['volume'])
         elif message['table'] == 'trade':
             TickData.set_ltp(message['data'][-1]['price'])
@@ -78,6 +91,9 @@ class RealtimeWSAPI:
         elif message['table'] == 'quote':
             TickData.set_bid(message['data'][-1]['bidPrice'])
             TickData.set_ask(message['data'][-1]['askPrice'])
+        elif message['table'] == 'orderBook10':
+            TickData.set_bid(message[0]['bids'][0][0])
+            TickData.set_ask(message[0]['asks'][0][0])
         else:
             print('unknown message in RealtimeWSAPI!')
 
@@ -86,8 +102,7 @@ class RealtimeWSAPI:
         print('closed public ws')
 
     def on_error(self, ws, error):
-        print(error)
-        print('Error occurred in public webscoket! restart the ws thread.')
+        print('Error occurred in public webscoket! restart the ws thread.', error)
         self.__init__()
 
 

@@ -63,6 +63,19 @@ class Account:
             self.order_type[order_id] = type
             self.order_status[order_id] = 'Sent'
 
+    def bot_cancel_order(self, order_id): #call from bot
+        trades = Trade.get_trades(10)
+        api_exec_data = list(map(lambda x: x['info'] if x['info']['orderID'] == order_id and str(x['info']['execComm']) != 'None' else None, trades))
+        api_exec_data = [x for x in api_exec_data if x != None]
+        if len(api_exec_data) > 0:
+            self.__calc_fee(order_id, list(map(lambda x: x['execComm'], api_exec_data)))
+            self.__execute_order(api_exec_data[-1]['orderID'], '', api_exec_data[-1]['side'], api_exec_data[-1]['price'], self.order_size[order_id] - api_exec_data[-1]['leavesQty'], api_exec_data[-1]['ordStatus'])
+        else:
+            self.__remove_order(order_id)
+
+
+
+
     #to confirm added order in actual order data from ws
     def __confirm_order(self, order_id, side, price, size, order_type):
         if order_id in self.order_ids:
@@ -111,9 +124,14 @@ class Account:
             self.order_ids.remove(order_id)
             del self.order_size[order_id]
             del self.order_price[order_id]
+            del self.order_side[order_id]
+            del self.order_dt[order_id]
+            del self.order_type[order_id]
+            del self.order_status[order_id]
             PrivateWSData.remove_order_data(order_id)
 
-    def __execute_order(self, order_id, exec_id, exec_side, exec_price, exec_qty, exec_comm, status):
+
+    def __execute_order(self, order_id, exec_id, exec_side, exec_price, exec_qty, status):
         if status == 'Filled' or status == 'Canceled':
             self.__calc_realized_pnl(exec_side, exec_price, exec_qty)
             self.__update_position(exec_side,exec_price, exec_qty)
@@ -152,7 +170,8 @@ class Account:
         self.win_rate = round(self.num_win / self.num_trade, 2)
 
     def __calc_fee(self, oid, api_exec_data):
-        self.total_fee += sum(list(map(lambda x: x['execComm'], api_exec_data))) / 100000000
+        self.total_fee += sum(api_exec_data) / 100000000
+        #self.total_fee += sum(list(map(lambda x: x['execComm'], api_exec_data))) / 100000000
 
     def __calc_unrealized_pnl(self, ltp):
         with self.lock_performance:
@@ -228,19 +247,14 @@ class Account:
                     elif order_data['ordStatus'] == 'Filled' or order_data['ordStatus'] == 'Canceled':
                         time.sleep(1)
                         trades = Trade.get_trades(10)
-                        print(len(trades))
-                        print(trades[0])
-                        print(trades[0]['info'])
-                        time.sleep(10)
-                        api_exec_data = list(map(lambda x: x['info']['execComm'] if x['info']['orderID'] == oid and str(x['info']['execComm']) != 'None' else 0, trades))
-                        print(api_exec_data)
-                        self.__calc_fee(oid,api_exec_data)
+                        api_exec_data = list(map(lambda x: x['info'] if x['info']['orderID'] == oid and str(x['info']['execComm']) != 'None' else {}, trades))
+                        api_exec_data = [x for x in api_exec_data if x != {}]
+                        self.__calc_fee(oid, list(map(lambda x: x['execComm'], api_exec_data)))
                         if order_data['ordStatus'] == 'Filled' and order_data['leavesQty'] > 0:
                             print('status is Filled but leavesQty is not 0!', order_data)
-                        self.__execute_order(order_data['orderID'], '', order_data['side'], order_data['price'], self.order_size[oid] - order_data['leavesQty'], order_data['ordStatus'])
+                        self.__execute_order(order_data['orderID'], '', self.order_side[oid], order_data['avgPx'], self.order_size[oid] - order_data['leavesQty'], order_data['ordStatus'])
                     else:
                         print('Unknown order status!', order_data['ordStatus'])
-
 
 
     def __onemin_thread(self):

@@ -61,15 +61,16 @@ class Bot:
             if dd.cancel:
                 oid = self.ac.get_order_ids()[0]
                 print('bot cancel order', oid)
-                Trade.cancel_order(oid) #accountでcancelを補足して処理する前にbotで再度cancelしてしまう。
+                cancel = Trade.cancel_order(oid) #accountでcancelを補足して処理する前にbotで再度cancelしてしまう。
+                print('cancel res', cancel)
+                self.ac.bot_cancel_order(oid)
             else:
                 if (dd.side == 'Buy' or dd.side == 'Sell'):
                     res = Trade.order(dd.side, dd.price, dd.type, dd.size)
                     if 'info' in res:
                         self.ac.add_order(res['info']['orderID'], dd.side, dd.price, dd.size, dd.type)
                     else:
-                        print('Trade Order Response is invalid!')
-                        print(res)
+                        print('Trade Order Response is invalid!', res)
 
             #process for every 1min
             if datetime.now().minute == next_min and flg:
@@ -78,7 +79,9 @@ class Bot:
                 #send positon / performance data to line
                 print(datetime.now())
                 print(self.ac.get_position())
-                print(self.ac.get_orders())
+                order_side, order_price, order_size, order_dt = self.ac.get_orders()
+                for o in order_side:
+                    print('order ', o, ', side=',order_side[o], ', price=',order_price[o], ', size=',order_size[o])
                 print(self.ac.get_performance())
                 #save log
 
@@ -109,7 +112,6 @@ class Bot:
             if self.posi_side != posi_side or self.posi_price != posi_price or self.posi_size != posi_size:
                 print('position unmatch was detected! Synchronize with account position data.')
                 print('posi_side={},posi_price={},posi_size={}'.format(self.posi_side, self.posi_price, self.posi_size))
-                print(position)
             self.posi_side, self.posi_size, self.posi_price = posi_side, posi_size, posi_price
             self.posi_status = 'fully executed'
             print('synchronized position data, side=' + str(self.posi_side) + ', size=' + str(
