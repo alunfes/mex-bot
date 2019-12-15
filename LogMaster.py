@@ -7,6 +7,7 @@ import threading
 class LogMaster:
     @classmethod
     def initialize(cls):
+        cls.index = 0
         cls.lock = threading.Lock()
         cls.log_file = './bot_log.csv'
         if os.path.isfile(cls.log_file):
@@ -14,15 +15,17 @@ class LogMaster:
         cls.ind_updates = 0 #current index wrote to csv file
         cls.index = 0
         cls.key_list = ['index','log_dt', 'dt', 'open','high','low','close','posi_side', 'posi_price', 'posi_size', 'order_side',
-                        'order_price', 'order_size', 'num_private_access', 'num_public_access', 'num_private_per_min',
-                        'pl', 'pl_per_min', 'num_trade', 'win_rate', 'prediction', 'api_error', 'action_message']
+                        'order_price', 'order_size', 'num_private_access', 'num_public_access',
+                        'pnl', 'pnl_per_min', 'num_trade', 'win_rate', 'prediction', 'api_error', 'action_message']
         cls.log_list = []
         print('initialized LogMaster')
 
     @classmethod
     def add_log(cls, dict_log):
+        dict_log['index'] = cls.index
         loop = asyncio.get_event_loop()
         loop.run_until_complete(cls.__add_log(dict_log))
+        cls.index += 1
 
     @classmethod
     async def __add_log(cls, dict_log):

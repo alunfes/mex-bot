@@ -9,7 +9,6 @@ import time
 class Test:
     def start(self):
         OneMinMarketData.initialize_for_bot(9)
-        LogMaster.initialize()
         ws = RealtimeWSAPI()
         bot = Bot()
         while True:

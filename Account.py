@@ -20,6 +20,7 @@ class Account:
         self.lock_performance = threading.Lock()
         self.taker_fee = 0.00075
         self.maker_fee = -0.00025
+        self.start_dt = time.time()
         self.posi_side = ''
         self.posi_price = 0
         self.posi_size = 0
@@ -33,9 +34,11 @@ class Account:
         self.order_dt = {}
         self.order_type = {} #Market or Limit
         self.order_status = {} #Sent, Onboarded
+        self.removed_order_ids = []
         self.exec_id = []
         self.realized_pnl = 0
         self.unrealized_pnl = 0
+        self.total_pnl_per_min = 0
         self.total_pnl = 0
         self.total_fee = 0
 
@@ -48,13 +51,14 @@ class Account:
         self.account_log = [] #{}
 
         th = threading.Thread(target = self.__account_thread)
-        th.start()
         th2 = threading.Thread(target=self.__onemin_thread)
+        th.start()
         th2.start()
 
 
     def add_order(self, order_id, side, price, size, type): #call from bot
         with self.lock_order:
+            print('entry order', order_id)
             self.order_ids.append(order_id)
             self.order_side[order_id] = side
             self.order_price[order_id] = price
@@ -104,7 +108,8 @@ class Account:
 
     def get_performance(self):
         with self.lock_performance:
-            return {'total_pl':self.realized_pnl + self.unrealized_pnl + self.total_fee, 'num_trade':self.num_trade, 'win_rate':self.win_rate, 'total_fee':self.total_fee}
+            return {'total_pl':self.realized_pnl + self.unrealized_pnl + self.total_fee, 'num_trade':self.num_trade, 'win_rate':self.win_rate, 'total_fee':self.total_fee,
+                    'total_pnl_per_min':self.total_pnl_per_min}
 
     def get_position(self):
         return {'side':self.posi_side, 'price':self.posi_price, 'size':self.posi_size, 'dt':self.posi_dt}
@@ -120,6 +125,7 @@ class Account:
 
     def __remove_order(self, order_id):
         with self.lock_order:
+            print('remove order', order_id)
             self.order_ids_executed.append(order_id)
             self.order_ids.remove(order_id)
             del self.order_size[order_id]
@@ -128,6 +134,7 @@ class Account:
             del self.order_dt[order_id]
             del self.order_type[order_id]
             del self.order_status[order_id]
+            self.removed_order_ids.append(order_id)
             PrivateWSData.remove_order_data(order_id)
 
 
@@ -153,7 +160,11 @@ class Account:
         if ltp > 0:
             self.__calc_unrealized_pnl(ltp)
         with self.lock_performance:
-            self.total_pnl = self.realized_pnl + self.unrealized_pnl - self.total_fee
+            self.total_pnl = round(self.realized_pnl + self.unrealized_pnl - self.total_fee, 4)
+            if abs(self.total_pnl) > 0:
+                self.total_pnl_per_min = round(self.total_pnl / ((time.time() - self.start_dt) / 60.0),4)
+            else:
+                self.total_pnl_per_min = 0
 
     def __calc_realized_pnl(self, exec_side, exec_price, exec_size):
         if self.posi_side != '' and (self.posi_side != exec_side):
@@ -239,7 +250,7 @@ class Account:
             for oid in self.order_ids:
                 order_data = PrivateWSData.get_order_data(oid)
                 exec_data = PrivateWSData.get_exec_data(oid)
-                if order_data is not None:
+                if order_data is not None and oid not in self.removed_order_ids:
                     if order_data['ordStatus'] == 'New' and self.order_status[oid] == 'Sent':
                         self.__confirm_order(oid, order_data['side'],order_data['price'],order_data['orderQty'],order_data['ordType'])
                     elif exec_data['ordStatus'] == 'PartiallyFilled' and order_data['ordStatus'] == 'PartiallyFilled':
@@ -252,7 +263,7 @@ class Account:
                         self.__calc_fee(oid, list(map(lambda x: x['execComm'], api_exec_data)))
                         if order_data['ordStatus'] == 'Filled' and order_data['leavesQty'] > 0:
                             print('status is Filled but leavesQty is not 0!', order_data)
-                        self.__execute_order(order_data['orderID'], '', self.order_side[oid], order_data['avgPx'], self.order_size[oid] - order_data['leavesQty'], order_data['ordStatus'])
+                        self.__execute_order(oid, '', self.order_side[oid], order_data['avgPx'], self.order_size[oid] - order_data['leavesQty'], order_data['ordStatus'])
                     else:
                         print('Unknown order status!', order_data['ordStatus'])
 

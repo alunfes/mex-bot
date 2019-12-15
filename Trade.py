@@ -466,6 +466,7 @@ class Trade:
             )
         except Exception as e:
             print('Trade-order error!, '+str(e))
+            print('side=',side, ', price=',price, ', type', type, ', amount', amount)
         return order_info
 
     '''

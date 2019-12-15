@@ -5,6 +5,7 @@ from Account import Account
 from SystemFlg import SystemFlg
 from LgbModel import LgbModel
 from BotStrategy import BotStrategy, DecisionData
+from LogMaster import LogMaster
 import threading
 from RealtimeWSAPI import TickData
 import pytz
@@ -45,10 +46,13 @@ class Bot:
         pws = PrivateWS()
         Trade.initialize()
         self.ac = Account()
+        self.omd = OneMinMarketData
         #self.lgb_model = LgbModel()
         self.amount = 10
-        th = threading.Thread(target=self.__bot_thread())
+        th = threading.Thread(target=self.__bot_thread)
+        th2 = threading.Thread(target=self.__bot_sub_thread)
         th.start()
+        th2.start()
 
 
     def __bot_thread(self):
@@ -72,22 +76,30 @@ class Bot:
                     else:
                         print('Trade Order Response is invalid!', res)
 
-            #process for every 1min
-            if datetime.now().minute == next_min and flg:
-                next_min = next_min + 1 if next_min + 1 < 60 else 0
-                flg = False
-                #send positon / performance data to line
-                print(datetime.now())
-                print(self.ac.get_position())
-                order_side, order_price, order_size, order_dt = self.ac.get_orders()
-                for o in order_side:
-                    print('order ', o, ', side=',order_side[o], ', price=',order_price[o], ', size=',order_size[o])
-                print(self.ac.get_performance())
-                #save log
+    def __bot_sub_thread(self):
+        while SystemFlg.get_system_flg():
+            time.sleep(60)
+            print(datetime.now())
+            print(self.ac.get_position())
+            order_side, order_price, order_size, order_dt = self.ac.get_orders()
+            for o in order_side:
+                print('order ', o, ', side=', order_side[o], ', price=', order_price[o], ', size=', order_size[o])
+            print(self.ac.get_performance())
 
-            if datetime.now().minute != next_min and flg==False:
-                flg = True
-            time.sleep(1)
+            posi_side, posi_price, posi_size, posi_dt = self.ac.get_position()
+            order_side, order_price, order_size, order_dt = self.ac.get_orders()
+            order_sides, order_prices, order_sizes, order_dts = ''
+            for oid in order_side:
+                order_sides = order_sides + ' : ' + order_side[oid]
+                order_prices = order_prices + ' : ' + order_price[oid]
+                order_sizes = order_sizes + ' : ' + order_size[oid]
+                order_dts = order_dts + ' : ' + order_dt[oid]
+            performance = self.ac.get_performance() #{'total_pl':self.realized_pnl + self.unrealized_pnl + self.total_fee, 'num_trade':self.num_trade, 'win_rate':self.win_rate, 'total_fee':self.total_fee}
+            LogMaster.add_log({'log_dt':datetime.now(), 'dt':self.omd.ohlc.dt[-1], 'open':self.omd.ohlc.open[-1], 'high':self.omd.ohlc.high[-1],
+                               'low':self.omd.ohlc.low[-1], 'close':self.omd.ohlc.close[-1], 'posi_side':posi_side, 'posi_price':posi_price, 'posi_size':posi_size,
+                               'order_side':order_sides,'order_price':order_prices, 'order_size':order_sizes, 'num_private_access':Trade.num_private_access,
+                               'num_public_access':Trade.num_public_access, 'pnl':performance['total_pnl'], 'pnl_per_min':performance['total_pnl_per_min'],
+                               'num_trade':performance['num_trade'], 'win_rate':performance['win_rate'], 'prediction':LgbModel.get_pred(), 'api_error', 'action_message'})
 
 
 
