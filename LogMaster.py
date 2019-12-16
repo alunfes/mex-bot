@@ -74,16 +74,22 @@ class LogMaster:
     @classmethod
     def get_latest_performance(cls):
         if cls.index > 0:
-            return {'log_dt':cls.log_list[-1]['log_dt'],'pl':cls.log_list[-1]['pl'], 'pl_per_min':cls.log_list[-1]['pl_per_min'], 'num_trade':cls.log_list[-1]['num_trade'],'win_rate':cls.log_list[-1]['win_rate']}
+            return {'dt':cls.log_list[-1]['dt'],'pnl':cls.log_list[-1]['pnl'], 'pnl_per_min':cls.log_list[-1]['pnl_per_min'], 'num_trade':cls.log_list[-1]['num_trade'],'win_rate':cls.log_list[-1]['win_rate']}
         else:
             return {}
 
     @classmethod
     def get_latest_position(cls):
         if cls.index > 0:
-            return {'log_dt': cls.log_list[-1]['log_dt'], 'posi_side': cls.log_list[-1]['posi_side'], 'posi_price': cls.log_list[-1]['posi_price'], 'posi_size': cls.log_list[-1]['posi_size']}
+            return {'dt': cls.log_list[-1]['dt'], 'posi_side': cls.log_list[-1]['posi_side'], 'posi_price': cls.log_list[-1]['posi_price'], 'posi_size': cls.log_list[-1]['posi_size']}
         else:
             return {}
+
+
+    @classmethod
+    def get_latest_prediction(cls):
+        if cls.index > 0:
+            return {'prediction':cls.log_list[-1]['prediction']}
 
     @classmethod
     def get_latest_order(cls):

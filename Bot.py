@@ -5,6 +5,7 @@ from Account import Account
 from SystemFlg import SystemFlg
 from LgbModel import LgbModel
 from BotStrategy import BotStrategy, DecisionData
+from LineNotification import LineNotification
 from LogMaster import LogMaster
 import threading
 from RealtimeWSAPI import TickData
@@ -48,6 +49,7 @@ class Bot:
         self.ac = Account()
         self.omd = OneMinMarketData
         #self.lgb_model = LgbModel()
+        LineNotification.initialize()
         self.amount = 10
         th = threading.Thread(target=self.__bot_thread)
         th2 = threading.Thread(target=self.__bot_sub_thread)
@@ -99,7 +101,8 @@ class Bot:
                                'low':self.omd.ohlc.low[-1], 'close':self.omd.ohlc.close[-1], 'posi_side':posi_side, 'posi_price':posi_price, 'posi_size':posi_size,
                                'order_side':order_sides,'order_price':order_prices, 'order_size':order_sizes, 'num_private_access':Trade.num_private_access,
                                'num_public_access':Trade.num_public_access, 'pnl':performance['total_pnl'], 'pnl_per_min':performance['total_pnl_per_min'],
-                               'num_trade':performance['num_trade'], 'win_rate':performance['win_rate'], 'prediction':LgbModel.get_pred(), 'api_error', 'action_message'})
+                               'num_trade':performance['num_trade'], 'win_rate':performance['win_rate'], 'prediction':LgbModel.get_pred(), 'api_error':'', 'action_message':'Move to next'})
+            LineNotification.send_performance_notification()
 
 
 

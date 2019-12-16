@@ -2,7 +2,7 @@ import requests
 import asyncio
 import numpy as np
 import matplotlib as plt
-
+from LogMaster import LogMaster
 
 class LineNotification:
     @classmethod
@@ -20,9 +20,9 @@ class LineNotification:
         file.close()
 
     @classmethod
-    def send_notification(cls, performance):
+    def send_performance_notification(cls):
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(cls.__send_performance_data(performance))
+        loop.run_until_complete(cls.__send_performance_data())
         # loop.run_until_complete(cls.__send_position_and_order_data())
 
     @classmethod
@@ -37,21 +37,19 @@ class LineNotification:
         if len(message) > 0:
             await cls.__send_message('\r\n' + str(message))
 
-    @classmethod
-    async def __send_pl_chart(cls, img):
-        if img is not None:
-            await cls.__send_image('\r\n' + str(img))
 
     @classmethod
-    async def __send_performance_data(cls, performance):
-        p = performance
+    async def __send_performance_data(cls):
+        p = LogMaster.get_latest_performance()
+        pred = LogMaster.get_latest_position()
+        posi = LogMaster.get_latest_position()
         if len(p) > 0:
             await cls.__send_message('\r\n' + '[' + str(p['dt'].strftime("%m/%d %H:%M:%S")) + ']' +
-                                     '\r\n' + 'p:' + str(p['total_pl']) + ', p-min:' + str(
-                round(p['total_pl_per_min'], 2)) +
-                                     ', num:' + str(p['num_trade']) + ', rate:' + str(
-                round(p['win_rate'], 2)) + ', exe gap:' + str(round(p['execution gap'], 1)) +
-                                     '\r\n' + str(p['posi_side']) + ' : ' + str(p['prediction']))
+                                     '\r\n' + 'p:' + str(p['pnl']) + ', p-min:' + str(p['total_pnl_per_min']) +
+                                     ', num:' + str(p['num_trade']) + ', rate:' + str(p['win_rate']) +
+                                     '\r\n' + str(posi['posi_side']) + ' : ' + str(pred['prediction']))
+
+
 
     @classmethod
     async def __send_message(cls, message):
