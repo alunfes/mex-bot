@@ -10,6 +10,7 @@ from LogMaster import LogMaster
 import threading
 from RealtimeWSAPI import TickData
 import pytz
+import pandas as pd
 import time
 from datetime import datetime
 import pickle
@@ -45,10 +46,11 @@ Botでは戦略意思決定、トレード、口座、Line, Logなどの管理�
 class Bot:
     def __init__(self):
         pws = PrivateWS()
+        self.pt_ratio, self.lc_ratio, self.pred_method, self.upper_kijun, self.avert_onemine, self.avert_period_kijun, self.avert_val_kijun = self.__read_config_data()
         Trade.initialize()
         self.ac = Account()
         self.omd = OneMinMarketData
-        #self.lgb_model = LgbModel()
+        self.lgb_model = LgbModel(self.pred_method, self.upper_kijun)
         LineNotification.initialize()
         self.amount = 10
         th = threading.Thread(target=self.__bot_thread)
@@ -105,6 +107,9 @@ class Bot:
             LineNotification.send_performance_notification()
 
 
+    def __read_config_data(self):
+        config = pd.read_csv('./Model/bpsp_config.csv', index_col=0)
+        return config['pt_ratio'], config['lc_ratio'], config['pred_method'], config['upper_kijun'], config['avert_onemine'], config['avert_period_kijun'], config['avert_val_kijun']
 
 
 
@@ -148,7 +153,11 @@ class Bot:
 
 
 if __name__ == '__main__':
+    config = pd.read_csv('./Model/bpsp_config.csv', index_col=0)
+
+    '''
     bot = Bot()
     bot.initialize()
     df = OneMinMarketData.generate_df_from_dict()
     df.to_csv('./Data/df.csv')
+    '''

@@ -232,20 +232,6 @@ class OneMinMarketData:
             func_obj[col] = cls.ohlc.func_dict[col]
         cls.ohlc.func_dict = func_obj
 
-    @classmethod
-    def __read_config_dict(cls):
-        configs = []
-        with open("./Model/bpsp_config.csv", "r") as f:
-            reader = csv.reader(f)
-            for r in reader:
-                configs.append(r)
-        
-
-        config = {'pt_ratio': pt_ratio, 'lc_ratio': lc_ratio, 'pred_method': pred_method,
-                  'upper_kijun': opt_params['upper_kijun'] / 100.0, 'avert_onemine': opt_params['avert_onemine'],
-                  'avert_period_kijun': opt_params['avert_period_kijun'],
-                  'avert_val_kijun': opt_params['avert_val_kijun'] / 10000}
-
 
     @classmethod
     def update_for_bot(cls):

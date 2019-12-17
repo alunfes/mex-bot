@@ -14,6 +14,7 @@ class PrivateWS:
         PrivateWSData.initialize()
         # サーバとのデータのやりとりを表示するため、Trueを指定する。
         websocket.enableTrace(False)
+
         # 接続先URLと各コールバック関数を引数に指定して、WebSocketAppのインスタンスを作成
         self.ws_pub = websocket.WebSocketApp(url='wss://www.bitmex.com/realtime',
                                     on_open=self.on_open,
@@ -23,6 +24,7 @@ class PrivateWS:
         self.thread = threading.Thread(target=lambda: self.ws_pub.run_forever())
         self.thread.daemon = True
         self.thread.start()
+        print(websocket.WebSocket.getstatus)
 
 
     def signature(self, api_secret: str, verb: str, url: str, nonce: int) -> str:

@@ -6,15 +6,28 @@ from RealtimeWSAPI import TickData
 
 class BotStrategy:
     @classmethod
-    def model_prediction_onemin(cls, prediction, ac, amount):
+    def sim_model_pred_onemin(cls, prediction, pt_ratio, lc_ratio, ac, amount):
         dd = DecisionData()
-        holding_side = ac.get_position()['side']
-        if holding_side != prediction:
-            if holding_side == '' and (prediction == 'Buy' or prediction == 'Sell'):  # no position no order
-                dd.set_decision(prediction, 0, amount, 'market', False, 10)
-            elif (holding_side == 'Buy' or holding_side == 'Sell') and (prediction == 'Buy' or prediction == 'Sell') and holding_side != prediction:
-                dd.set_decision(prediction, 0, ac.get_position()['side'] + amount, 'market', False, 10)  # exit and re-entry
+        if TickData.get_ask() > 0:
+            position = ac.get_position()
+            order_side, order_price, order_size, order_dt = ac.get_orders()
+            pt_price = int(round(position['price'] * (1.0 + pt_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 - pt_ratio)))
+            if position['side'] != prediction:
+                if position['side'] == '' and (prediction == 'Buy' or prediction == 'Sell'):  # no position no order
+                    dd.set_decision(prediction, 0, amount, 'Market', False) #entry order
+                elif (position['side'] == 'Buy' or position['side'] == 'Sell') and (prediction == 'Buy' or prediction == 'Sell') and position['side'] != prediction and len(order_side) > 0:
+                    dd.set_decision('', 0, 0, '', True) #cancel pt order before exit and re-entry
+                elif (position['side'] == 'Buy' or position['side'] == 'Sell') and (prediction == 'Buy' or prediction == 'Sell') and position['side'] != prediction and len(order_side) == 0:
+                    dd.set_decision(prediction, 0, position['size'] + amount, 'Market', False)  # exit and re-entry
+                elif position['side'] != '' and len(order_side) == 0:
+                    dd.set_decision('Buy' if position['side'] == 'Sell' else 'Sell', pt_price, position['size'], 'Limit', False) #place a pt limit order
+                elif position['side'] != '' and position['price']
+
         return dd
+
+    @classmethod
+    def sim_model_pred_onemin_avert(cls, prediction, pt_ratio, lc_ratio, ac, ac2, avert_period_kijun, avert_val_kijun, amount):
+
 
 
     '''

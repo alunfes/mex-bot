@@ -189,5 +189,6 @@ class DownloadMexOhlc:
 if __name__ == '__main__':
     print(datetime.now())
     DownloadMexOhlc.download_data()
+    print('completed download data')
 
 
