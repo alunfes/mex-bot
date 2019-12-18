@@ -199,19 +199,3 @@ class LgbModel:
                 return float(matched) / float(len(predictions))
             else:
                 return 0
-
-        def eval_multi_score(self, pred, test_y):
-            correct = [0, 0, 0, 0]
-            for i in range(len(pred)):
-                if pred[i] == test_y.iloc[i]:
-                    correct[pred[i]] += 1
-
-            if correct[0] > 0:
-                bar_val = [correct[0] / float((test_y == 0).sum()), correct[1] / float((test_y == 1).sum()),
-                           correct[2] / float((test_y == 2).sum()), correct[3] / float((test_y == 3).sum())]
-            else:
-                ar_val = 0
-            plt.bar(['no', 'buy', 'sell', 'both'], bar_val)
-            print('accuracy=', accuracy_score(pred, test_y))
-            print('f1=', f1_score(pred, test_y, average='macro'))
-            print('buy/sell accuracy=', np.mean([bar_val[1], bar_val[2]]))

@@ -78,6 +78,8 @@ class Account:
             self.__remove_order(order_id)
 
 
+    def bot_sync_order_position(self):
+        pass
 
 
     #to confirm added order in actual order data from ws

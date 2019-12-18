@@ -1,10 +1,10 @@
 from Trade import Trade
 from OneMinMarketData import OneMinMarketData
-from PrivateWS import PrivateWS, PrivateWSData
+from PrivateWS import PrivateWS
 from Account import Account
 from SystemFlg import SystemFlg
 from LgbModel import LgbModel
-from BotStrategy import BotStrategy, DecisionData
+from BotStrategy import BotStrategy, BotStateData
 from LineNotification import LineNotification
 from LogMaster import LogMaster
 import threading
@@ -63,23 +63,52 @@ class Bot:
         next_min = datetime.now().minute +1 if datetime.now().minute +1 < 60 else 0
         flg = False
         while SystemFlg.get_system_flg():
-            #pred = self.lgb_model.get_pred()
-            #dd = BotStrategy.model_prediction_onemin(pred, self.ac, self.amount)
-            dd = BotStrategy.random_pl_taker(self.ac, self.amount)
-            if dd.cancel:
-                oid = self.ac.get_order_ids()[0]
-                print('bot cancel order', oid)
-                cancel = Trade.cancel_order(oid) #accountでcancelを補足して処理する前にbotで再度cancelしてしまう。
-                print('cancel res', cancel)
-                self.ac.bot_cancel_order(oid)
-            else:
-                if (dd.side == 'Buy' or dd.side == 'Sell'):
-                    res = Trade.order(dd.side, dd.price, dd.type, dd.size)
-                    if 'info' in res:
-                        self.ac.add_order(res['info']['orderID'], dd.side, dd.price, dd.size, dd.type)
-                    else:
-                        print('Trade Order Response is invalid!', res)
+            pred = self.lgb_model.get_pred()
 
+
+
+
+'''
+            ds = BotStrategy.model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, self.ac, self.amount)
+            position = self.ac.get_position()
+            order_side, order_price, order_size, order_dt = self.ac.get_orders()
+            if ds.flg_noaction == False:
+                if ds.posi_side == '' and ds.order_price == 0 and ds.order_type == 'Market':#losscut
+                    for oid in order_side: #cancel all orders before losscut
+                        cancel = Trade.cancel_order(oid)
+                        if 'info' not in cancel:
+                            print('cancel failed in bot!', cancel)
+                        else:
+                            self.ac.bot_cancel_order(oid)
+                    if position['side'] != '': #do losscut
+                        res = Trade.order('Buy' if position['side'] == ' Sell' else 'Sell', 0, 'Market', position['size'])
+                        if 'info' not in res:
+                            print('order error in bot!'), res
+                        else:
+                            self.ac.add_order(res['info']['orderID'], res['info']['side'], res['info']['price'], res['info']['orderQty'], res['info']['ordType'])
+                else: #not losscut
+
+                    if ds.posi_side != position['side'] and ds.posi_side != '':
+                        flg_trade_error = False
+                        res = Trade.order(ds.posi_side, 0, 'Market', position['size']+ds.posi_size) #making same position as ds
+                        if 'info' not in res:
+                            print('order error in bot!', res)
+                            flg_trade_error = True
+                        else:
+                            self.ac.add_order(res['info']['orderID'], res['info']['side'], res['info']['price'],res['info']['orderQty'], res['info']['ordType'])
+                    if ds.order_type == 'PT' and flg_trade_error == False:
+                        Trade.order(ds.order_side, )
+                    elif ds.order_side != '' and len(order_side) > 0:
+                        pass
+'''
+
+
+
+
+
+    '''
+    for minutes process
+    '''
     def __bot_sub_thread(self):
         while SystemFlg.get_system_flg():
             time.sleep(60)

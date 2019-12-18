@@ -9,20 +9,14 @@ import csv
 import numpy as np
 import talib as ta
 
-from SimStrategy import Strategy
-from SimOneMinMarketData import OneMinMarketData
-from SimAccount import SimAccount
-from SimLgbModel import LgbModel
+from RealtimeSimStrategy import RealtimeSimStrategy
+from RealtimeSimAccount import RealtimeSimAccount
 import time
 
-class Sim:
+class RealtimeSim:
     @classmethod
-    def sim_model_pred_onemin(cls, start_ind, prediction, pt, lc, ac):
-        omd = OneMinMarketData
-        for i in range(len(prediction) - 1):
-            ac.check_executions(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i],
-                                omd.ohlc.high[start_ind + i], omd.ohlc.low[start_ind + i])
-            dd = Strategy.model_prediction_onemin(start_ind, prediction, i, ac)
+    def sim_model_pred_onemin(cls, pred, pt, lc, ltp, ac):
+            dd = RealtimeSimStrategy.model_prediction_onemin(pred,ac, ltp)
             if dd.side != '':
                 ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pt, lc, i, omd.ohlc.dt[start_ind + i])
             ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i], omd.ohlc.high[start_ind + i],

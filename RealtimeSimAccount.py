@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-class SimAccount:
+class RealtimeSimAccount:
     def __init__(self):
         self.__initialize_order()
         self.__initialize_holding()
