@@ -13,6 +13,10 @@ import pytz
 import pandas as pd
 import time
 from datetime import datetime
+
+from RealtimeSim import RealtimeSim
+from RealtimeSimAccount import RealtimeSimAccount
+
 import pickle
 
 
@@ -53,6 +57,10 @@ class Bot:
         self.lgb_model = LgbModel(self.pred_method, self.upper_kijun)
         LineNotification.initialize()
         self.amount = 10
+
+        self.sim = RealtimeSim()
+        self.ac = RealtimeSimAccount()
+
         th = threading.Thread(target=self.__bot_thread)
         th2 = threading.Thread(target=self.__bot_sub_thread)
         th.start()
@@ -65,11 +73,12 @@ class Bot:
         while SystemFlg.get_system_flg():
             pred = self.lgb_model.get_pred()
 
-
+            self.ac = self.sim.sim_model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, TickData.get_ltp(), self.ac)
 
 
 '''
             ds = BotStrategy.model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, self.ac, self.amount)
+            pt_price = int(round(position['price'] * (1.0 + pt_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 - pt_ratio)))
             position = self.ac.get_position()
             order_side, order_price, order_size, order_dt = self.ac.get_orders()
             if ds.flg_noaction == False:

@@ -2,14 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="549546f5-9711-4611-b5a7-af5500ed94e2" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Account.py" beforeDir="false" afterPath="$PROJECT_DIR$/Account.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/Bot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BotStrategy.py" beforeDir="false" afterPath="$PROJECT_DIR$/BotStrategy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LgbModel.py" beforeDir="false" afterPath="$PROJECT_DIR$/LgbModel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sim.py" beforeDir="false" afterPath="$PROJECT_DIR$/RealtimeSim.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SimAccount.py" beforeDir="false" afterPath="$PROJECT_DIR$/RealtimeSimAccount.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SimStrategy.py" beforeDir="false" afterPath="$PROJECT_DIR$/RealtimeSimStrategy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RealtimeSim.py" beforeDir="false" afterPath="$PROJECT_DIR$/RealtimeSim.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RealtimeSimAccount.py" beforeDir="false" afterPath="$PROJECT_DIR$/RealtimeSimAccount.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RealtimeSimStrategy.py" beforeDir="false" afterPath="$PROJECT_DIR$/RealtimeSimStrategy.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -22,8 +21,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Bot.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1005">
-              <caret line="67" selection-start-line="67" selection-end-line="67" />
+            <state relative-caret-position="276">
+              <caret line="77" selection-start-line="77" selection-end-line="77" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -31,11 +30,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/RealtimeSimAccount.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="210">
-              <caret line="14" column="26" selection-start-line="14" selection-start-column="26" selection-end-line="14" selection-end-column="26" />
+            <state relative-caret-position="960">
+              <caret line="64" column="42" selection-start-line="64" selection-start-column="42" selection-end-line="64" selection-end-column="42" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
               </folding>
@@ -43,11 +42,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/RealtimeSim.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
-              <caret line="19" column="29" lean-forward="true" selection-start-line="19" selection-start-column="29" selection-end-line="19" selection-end-column="29" />
+            <state relative-caret-position="226">
+              <caret line="30" column="29" lean-forward="true" selection-start-line="30" selection-start-column="29" selection-end-line="30" selection-end-column="29" />
               <folding>
                 <element signature="e#38#51#0" expanded="true" />
               </folding>
@@ -58,8 +57,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/RealtimeSimStrategy.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="13" selection-start-line="13" selection-end-line="13" />
+            <state relative-caret-position="225">
+              <caret line="15" column="51" selection-start-line="15" selection-start-column="51" selection-end-line="15" selection-end-column="51" />
             </state>
           </provider>
         </entry>
@@ -67,8 +66,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/BotStrategy.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="600">
-              <caret line="40" column="36" selection-start-line="40" selection-start-column="36" selection-end-line="40" selection-end-column="36" />
+            <state relative-caret-position="195">
+              <caret line="13" selection-start-line="13" selection-end-line="13" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
               </folding>
@@ -79,8 +78,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/PrivateWS.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1864">
-              <caret line="30" column="17" lean-forward="true" selection-start-line="30" selection-start-column="17" selection-end-line="30" selection-end-column="17" />
+            <state relative-caret-position="330">
+              <caret line="30" column="17" selection-start-line="30" selection-start-column="17" selection-end-line="30" selection-end-column="17" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -91,8 +90,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="99">
-              <caret line="31" column="21" lean-forward="true" selection-start-line="31" selection-start-column="21" selection-end-line="31" selection-end-column="21" />
+            <state relative-caret-position="315">
+              <caret line="31" column="21" selection-start-line="31" selection-start-column="21" selection-end-line="31" selection-end-column="21" />
               <folding>
                 <element signature="e#0#33#0" expanded="true" />
               </folding>
@@ -103,7 +102,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/LineNotification.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-54">
+            <state relative-caret-position="270">
               <caret line="22" column="37" selection-start-line="22" selection-start-column="37" selection-end-line="22" selection-end-column="37" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
@@ -115,7 +114,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Trade.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="263">
+            <state relative-caret-position="6285">
               <caret line="427" column="18" selection-start-line="427" selection-start-column="11" selection-end-line="427" selection-end-column="18" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
@@ -135,7 +134,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>set_ask</find>
       <find>p</find>
       <find>LOG</find>
       <find>trdMatchID</find>
@@ -165,6 +163,7 @@
       <find>close_change</find>
       <find>__read_func_dict</find>
       <find>cancel</find>
+      <find>current_pl</find>
     </findStrings>
     <replaceStrings>
       <replace>term</replace>
@@ -206,14 +205,15 @@
         <option value="$PROJECT_DIR$/OneMinMarketData.py" />
         <option value="$PROJECT_DIR$/LogMaster.py" />
         <option value="$PROJECT_DIR$/PrivateWS.py" />
-        <option value="$PROJECT_DIR$/BotStrategy.py" />
         <option value="$PROJECT_DIR$/Account.py" />
-        <option value="$PROJECT_DIR$/Bot.py" />
         <option value="$PROJECT_DIR$/Sim.py" />
         <option value="$PROJECT_DIR$/SimAccount.py" />
         <option value="$PROJECT_DIR$/SimStrategy.py" />
         <option value="$PROJECT_DIR$/LgbModel.py" />
+        <option value="$PROJECT_DIR$/BotStrategy.py" />
         <option value="$PROJECT_DIR$/RealtimeSimStrategy.py" />
+        <option value="$PROJECT_DIR$/Bot.py" />
+        <option value="$PROJECT_DIR$/RealtimeSimAccount.py" />
         <option value="$PROJECT_DIR$/RealtimeSim.py" />
       </list>
     </option>
@@ -228,26 +228,14 @@
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
-    <panes>
-      <pane id="ProjectPane">
-        <subPane>
-          <expand>
-            <path>
-              <item name="mex-bot" type="b2602c69:ProjectViewProjectNode" />
-              <item name="mex-bot" type="462c0819:PsiDirectoryNode" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-      </pane>
-      <pane id="Scope" />
-    </panes>
+    <panes />
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="ToolWindowDebug.ShowToolbar" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
+    <property name="settings.editor.selected.configurable" value="preferences.sourceCode" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -377,11 +365,11 @@
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Python.Bot" />
+      <item itemvalue="Python.DownloadMexOhlc" />
+      <item itemvalue="Python.PrivateWS" />
       <item itemvalue="Python.Test" />
       <item itemvalue="Python.Trade" />
-      <item itemvalue="Python.DownloadMexOhlc" />
-      <item itemvalue="Python.Bot" />
-      <item itemvalue="Python.PrivateWS" />
     </list>
     <recent_temporary>
       <list>
@@ -441,13 +429,13 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/mex-bot/lib/python3.6/site-packages/pandas/core/internals/construction.py" />
     <entry file="file://$PROJECT_DIR$/mex_1m_data.csv">
-      <provider editor-type-id="csv-table-editor">
-        <state showInfoPanel="true" fixedHeaders="false" rowLines="3" />
-      </provider>
       <provider selected="true" editor-type-id="csv-text-editor">
         <state relative-caret-position="469">
           <caret line="161275" column="49" selection-start-line="161275" selection-start-column="49" selection-end-line="161275" selection-end-column="49" />
         </state>
+      </provider>
+      <provider editor-type-id="csv-table-editor">
+        <state showInfoPanel="true" fixedHeaders="false" rowLines="3" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/mex-bot/lib/python3.6/site-packages/ccxt/base/exchange.py" />
@@ -570,10 +558,10 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/pnl.csv">
+      <provider selected="true" editor-type-id="csv-text-editor" />
       <provider editor-type-id="csv-table-editor">
         <state showInfoPanel="true" fixedHeaders="false" rowLines="3" />
       </provider>
-      <provider selected="true" editor-type-id="csv-text-editor" />
     </entry>
     <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -711,72 +699,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/LineNotification.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-54">
-          <caret line="22" column="37" selection-start-line="22" selection-start-column="37" selection-end-line="22" selection-end-column="37" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/LogMaster.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="120">
           <caret line="8" column="22" selection-start-line="8" selection-start-column="22" selection-end-line="8" selection-end-column="22" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Trade.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="263">
-          <caret line="427" column="18" selection-start-line="427" selection-start-column="11" selection-end-line="427" selection-end-column="18" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="99">
-          <caret line="31" column="21" lean-forward="true" selection-start-line="31" selection-start-column="21" selection-end-line="31" selection-end-column="21" />
-          <folding>
-            <element signature="e#0#33#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/BotStrategy.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="600">
-          <caret line="40" column="36" selection-start-line="40" selection-start-column="36" selection-end-line="40" selection-end-column="36" />
-          <folding>
-            <element signature="e#0#13#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/PrivateWS.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1864">
-          <caret line="30" column="17" lean-forward="true" selection-start-line="30" selection-start-column="17" selection-end-line="30" selection-end-column="17" />
-          <folding>
-            <element signature="e#0#16#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Bot.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1005">
-          <caret line="67" selection-start-line="67" selection-end-line="67" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -791,16 +719,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/RealtimeSimAccount.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="26" selection-start-line="14" selection-start-column="26" selection-end-line="14" selection-end-column="26" />
-          <folding>
-            <element signature="e#0#19#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/LgbModel.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="266">
@@ -811,19 +729,89 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/RealtimeSimStrategy.py">
+    <entry file="file://$PROJECT_DIR$/OneMinMarketData.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="315">
+          <caret line="31" column="21" selection-start-line="31" selection-start-column="21" selection-end-line="31" selection-end-column="21" />
+          <folding>
+            <element signature="e#0#33#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/LineNotification.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="22" column="37" selection-start-line="22" selection-start-column="37" selection-end-line="22" selection-end-column="37" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Trade.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="6285">
+          <caret line="427" column="18" selection-start-line="427" selection-start-column="11" selection-end-line="427" selection-end-column="18" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PrivateWS.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="30" column="17" selection-start-line="30" selection-start-column="17" selection-end-line="30" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#16#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/BotStrategy.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="195">
           <caret line="13" selection-start-line="13" selection-end-line="13" />
+          <folding>
+            <element signature="e#0#13#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Bot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="276">
+          <caret line="77" selection-start-line="77" selection-end-line="77" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/RealtimeSimStrategy.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="15" column="51" selection-start-line="15" selection-start-column="51" selection-end-line="15" selection-end-column="51" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/RealtimeSim.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="165">
-          <caret line="19" column="29" lean-forward="true" selection-start-line="19" selection-start-column="29" selection-end-line="19" selection-end-column="29" />
+        <state relative-caret-position="226">
+          <caret line="30" column="29" lean-forward="true" selection-start-line="30" selection-start-column="29" selection-end-line="30" selection-end-column="29" />
           <folding>
             <element signature="e#38#51#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/RealtimeSimAccount.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="960">
+          <caret line="64" column="42" selection-start-line="64" selection-start-column="42" selection-end-line="64" selection-end-column="42" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
           </folding>
         </state>
       </provider>

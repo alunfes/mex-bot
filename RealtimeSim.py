@@ -8,24 +8,35 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 import talib as ta
-
+from datetime import datetime
 from RealtimeSimStrategy import RealtimeSimStrategy
 from RealtimeSimAccount import RealtimeSimAccount
 import time
 
+
 class RealtimeSim:
     @classmethod
-    def sim_model_pred_onemin(cls, pred, pt, lc, ltp, ac):
-            dd = RealtimeSimStrategy.model_prediction_onemin(pred,ac, ltp)
-            if dd.side != '':
-                ac.entry_order(dd.side, dd.price, dd.size, dd.type, dd.expire, pt, lc, i, omd.ohlc.dt[start_ind + i])
-            ac.move_to_next(i, omd.ohlc.dt[start_ind + i], omd.ohlc.open[start_ind + i], omd.ohlc.high[start_ind + i],
-                            omd.ohlc.low[start_ind + i], omd.ohlc.close[start_ind + i])
-        end_i = len(prediction) - 1
-        ac.last_day_operation(end_i, omd.ohlc.dt[start_ind + end_i], omd.ohlc.open[start_ind + end_i],
-                              omd.ohlc.high[start_ind + end_i], omd.ohlc.low[start_ind + end_i],
-                              omd.ohlc.close[start_ind + end_i])
-        return ac
+    def sim_model_pred_onemin(cls, pred, pt_ratio, lc_ratio, amount, ltp, ac:RealtimeSimAccount):
+            ds = RealtimeSimStrategy.model_prediction_onemin(pred, lc_ratio, amount, ac, ltp)
+            pt_price = int(round(ac.holding_price * (1.0 + pt_ratio))) if ac.holding_side == 'Buy' else int(round(ac.holding_price * (1.0 - pt_ratio)))
+            if ds.flg_noaction == False:
+                if ds.order_type == 'LC':  # losscut
+                    ac.cancel_all_orders()
+                    if ac.holding_side != '':  # do losscut
+                        ac.entry_order('Buy' if ac.holding_side == 'Sell' else 'Sell', 0, ac.holding_size, 'Market', ltp, datetime.now())
+                else:  # not losscut
+                    if ds.posi_side != ac.holding_side and ds.posi_side != '':
+                        if ac.holding_side =='':
+                            ac.entry_order(ds.posi_side, 0, ds.posi_size, 'Market', ltp, datetime.now())
+                        else:
+                            ac.entry_order(ds.posi_side, 0, ds.posi_size + ac.holding_size, 'Market', ltp, datetime.now())
+                    elif ds.order_type == 'PT':
+                        ac.entry_order('Buy' if ac.holding_side == 'Sell' else 'Sell', pt_price, ac.holding_size, 'Limit', ltp, datetime.now())
+                    elif ds.posi_side == ac.holding_side and ds.posi_size != ac.holding_size:
+                        print('position size unmatched!')
+            ac.check_executions(ltp, datetime.now())
+            ac.update_pnl(ltp)
+            return ac
 
     @classmethod
     def sim_model_pred_onemin_avert(cls, start_ind, prediction, pt, lc, ac, avert_period_kijun=120,
@@ -83,164 +94,4 @@ class RealtimeSim:
 
 
 if __name__ == '__main__':
-    '''
-    ema trend follow sim
-    '''
-    num_term = 10
-    initial_data_vol = 20000
-
-    start = time.time()
-    OneMinMarketData.initialize_for_bot(num_term, initial_data_vol)
-    df = OneMinMarketData.genrate_df_from_dict()
-    # df = OneMinMarketData.remove_cols_contains_nan(df)
-
-    start_ind = 0
-    sim = Sim()
-    ac = SimAccount()
-    ac = sim.sim_ema_trend_follow(start_ind, ac)
-    print('total pl={},num trade={},win rate={}, pl_stability={}, num_buy={}, num_sell={}'.format(ac.total_pl,
-                                                                                                  ac.num_trade,
-                                                                                                  ac.win_rate,
-                                                                                                  ac.pl_stability,
-                                                                                                  ac.num_buy,
-                                                                                                  ac.num_sell))
-    print('strategy performance={}'.format(ac.total_pl * ac.pl_stability))
-
-    fig, ax1 = plt.subplots()
-    plt.figure(figsize=(30, 30), dpi=200)
-    ax1.plot(ac.performance_total_pl_log, color='red', linewidth=3.0, label='pl')
-    ax2 = ax1.twinx()
-    fromn = len(OneMinMarketData.ohlc.close) - len(ac.performance_total_pl_log)
-    ax2.plot(OneMinMarketData.ohlc.close[fromn:])
-    plt.show()
-
-    #load model and sim
-    '''
-    num_term = 10
-    corr_kijun = 0.9
-    upper_kijun = 0.5
-    lower_kijun = 0.4
-    initial_data_vol = 3000
-
-    train_size = 0.8
-    valid_size = 0.1
-
-    params = {'objective': 'binary', 'boosting': 'gbdt', 'learning_rate': 0.05, 'num_iterations': 15000, 'max_depth': 6,
-              'num_leaves': 500, 'verbose_eval': False, 'verbose': -1, 'early_stopping_rounds': 50}
-
-    start = time.time()
-    OneMinMarketData.initialize_for_load_sim(num_term, initial_data_vol)
-    df = OneMinMarketData.genrate_df_from_dict()
-    test_y = df['bpsp']
-    test_y.columns = ['bpsp']
-    test_df = df.drop(['dt', 'size', 'bpsp'], axis=1)
-    lgbmodel = LgbModel()
-    model = lgbmodel.load_model()
-    cols = list(test_df.columns)
-    cols.sort()
-    test_df = test_df[cols]
-
-    predictions = lgbmodel.bp_prediciton(model, test_df, upper_kijun)
-    print('test accuracy={}'.format(lgbmodel.calc_bp_accuracy(predictions, test_y)))
-
-    start_ind = OneMinMarketData.check_matched_index(test_df)
-    sim = Sim()
-    ac = SimAccount()
-    ac = sim.sim_model_pred_onemin(start_ind, predictions, ac)
-    print('total pl={},num trade={},win rate={}, pl_stability={}, num_buy={}, num_sell={}'.format(ac.total_pl,
-                                                                                                  ac.num_trade,
-                                                                                                  ac.win_rate,
-                                                                                                  ac.pl_stability,
-                                                                                                  ac.num_buy,
-                                                                                                  ac.num_sell))
-    print('strategy performance={}'.format(ac.total_pl * ac.pl_stability))
-
-    fig, ax1 = plt.subplots()
-    plt.figure(figsize=(30, 30), dpi=200)
-    ax1.plot(ac.performance_total_pl_log, color='red', linewidth=3.0, label='pl')
-    ax2 = ax1.twinx()
-    ax2.plot(OneMinMarketData.ohlc.close[start_ind:])
-    plt.show()
-
-    test_df = test_df.assign(dt=df['dt'])
-    test_df = test_df.assign(prediction=predictions)
-    test_df.to_csv('./Data/sim_result.csv', index=False)
-    '''
-
-
-    #train and sim
-    '''
-    num_term = 10
-    corr_kijun = 0.9
-    upper_kijun = 0.5
-    lower_kijun = 0.4
-    initial_data_vol = 20000
-
-    train_size = 0.8
-    valid_size = 0.1
-
-    params = {'objective': 'binary', 'boosting': 'gbdt', 'learning_rate': 0.05, 'num_iterations': 15000, 'max_depth': 6,
-              'num_leaves': 500, 'verbose_eval': False, 'verbose': -1, 'early_stopping_rounds': 50}
-
-    start = time.time()
-    OneMinMarketData.initialize_for_bot(num_term, initial_data_vol)
-    
-    df = OneMinMarketData.genrate_df_from_dict()
-    df = OneMinMarketData.remove_cols_contains_nan(df)
-    df, corrs = OneMinMarketData.remove_all_correlated_cols3(df, 0.9)
-
-    lgbmodel = LgbModel()
-    train_xb, test_xb, train_yb, test_yb, valid_xb, valid_yb = lgbmodel.generate_bpsp_data(df, train_size, valid_size)
-    model = lgbmodel.train_params_with_validations(train_xb, train_yb, valid_xb, valid_yb, params)
-    # OneMinMarketData.write_all_func_dict()
-
-    tp = lgbmodel.bp_prediciton(model, train_xb, upper_kijun)
-    print('train accuracy={}'.format(lgbmodel.calc_bp_accuracy(tp, train_yb)))
-    predictions = lgbmodel.bp_prediciton(model, test_xb, upper_kijun)
-    print('test accuracy={}'.format(lgbmodel.calc_bp_accuracy(predictions, test_yb)))
-    print('pred num buy=' + str(sum(predictions)))
-
-    # importanceの上位200colだけ使って再学習
-    cols = lgbmodel.select_important_cols2(model, train_xb)
-    cols.extend(['open', 'high', 'low', 'close'])
-    cols.sort()
-
-    with open('./Model/sim_bpsp_cols.csv', 'w') as file:
-        writer = csv.writer(file, lineterminator='\n')
-        writer.writerow(cols)
-    print('completed write bpsp columns')
-
-    train_xb, test_xb, valid_xb = train_xb[cols], test_xb[cols], valid_xb[cols]
-    train_xb = train_xb.loc[:, cols]
-    test_xb = test_xb.loc[:, cols]
-    valid_xb = valid_xb.loc[:, cols]
-    model = lgbmodel.train_params_with_validations(train_xb, train_yb, valid_xb, valid_yb, params)
-
-    tp = lgbmodel.bp_prediciton(model, train_xb, upper_kijun)
-    print('train accuracy={}'.format(lgbmodel.calc_bp_accuracy(tp, train_yb)))
-    predictions = lgbmodel.bp_prediciton(model, test_xb, upper_kijun)
-    print('test accuracy={}'.format(lgbmodel.calc_bp_accuracy(predictions, test_yb)))
-    print('pred num buy=' + str(sum(predictions)))
-
-    with open('./Model/sim_lgb_bpsp_model.dat', 'wb') as f:
-        pickle.dump(model, f)
-
-    start_ind = OneMinMarketData.check_matched_index(test_xb)
-    sim = Sim()
-    ac = SimAccount()
-    ac = sim.sim_model_pred_onemin(start_ind, predictions, ac)
-    print('total pl={},num trade={},win rate={}, pl_stability={}, num_buy={}, num_sell={}'.format(ac.total_pl,
-                                                                                                  ac.num_trade,
-                                                                                                  ac.win_rate,
-                                                                                                  ac.pl_stability,
-                                                                                                  ac.num_buy,
-                                                                                                  ac.num_sell))
-    print('strategy performance={}'.format(ac.total_pl * ac.pl_stability))
-
-    fig, ax1 = plt.subplots()
-    plt.figure(figsize=(30, 30), dpi=200)
-    ax1.plot(ac.performance_total_pl_log, color='red', linewidth=3.0, label='pl')
-    ax2 = ax1.twinx()
-    ax2.plot(OneMinMarketData.ohlc.close[start_ind:])
-    plt.show()
-    '''
+    pass

@@ -3,14 +3,18 @@ from RealtimeSimAccount import RealtimeSimAccount
 
 class RealtimeSimStrategy:
     @classmethod
-    def model_prediction_onemin(cls, pred, ac, ltp):
-        dd = DecisionData()
-        if ac.holding_side != pred:
-            if ac.holding_side == '' and (pred == 'Buy' or pred == 'Sell'):  # no position no order
-                dd.set_decision(pred, 0, cls.__calc_opt_size(ltp, ac),'Market', False, 10)
-            elif (ac.holding_side == 'Buy' or ac.holding_side == 'Sell') and (pred == 'Buy' or pred == 'Sell') and ac.holding_side != pred:
-                dd.set_decision(pred, 0,ac.holding_size + cls.__calc_opt_size(ltp, ac),'market', False, 10)  # exit and re-entry
-        return dd
+    def model_prediction_onemin(cls, prediction, lc_ratio, amount, ac:RealtimeSimAccount, ltp):
+        ds = StateData()
+        lc_price = int(round(ac.holding_price * (1.0 - lc_ratio))) if ac.holding_side == 'Buy' else int(round(ac.holding_price * (1.0 + lc_ratio)))
+        if (ac.hoding_side == 'Buy' and ltp <= lc_price) or (ac.holding_side == 'Sell' and ltp >= lc_price):
+            ds.set_state(False, '', 0, '', 0, 0, 'LC')  # do losscut
+        elif prediction == 'Buy' or prediction == 'Sell':  # prediction通りのposi_sideにしてpt orderを出す
+            ds.set_state(False, prediction, amount, 'Buy' if prediction == 'Sell' else 'Sell', 0, 0, 'PT')
+        elif (prediction != 'Buy' and prediction != 'Sell') and (ac.holding_side != prediction):
+            ds.set_state(True, '', 0, '', 0, 0, '')  # for zero three
+        else:
+            ds.set_state(True, '', 0, '', 0, 0, '')
+        return ds
 
 
     @classmethod
@@ -18,21 +22,21 @@ class RealtimeSimStrategy:
         return 0.01
 
 
-#        return round((ac.asset * ac.leverage) / (price * 1.0 * ac.base_margin_rate), 2)
-
-class DecisionData:
+class StateData:
     def __init__(self):
-        self.side = ''
-        self.size = 0
-        self.price = 0
-        self.type = 0
-        self.cancel = False
-        self.expire = 0  # sec
+        self.flg_noaction = True
+        self.posi_side = ''
+        self.posi_size = 0
+        self.order_side = ''
+        self.order_price = 0
+        self.order_size = 0
+        self.order_type = '' #Limit, Market, PT, LC
 
-    def set_decision(self, side, price, size, type, cancel, expire):
-        self.side = side
-        self.price = price
-        self.size = size
-        self.type = type
-        self.cancel = cancel
-        self.expire = expire
+    def set_state(self, flg_noaction, posi_side, posi_size, order_side, order_price, order_size, order_type):
+        self.flg_noaction = flg_noaction
+        self.posi_side = posi_side
+        self.posi_size = posi_size
+        self.order_side = order_side
+        self.order_price = order_price
+        self.order_size = order_size
+        self.order_type = order_type

@@ -9,21 +9,16 @@ class RealtimeSimAccount:
         self.log_data_list = []
         self.log_data_df = pd.DataFrame()
 
-        self.base_margin_rate = 1.2
-        self.leverage = 4.0
-        self.slip_page = 0
-        self.fee = 0.00015
-        self.force_loss_cut_rate = 0.5
-        self.initial_asset = 1500
-        self.order_cancel_delay = 1
-        self.ls_penalty = 0
+        self.taker_fee = 0.00075
+        self.maker_fee = -0.00025
+        self.exec_slip = 0.5 #process execution when price + exec_slip or price - exec_slip depends on side
+        self.initial_asset = 1500000
 
-        self.pl_kijun = 0
-        self.ls_kijun = 0
 
         self.total_pl = 0
         self.realized_pl = 0
-        self.current_pl = 0
+        self.unrealized_pl = 0
+        self.total_fee = 0
         self.num_trade = 0
         self.num_sell = 0
         self.num_buy = 0
@@ -32,14 +27,7 @@ class RealtimeSimAccount:
         self.asset = self.initial_asset
 
         self.dt_log = []
-        self.i_log = []
-        self.order_log = []
-        self.holding_log = []
         self.total_pl_log = []
-        self.action_log = []
-        self.price_log = []
-        self.performance_total_pl_log = []
-        self.performance_dt_log = []
         self.pl_stability = 0
 
         self.start_dt = ''
@@ -52,12 +40,8 @@ class RealtimeSimAccount:
         self.order_side = {}
         self.order_price = {}
         self.order_size = {}
-        self.order_i = {}
         self.order_dt = {}
-        self.order_ut = {}
         self.order_type = {}  # market / limit
-        self.order_cancel = {}  # True / False
-        self.order_expire = {}
 
     def __del_order(self, target_serial):
         if target_serial in self.order_serial_list:
@@ -66,12 +50,8 @@ class RealtimeSimAccount:
             del self.order_side[target_serial]
             del self.order_price[target_serial]
             del self.order_size[target_serial]
-            del self.order_i[target_serial]
             del self.order_dt[target_serial]
-            del self.order_ut[target_serial]
-            del self.order_type[target_serial]  # market / limit
-            del self.order_cancel[target_serial]  # True / False
-            del self.order_expire[target_serial]
+            del self.order_type[target_serial]
 
     def __initialize_holding(self):
         self.holding_side = ''
@@ -81,209 +61,103 @@ class RealtimeSimAccount:
         self.holding_dt = ''
         self.holding_ut = 0
 
-    def check_executions(self, i, dt, openp, high, low):
-        self.__check_loss_cut(i, dt, high, low)
-        self.__check_execution(i, dt, openp, high, low)
-        self.__check_cancel(i, dt)
-        self.__check_pl(i, dt, high, low)
-        self.__check_ls(i, dt, high, low)
 
-    def move_to_next(self, i, dt, openp, high, low, close):
-        if len(str(self.start_dt)) < 3:
-            self.start_dt = dt
-        # self.__check_loss_cut(i, dt, high, low)
-        # self.__check_execution(i, dt, openp, high, low)
-        # self.__check_cancel(i, dt)
-        # self.__check_pl(i, dt, high, low)
-        # self.__check_ls(i, dt, high, low)
-        if self.holding_side != '':
-            self.current_pl = (close - self.holding_price) * self.holding_size if self.holding_side == 'buy' else (
-                                                                                                                              self.holding_price - close) * self.holding_size
-        else:
-            self.current_pl = 0
-        self.total_pl = self.realized_pl + self.current_pl
-        self.performance_total_pl_log.append(self.total_pl)
-        self.performance_dt_log.append(dt)
-        self.asset = self.initial_asset + self.total_pl
-        self.price_log.append(close)
+    def onemine_process(self, ltp, i, dt):
+        self.total_pl_log.append(self.total_pl)
         # self.__add_log('i:'+str(i), i)
 
-    def last_day_operation(self, i, dt, openp, high, low, close):
-        self.__check_loss_cut(i, dt, high, low)
-        self.__check_execution(i, dt, openp, high, low)
-        self.__check_cancel(i, dt)
-        if self.holding_side != '':
-            self.realized_pl += (close - self.holding_price) * self.holding_size if self.holding_side == 'buy' else (
-                                                                                                                                self.holding_price - close) * self.holding_size
-        self.total_pl = self.realized_pl
-        self.num_trade += 1
-        self.total_pl_log.append(self.total_pl)
-        self.performance_total_pl_log.append(self.total_pl)
-        self.performance_dt_log.append(dt)
-        if self.num_trade > 0:
-            self.win_rate = round(float(self.num_win) / float(self.num_trade), 4)
-        self.__add_log('Sim Finished.', i, dt)
-        self.end_dt = dt
-        self.__calc_pl_stability()
-        self.log_data_df = pd.DataFrame.from_dict(self.log_data_list, orient='columns')
+    def update_pnl(self, ltp):
+        self.__calc_unrealized_pl(ltp)
+        self.total_pl = self.realized_pl + self.unrealized_pl - self.total_fee
+        self.asset = self.initial_asset + self.total_pl
 
-    def entry_order(self, side, price, size, type, expire, pl, ls, i, dt):
-        if side == 'buy':
+    def entry_order(self, side, price, size, type, ltp, dt):
+        if side == 'Buy':
             self.num_buy += 1
-        elif side == 'sell':
+        elif side == 'Sell':
             self.num_sell += 1
 
         self.order_serial[self.order_serial_num] = self.order_serial_num
         self.order_side[self.order_serial_num] = side
         self.order_price[self.order_serial_num] = price
         self.order_size[self.order_serial_num] = size
-        self.order_i[self.order_serial_num] = i
         self.order_dt[self.order_serial_num] = dt
-        self.order_ut[self.order_serial_num] = 0
-        self.order_type[self.order_serial_num] = type  # limit, market
-        self.order_cancel[self.order_serial_num] = False
-        self.order_expire[self.order_serial_num] = expire
-        self.pl_kijun = pl
-        self.ls_kijun = ls
+        self.order_type[self.order_serial_num] = type  # Limit, Market
         self.order_serial_list.append(self.order_serial_num)
-        self.order_serial_num += 1
-        self.__add_log('entry order' + side + ' type=' + type, i, dt)
 
-    def __update_holding(self, side, price, size, pl, ls, i, dt):
+        if type == 'Market': #即時約定
+            self.__process_execution(side, ltp, size, dt)
+            self.__del_order(self.order_serial_list[-1])
+
+        self.order_serial_num += 1
+
+
+    def __update_holding(self, side, price, size, dt):
         self.holding_side = side
         self.holding_price = price
         self.holding_size = size
-        self.holding_i = i
         self.holding_dt = dt
-        self.pl_kijun = pl
-        self.ls_kijun = ls
 
     # always cancel latest order
-    def cancel_order(self, i, dt, ut):
-        num = self.order_serial_list[-1]
-        if self.order_type[num] != 'losscut' and self.order_cancel[num] == False:
-            self.order_cancel[num] = True
-            self.order_i[num] = i
-            self.order_dt[num] = dt
-            self.order_ut[num] = ut
+    def cancel_order(self, order_serial_num):
+        if order_serial_num in self.order_side:
+            self.__del_order(order_serial_num)
 
-    def __check_cancel(self, i, dt):
-        ks = list(self.order_cancel.keys())
-        for k in ks:
-            if k in self.order_cancel:
-                if self.order_cancel[k]:
-                    self.__del_order(k)
-                    self.__add_log('order cancelled.', i, dt)
+    def cancel_all_orders(self):
+        for oid in self.order_side:
+            self.__del_order(oid)
 
-    def __check_expiration(self, i, dt):
-        ks = list(self.order_i.keys())
-        for k in ks:
-            if k in self.order_type[k]:
-                if i - self.order_i[k] >= self.order_expire[k] and self.order_type[k] == 'limit':
-                    self.__del_order(k)
-                    self.__add_log('order expired.', i, dt)
+    def check_execution(self, ltp, dt):
+        for oid in self.order_serial_list:
+            if self.order_type[oid] == 'Limit':
+                if self.order_side[oid] == 'Buy' and self.order_price[oid] >= ltp + self.exec_slip:
+                    self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], dt)
+                elif self.order_side[oid] == 'Sell' and self.order_price[oid] <= ltp - self.exec_slip:
+                    self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], dt)
 
-    '''
-    直前のpredictionが反対出なければpl判定させずにholdした方が効率的
-    '''
 
-    def __check_pl(self, i, dt, high, low):
-        if self.holding_side != '' and self.pl_kijun > 0:
-            if self.holding_side == 'buy' and self.holding_price + self.pl_kijun <= high:
-                self.__add_log('pl executed.', i, dt)
-                self.__calc_executed_pl(self.holding_price + self.pl_kijun, self.holding_size, i)
-                self.__initialize_holding()
-                # self.__update_holding(self.holding_side, self.holding_price + self.pl_kijun + 100, self.holding_size, self.pl_kijun, self.ls_kijun, True, i, dt, ut)
-            if self.holding_side == 'sell' and self.holding_price - self.pl_kijun >= low:
-                self.__add_log('pl executed.', i, dt)
-                self.__calc_executed_pl(self.holding_price - self.pl_kijun, self.holding_size, i)
-                self.__initialize_holding()
-                # self.__update_holding(self.holding_side, self.holding_price - self.pl_kijun - 100, self.holding_size, self.pl_kijun, self.ls_kijun, True, i, dt, ut)
+    def __process_execution(self, side, exec_price, size, dt):
+        if self.holding_side == '':  # no position
+            self.__update_holding(side, exec_price, size, dt)
+        elif self.holding_side == side:
+            ave_price = round(((self.holding_price * self.holding_size) + (exec_price * size)) / (size + self.holding_size))  # averaged holding price
+            self.__update_holding(side, ave_price, self.holding_size + size, dt)
+        elif self.holding_side != side and self.holding_size == size:
+            self.__calc_executed_pl(exec_price, size)
+            self.__initialize_holding()
+        elif self.holding_side != side and self.holding_size > size:
+            self.__calc_executed_pl(exec_price, size)
+            self.__update_holding(self.holding_side, self.holding_price, self.holding_size - size, dt)
+        elif self.holding_side != side and self.holding_size < size:
+            self.__calc_executed_pl(exec_price, size)
+            self.__update_holding(side, exec_price, size - self.holding_size, dt)
+        else:
+            print('unknown situation in __process_execution!')
 
-    def __check_ls(self, i, dt, high, low):
-        if self.holding_side != '' and self.ls_kijun > 0:
-            if self.holding_side == 'buy' and low - self.holding_price <= -self.ls_kijun:
-                self.__add_log('ls executed.', i, dt)
-                # self.__calc_executed_pl(self.holding_price - self.ls_kijun - self.ls_penalty, self.holding_size, i)
-                self.__calc_executed_pl(self.holding_price - self.ls_kijun, self.holding_size, i)
-                self.__initialize_holding()
-            if self.holding_side == 'sell' and self.holding_price - high <= -self.ls_kijun:
-                self.__add_log('ls executed.', i, dt)
-                # self.__calc_executed_pl(self.holding_price + self.ls_kijun + self.ls_penalty, self.holding_size, i)
-                self.__calc_executed_pl(self.holding_price + self.ls_kijun, self.holding_size, i)
-                self.__initialize_holding()
 
-    def __check_execution(self, i, dt, openp, high, low):
-        ks = list(self.order_i.keys())
-        for k in ks:
-            if k in self.order_side:
-                if self.order_side[k] != '' and self.order_i[k] < i:
-                    if self.order_type[k] == 'market':
-                        self.__process_execution(openp, i, dt, k)
-                        self.__del_order(k)
-                    elif self.order_type[k] == 'limit' and (
-                            (self.order_side[k] == 'buy' and self.order_price[k] >= low) or (
-                            self.order_side[k] == 'sell' and self.order_price[k] <= high)):
-                        self.__process_execution(self.order_price[k], i, dt)
-                        self.__del_order(k)
-                    elif self.order_type[k] != 'market' and self.order_type[k] != 'limit' and self.order_type[
-                        k] != 'losscut':
-                        print('Invalid order type!' + self.order_type[k])
-                        self.__add_log('invalid order type!' + self.order_type[k], i, dt)
-
-    def __process_execution(self, exec_price, i, dt, k):
-        if self.order_side[k] != '':
-            if self.holding_side == '':  # no position
-                self.__update_holding(self.order_side[k], exec_price, self.order_size[k], self.pl_kijun, self.ls_kijun,
-                                      i, dt)
-                self.__add_log('New Entry:' + self.order_type[k], i, dt)
-            else:
-                if self.holding_side == self.order_side[k]:  # order side and position side is matched
-                    ave_price = round(((self.holding_price * self.holding_size) + (exec_price * self.order_size[k])) / (
-                                self.order_size[k] + self.holding_size))  # averaged holding price
-                    self.__update_holding(self.holding_side, ave_price, self.order_size[k] + self.holding_size,
-                                          self.pl_kijun, self.ls_kijun, i, dt)
-                    self.__add_log('Additional Entry:' + self.order_type[k], i, dt)
-                elif self.holding_size > self.order_size[k]:  # side is not matched and holding size > order size
-                    self.__calc_executed_pl(exec_price, self.order_size[k], i)
-                    self.__update_holding(self.holding_side, self.holding_price, self.holding_size - self.order_size[k],
-                                          self.pl_kijun, self.ls_kijun, i, dt)
-                    self.__add_log('Exit Order (h>o):' + self.order_type[k], i, dt)
-                elif self.holding_size == self.order_size[k]:
-                    self.__add_log('Exit Order (h=o):' + self.order_type[k], i, dt)
-                    self.__calc_executed_pl(exec_price, self.order_size[k], i)
-                    self.__initialize_holding()
-                else:  # in case order size is bigger than holding size
-                    self.__calc_executed_pl(exec_price, self.holding_size, i)
-                    self.__add_log('Exit & Entry Order (h<o):' + self.holding_side, i, dt)
-                    self.__update_holding(self.order_side[k], exec_price, self.order_size[k] - self.holding_size,
-                                          self.pl_kijun, self.ls_kijun, i, dt)
-
-    def __calc_executed_pl(self, exec_price, size, i):  # assume all order size was executed
-        pl = (exec_price - self.holding_price * (self.fee + 1)) * size if self.holding_side == 'buy' else (
-                                                                                                                      self.holding_price * (
-                                                                                                                          1 - self.fee) - exec_price) * size
-        # pl = (exec_price - self.holding_price) * size if self.holding_side == 'buy' else (self.holding_price - exec_price) * size
+    def __calc_executed_pl(self, exec_price, size, type):
+        self.__calc_fee(size, exec_price, type)
+        pl = (exec_price - self.holding_price) * size if self.holding_side == 'buy' else (self.holding_price - exec_price) * size
         self.realized_pl += round(pl, 4)
         self.num_trade += 1
         if pl > 0:
             self.num_win += 1
+        if self.num_trade > 0:
+            self.win_rate = round(self.num_win / self.num_trade, 2)
 
-    def __check_loss_cut(self, i, dt, high, low):
+    def __calc_fee(self, size, price, type):
+        if type == 'Limit':
+            self.total_fee += size * price * self.maker_fee
+        elif type == 'Market':
+            self.total_fee += size * price * self.taker_fee
+        else:
+            print('invalid maker_taker flg!')
+
+    def __calc_unrealized_pl(self, ltp):
         if self.holding_side != '':
-            price = high if self.holding_side == 'sell' else low
-            req_collateral = self.holding_size * price / self.leverage
-            pl = price - self.holding_price if self.holding_side == 'buy' else self.holding_price - price
-            pl = pl * self.holding_size
-            margin_rate = (self.initial_asset + self.realized_pl + pl) / req_collateral
-            if margin_rate <= self.force_loss_cut_rate:
-                self.__force_exit(i, dt)
-                self.__add_log('Loss cut postion! margin_rate=' + str(margin_rate), i, dt)
-
-    def __force_exit(self, i, dt):
-        # self.__initialize_order()
-        self.entry_order('buy' if self.holding_side == 'sell' else 'sell', 0, self.holding_size, 'losscut', 10, 9999,
-                         9999, i, dt)
+            self.unrealized_pl = (ltp - self.holding_price) * self.holding_size if self.holding_side == 'buy' else (self.holding_price - ltp) * self.holding_size
+        else:
+            self.unrealized_pl= 0
 
     def __calc_pl_stability(self):
         base_line = np.linspace(self.performance_total_pl_log[0], self.performance_total_pl_log[-1],

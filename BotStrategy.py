@@ -6,14 +6,13 @@ from RealtimeWSAPI import TickData
 
 class BotStrategy:
     @classmethod
-    def model_pred_onemin(cls, prediction, pt_ratio, lc_ratio, ac, amount):
+    def model_pred_onemin(cls, prediction, pt_ratio, lc_ratio, ac, amount, ltp):
         ds = BotStateData()
         position = ac.get_position()
         order_side, order_price, order_size, order_dt = ac.get_orders()
-        pt_price = int(round(position['price'] * (1.0 + pt_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 - pt_ratio)))
         lc_price = int(round(position['price'] * (1.0 - lc_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 + lc_ratio)))
 
-        if (position['side'] == 'Buy' and position['price'] >= lc_price) or (position['side'] == 'Sell' and position['price'] <= lc_price):
+        if (position['side'] == 'Buy' and ltp <= lc_price) or (position['side'] == 'Sell' and ltp >= lc_price):
             ds.set_state(False,'', 0, '', 0, 0, 'Market') #do losscut
         elif prediction == 'Buy' or prediction == 'Sell': #prediction通りのposi_sideにしてpt orderを出す
             ds.set_state(False, prediction, amount, 'Buy' if prediction == 'Sell' else 'Sell', 0, 0, 'PT')
