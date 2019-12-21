@@ -73,7 +73,6 @@ class LgbModel:
                         OneMinMarketData.set_flg_ohlc_update(False)
                         print('prediction = ', self.pred)
                         self.write_df_pred(df, self.pred)
-
             '''
             df = OneMinMarketData.get_df()
             if df is not None:
@@ -86,116 +85,115 @@ class LgbModel:
                     OneMinMarketData.set_flg_ohlc_update(False)
                     print('prediction = ', self.pred, 'next min=',self.next_min)
                     self.sim(self.pred)
-                    '''
+            '''
         print('Lgb main thread ended.')
 
-
-        def __check_train_test_index_duplication(self, train_x, test_x):
-            train_list = list(train_x.index.values)
-            test_list = list(test_x.index.values)
-            dupli = set(train_list) & set(test_list)
-            if len(dupli) > 0:
-                print('Index duplication in train and test df was found!')
-                print(dupli)
-
-
-        def load_model(self):
-            model_buy = None
-            model_sell = None
-            with open('/content/drive/My Drive/Model/lgb_model_buy.dat', 'rb') as f:
-                model_buy = pickle.load(f)
-            with open('/content/drive/My Drive/Model/lgb_model_sell.dat', 'rb') as f:
-                model_sell = pickle.load(f)
-            return model_buy, model_sell
+    def check_train_test_index_duplication(self, train_x, test_x):
+        train_list = list(train_x.index.values)
+        test_list = list(test_x.index.values)
+        dupli = set(train_list) & set(test_list)
+        if len(dupli) > 0:
+            print('Index duplication in train and test df was found!')
+            print(dupli)
 
 
-        def bpsp_prediction(self, model, test_x, uppder_kijun):
-            prediction = []
-            pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
-            for p in pval:
-                res = list(map(lambda x: 1.0 if x >= uppder_kijun else 0, p))
-                if (res[0] == 1 and res[1] == 0 and res[2] == 0 and res[3] == 0) or (
-                        res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 0):
-                    prediction.append(0)
-                elif res[0] == 0 and res[1] == 1 and res[2] == 0 and res[3] == 0:
-                    prediction.append(1)
-                elif res[0] == 0 and res[1] == 0 and res[2] == 1 and res[3] == 0:
-                    prediction.append(2)
-                elif res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 1:
-                    prediction.append(3)
-                else:
-                    prediction.append(0)  # 複数は発火した時は0にする
-            return prediction
+    def load_model(self):
+        model_buy = None
+        model_sell = None
+        with open('/content/drive/My Drive/Model/lgb_model_buy.dat', 'rb') as f:
+            model_buy = pickle.load(f)
+        with open('/content/drive/My Drive/Model/lgb_model_sell.dat', 'rb') as f:
+            model_sell = pickle.load(f)
+        return model_buy, model_sell
 
-        def bpsp_prediction2(self, model, test_x):
-            prediction = []
-            pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
-            for p in pval:
+
+    def bpsp_prediction(self, model, test_x, uppder_kijun):
+        prediction = []
+        pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
+        for p in pval:
+            res = list(map(lambda x: 1.0 if x >= uppder_kijun else 0, p))
+            if (res[0] == 1 and res[1] == 0 and res[2] == 0 and res[3] == 0) or (
+                    res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 0):
+                prediction.append(0)
+            elif res[0] == 0 and res[1] == 1 and res[2] == 0 and res[3] == 0:
+                prediction.append(1)
+            elif res[0] == 0 and res[1] == 0 and res[2] == 1 and res[3] == 0:
+                prediction.append(2)
+            elif res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 1:
+                prediction.append(3)
+            else:
+                prediction.append(0)  # 複数は発火した時は0にする
+        return prediction
+
+    def bpsp_prediction2(self, model, test_x):
+        prediction = []
+        pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
+        for p in pval:
+            prediction.append(np.argmax(p))
+        return prediction
+
+    def bpsp_prediction2_kai(self, model, test_x):
+        return list(np.argmax(model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration), axis=1))
+
+    def bpsp_prediction3(self, model, test_x, pred_kijun):
+        prediction = []
+        pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
+        for p in pval:
+            if max(p) > pred_kijun:
                 prediction.append(np.argmax(p))
-            return prediction
-
-        def bpsp_prediction2_kai(self, model, test_x):
-            return list(np.argmax(model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration), axis=1))
-
-        def bpsp_prediction3(self, model, test_x, pred_kijun):
-            prediction = []
-            pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
-            for p in pval:
-                if max(p) > pred_kijun:
-                    prediction.append(np.argmax(p))
-                else:
-                    prediction.append(0)
-            return prediction
-
-        def calc_bpsp_accuracy(self, prediction, test_y):
-            num = len(prediction)
-            matched = 0
-            y = np.array(test_y)
-            for i in range(len(prediction)):
-                if prediction[i] == y[i]:
-                    matched += 1
-            return round(float(matched) / float(num), 4)
-
-
-        def calc_buysell_accuracy(self, predictions, test_y):
-            num = predictions.count(1) + predictions.count(2)
-            matched = 0
-            y = np.array(test_y)
-            for i in range(len(predictions)):
-                if predictions[i] == 1 and y[i] == 1 or predictions[i] == 2 and y[i] == 2:
-                    matched += 1
-            if num > 0:
-                return float(matched) / float(num)
             else:
-                return 0
+                prediction.append(0)
+        return prediction
 
-        def calc_total_accuracy(self, predictions, test_y):
-            matched = 0
-            y = np.array(test_y)
-            for i in range(len(predictions)):
-                if predictions[i] == y[i]:
-                    matched += 1
+    def calc_bpsp_accuracy(self, prediction, test_y):
+        num = len(prediction)
+        matched = 0
+        y = np.array(test_y)
+        for i in range(len(prediction)):
+            if prediction[i] == y[i]:
+                matched += 1
+        return round(float(matched) / float(num), 4)
+
+
+    def calc_buysell_accuracy(self, predictions, test_y):
+        num = predictions.count(1) + predictions.count(2)
+        matched = 0
+        y = np.array(test_y)
+        for i in range(len(predictions)):
+            if predictions[i] == 1 and y[i] == 1 or predictions[i] == 2 and y[i] == 2:
+                matched += 1
+        if num > 0:
+            return float(matched) / float(num)
+        else:
+            return 0
+
+    def calc_total_accuracy(self, predictions, test_y):
+        matched = 0
+        y = np.array(test_y)
+        for i in range(len(predictions)):
+            if predictions[i] == y[i]:
+                matched += 1
+        return float(matched) / float(len(predictions))
+
+    def calc_bp_accuracy(self, predictions, test_y):
+        matched = 0
+        y = np.array(test_y)
+        for i in range(len(predictions)):
+            if predictions[i] == 1 and y[i] == 1:
+                matched += 1
+        if sum(predictions) > 0:
+            return float(matched) / float(sum(predictions))
+        else:
+            return 0
+
+    # count only matched with test_y (0 or 1)
+    def calc_bp_accuracy2(self, predictions, test_y):
+        matched = 0
+        y = np.array(test_y)
+        for i in range(len(predictions)):
+            if predictions[i] == y[i]:
+                matched += 1
+        if sum(predictions) > 0:
             return float(matched) / float(len(predictions))
-
-        def calc_bp_accuracy(self, predictions, test_y):
-            matched = 0
-            y = np.array(test_y)
-            for i in range(len(predictions)):
-                if predictions[i] == 1 and y[i] == 1:
-                    matched += 1
-            if sum(predictions) > 0:
-                return float(matched) / float(sum(predictions))
-            else:
-                return 0
-
-        # count only matched with test_y (0 or 1)
-        def calc_bp_accuracy2(self, predictions, test_y):
-            matched = 0
-            y = np.array(test_y)
-            for i in range(len(predictions)):
-                if predictions[i] == y[i]:
-                    matched += 1
-            if sum(predictions) > 0:
-                return float(matched) / float(len(predictions))
-            else:
-                return 0
+        else:
+            return 0

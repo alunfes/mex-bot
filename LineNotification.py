@@ -21,12 +21,24 @@ class LineNotification:
 
     @classmethod
     def send_performance_notification(cls):
-        loop = asyncio.get_event_loop()
+        #loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.run_until_complete(cls.__send_performance_data())
         # loop.run_until_complete(cls.__send_position_and_order_data())
 
+
+    @classmethod
+    def send_free_message(cls, message):
+        #loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(cls.__send_free_data(message))
+
+
     @classmethod
     def send_error(cls, message):
+        #loop = asyncio.new_event_loop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(cls.__send_error(message))
@@ -48,6 +60,10 @@ class LineNotification:
                                      '\r\n' + 'p:' + str(p['pnl']) + ', p-min:' + str(p['total_pnl_per_min']) +
                                      ', num:' + str(p['num_trade']) + ', rate:' + str(p['win_rate']) +
                                      '\r\n' + str(posi['posi_side']) + ' : ' + str(pred['prediction']))
+
+    @classmethod
+    async def __send_free_data(cls, message):
+        await cls.__send_message(message)
 
 
 

@@ -34,7 +34,7 @@ class RealtimeSim:
                         ac.entry_order('Buy' if ac.holding_side == 'Sell' else 'Sell', pt_price, ac.holding_size, 'Limit', ltp, datetime.now())
                     elif ds.posi_side == ac.holding_side and ds.posi_size != ac.holding_size:
                         print('position size unmatched!')
-            ac.check_executions(ltp, datetime.now())
+            ac.check_execution(ltp, datetime.now())
             ac.update_pnl(ltp)
             return ac
 
@@ -46,7 +46,7 @@ class RealtimeSim:
             if np.gradient(ta.MA(np.array(ac2.total_pl_log[-avert_period_kijun:], dtype='f8'), timeperiod=avert_period_kijun))[-1] > avert_val_kijun:
                 if ac2.holding_side != ac.holding_side and ac2.holding_side != '':
                     ac.entry_order(ac.holding_side, 0, ac2.holding_size, 'Market')
-                    print('sim onemin avert: Market order for position  {', ac.holding_side, ' x ', ac.holding_size, ' @', ac.holding_price +'}')
+                    print('sim onemin avert: Market order for position  {', ac.holding_side, ' x ', ac.holding_size, ' @', ac.holding_price + '}')
                 elif ac2.order_side != ac.order_side:
                     if ac.order_side != '':
                         ac.cancel_all_orders()
@@ -54,9 +54,9 @@ class RealtimeSim:
                     print('sim onemin avert:' + ac2.order_type + ' entry order {', ac2.orderside, ' x ', ac.holding_size, ' @', ac.holding_price + '}')
         else:  # logがたまるまでは普通にトレード
             ac = cls.sim_model_pred_onemin(pred, pt_ratio, lc_ratio, amount, ltp, ac)
-        ac.check_executions(ltp, datetime.now())
+        ac.check_execution(ltp, datetime.now())
         ac.update_pnl(ltp)
-        ac2.check_executions(ltp, datetime.now())
+        ac2.check_execution(ltp, datetime.now())
         ac2.update_pnl(ltp)
         return ac
 

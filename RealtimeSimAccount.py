@@ -43,6 +43,7 @@ class RealtimeSimAccount:
         self.order_dt = {}
         self.order_type = {}  # market / limit
 
+
     def __del_order(self, target_serial):
         if target_serial in self.order_serial_list:
             self.order_serial_list.remove(target_serial)

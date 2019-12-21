@@ -6,7 +6,7 @@ class RealtimeSimStrategy:
     def model_prediction_onemin(cls, prediction, lc_ratio, amount, ac:RealtimeSimAccount, ltp):
         ds = StateData()
         lc_price = int(round(ac.holding_price * (1.0 - lc_ratio))) if ac.holding_side == 'Buy' else int(round(ac.holding_price * (1.0 + lc_ratio)))
-        if (ac.hoding_side == 'Buy' and ltp <= lc_price) or (ac.holding_side == 'Sell' and ltp >= lc_price):
+        if (ac.holding_side == 'Buy' and ltp <= lc_price) or (ac.holding_side == 'Sell' and ltp >= lc_price):
             ds.set_state(False, '', 0, '', 0, 0, 'LC')  # do losscut
         elif prediction == 'Buy' or prediction == 'Sell':  # prediction通りのposi_sideにしてpt orderを出す
             ds.set_state(False, prediction, amount, 'Buy' if prediction == 'Sell' else 'Sell', 0, 0, 'PT')

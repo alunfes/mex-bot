@@ -8,9 +8,9 @@ import time
 
 class Test:
     def start(self):
-        OneMinMarketData.initialize_for_bot(9)
+        OneMinMarketData.initialize_for_bot()
         ws = RealtimeWSAPI()
-        bot = Bot()
+        bot = Bot('./Data/sim_log.csv')
         while True:
            time.sleep(1)
 

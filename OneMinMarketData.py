@@ -20,7 +20,7 @@ data download and calc for bot
 
 class OneMinMarketData:
     @classmethod
-    def initialize_for_bot(cls, num_term):
+    def initialize_for_bot(cls):
         cls.ohlc_buffer = 10 #download more ohlc than max_term
         cls.JST = pytz.timezone('Asia/Tokyo')
         print('OneMinMarketData started:', datetime.now(cls.JST))
@@ -33,9 +33,9 @@ class OneMinMarketData:
         cls.pred = -1
         cls.lock_pred=  threading.Lock()
         cls.lock_df = threading.Lock()
-        #cls.term_list = cls.generate_term_list(num_term)
         cls.term_list = cls.generate_term_list2(cls.__read_numterm_data())
         cls.kijun_period = cls.__read_kijunperiod()
+
         cls.max_term = cls.detect_max_term()
         DownloadMexOhlc.initial_data_download(cls.max_term+cls.ohlc_buffer, './Data/bot_ohlc.csv')
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
@@ -60,6 +60,7 @@ class OneMinMarketData:
     def __read_kijunperiod(self):
         config = pd.read_csv('./Model/bpsp_config.csv', index_col=0)
         return int(config['kijun_period'])
+
 
     #to be used by another process
     @classmethod
@@ -352,8 +353,6 @@ class OneMinMarketData:
         print('calculating all index dict')
         start_time = time.time()
 
-        # cls.calc_ohlc_change()
-
         for k in cls.ohlc.func_dict:
             if int(k.split(':')[1]) > 0:
                 if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and k.split(':')[0] not in ['ema_kairi','ema_gra','dema_kairi','dema_gra']:
@@ -371,7 +370,6 @@ class OneMinMarketData:
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
 
-        cls.ohlc.future_side = cls.calc_future_side2()
         print('completed calc makairi diff index. time=', time.time() - start_time)
 
     @classmethod

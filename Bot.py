@@ -12,6 +12,7 @@ from RealtimeWSAPI import TickData
 import pytz
 import pandas as pd
 import time
+import os
 from datetime import datetime
 
 from RealtimeSim import RealtimeSim
@@ -27,7 +28,7 @@ import pickle
 
 
 class Bot:
-    def __init__(self):
+    def __init__(self, sim_data_path):
         pws = PrivateWS()
         self.pt_ratio, self.lc_ratio, self.pred_method, self.upper_kijun, self.avert_onemine, self.avert_period_kijun, self.avert_val_kijun = self.__read_config_data()
         Trade.initialize()
@@ -40,6 +41,10 @@ class Bot:
         self.sim = RealtimeSim()
         self.sim_ac = RealtimeSimAccount()
         self.sim_ac2 = RealtimeSimAccount()
+        self.sim_log = pd.DataFrame()
+        self.sim_data_path = sim_data_path
+        if os.path.exists(self.sim_data_path):
+            os.remove(self.sim_data_path)
 
         th = threading.Thread(target=self.__bot_thread)
         th2 = threading.Thread(target=self.__bot_sub_thread)
@@ -101,13 +106,17 @@ class Bot:
     def __bot_sub_thread(self):
         while SystemFlg.get_system_flg():
             time.sleep(60)
-            print(datetime.now())
 
             self.sim_ac.onemine_process(TickData.get_ltp(), datetime.now())
             print('posi_side:',self.sim_ac.holding_side, ', posi_price:',self.sim_ac.holding_price, ', posi_size:',self.sim_ac.holding_size)
             for oid in self.sim_ac.order_serial_list:
                 print('order_side:',self.sim_ac.order_side[oid], ', order_price:',self.sim_ac.order_price, ', order_size:',self.sim_ac.order_size, ', order_type:',self.sim_ac.order_type)
-            print('total_pl:',self.sim_ac.total_pl, 'total_fee:',self.total_fee)
+            print('total_pl:',self.sim_ac.total_pl, 'total_fee:',self.sim_ac.total_fee, 'num_trade:', self.sim_ac.num_trade, 'win_rate:',self.sim_ac.win_rate)
+
+            LineNotification.send_free_message('pred='+self.lgb_model.get_pred()+', posi_side:'+self.sim_ac.holding_side+', posi_price:'+str(self.sim_ac.holding_price)+', posi_size:'+str(self.sim_ac.holding_size) + '\r\n'
+                                               +'total_pl:'+str(self.sim_ac.total_pl)+', total_fee:'+str(self.sim_ac.total_fee)+', num_trade:'+str(self.sim_ac.num_trade)+', win_rate:'+str(self.sim_ac.win_rate))
+
+
 
             '''
             print(self.ac.get_position())
@@ -137,7 +146,23 @@ class Bot:
 
     def __read_config_data(self):
         config = pd.read_csv('./Model/bpsp_config.csv', index_col=0)
-        return config['pt_ratio'], config['lc_ratio'], config['pred_method'], config['upper_kijun'], config['avert_onemine'], config['avert_period_kijun'], config['avert_val_kijun']
+        return float(config['pt_ratio']), float(config['lc_ratio']), int(config['pred_method']), float(config['upper_kijun']), int(config['avert_onemine']), \
+               int(config['avert_period_kijun']), float(config['avert_val_kijun'])
+
+
+    def __write_sim_log(self):
+        order_side = ''
+        order_price = ''
+        order_size = ''
+        for oid in self.sim_ac.order_serial_list:
+            order_side = order_side + self.sim_ac.order_side[oid] + ':'
+            order_price = order_price + str(self.sim_ac.order_price[oid]) + ':'
+            order_size = order_size + str(self.sim_ac.order_size[oid]) + ':'
+        self.sim_log.append({'dt':self.omd.ohlc.dt[-1], 'open':self.omd.ohlc.open[-1], 'high':self.omd.ohlc.high[-1], 'low':self.omd.ohlc.low[-1], 'close':self.omd.ohlc.close[-1],
+                             'posi_side':self.sim_ac.holding_side, 'posi_price':self.sim_ac.holding_price, 'posi_size':self.sim_ac.holding_size,
+                             'order_side':order_side, 'order_price':order_price, 'order_size':order_size,
+                             'total_pl':self.sim_ac.total_pl, 'total_fee':self.sim_ac.total_fee, 'num_trade':self.sim_ac.num_trade, 'win_rate':self.sim_ac.win_rate})
+        self.sim_log.to_csv(self.sim_data_path)
 
 
 
