@@ -85,7 +85,7 @@ class RealtimeSimAccount:
         self.order_serial_list.append(self.order_serial_num)
 
         if type == 'Market': #即時約定
-            self.__process_execution(side, ltp, size, dt)
+            self.__process_execution(side, ltp, size, 'Market', dt)
             self.__del_order(self.order_serial_list[-1])
 
         self.order_serial_num += 1
@@ -110,32 +110,36 @@ class RealtimeSimAccount:
         for oid in self.order_serial_list:
             if self.order_type[oid] == 'Limit':
                 if self.order_side[oid] == 'Buy' and self.order_price[oid] >= ltp + self.exec_slip:
-                    self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], dt)
+                    self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
                 elif self.order_side[oid] == 'Sell' and self.order_price[oid] <= ltp - self.exec_slip:
-                    self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], dt)
+                    self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
 
 
-    def __process_execution(self, side, exec_price, size, dt):
+    def __process_execution(self, side, exec_price, size, type, dt):
         if self.holding_side == '':  # no position
             self.__update_holding(side, exec_price, size, dt)
+            self.__calc_fee(size, exec_price, type)
         elif self.holding_side == side:
             ave_price = round(((self.holding_price * self.holding_size) + (exec_price * size)) / (size + self.holding_size))  # averaged holding price
             self.__update_holding(side, ave_price, self.holding_size + size, dt)
+            self.__calc_fee(size, exec_price, type)
         elif self.holding_side != side and self.holding_size == size:
-            self.__calc_executed_pl(exec_price, size)
+            self.__calc_fee(size, exec_price, type)
+            self.__calc_executed_pl(exec_price, size, type)
             self.__initialize_holding()
         elif self.holding_side != side and self.holding_size > size:
-            self.__calc_executed_pl(exec_price, size)
+            self.__calc_fee(size, exec_price, type)
+            self.__calc_executed_pl(exec_price, size, type)
             self.__update_holding(self.holding_side, self.holding_price, self.holding_size - size, dt)
         elif self.holding_side != side and self.holding_size < size:
-            self.__calc_executed_pl(exec_price, size)
+            self.__calc_fee(size, exec_price, type)
+            self.__calc_executed_pl(exec_price, size, type)
             self.__update_holding(side, exec_price, size - self.holding_size, dt)
         else:
             print('unknown situation in __process_execution!')
 
 
     def __calc_executed_pl(self, exec_price, size, type):
-        self.__calc_fee(size, exec_price, type)
         pl = (exec_price - self.holding_price) * size if self.holding_side == 'buy' else (self.holding_price - exec_price) * size
         self.realized_pl += round(pl, 4)
         self.num_trade += 1

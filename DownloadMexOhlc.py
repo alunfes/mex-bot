@@ -187,8 +187,9 @@ class DownloadMexOhlc:
 
 
 if __name__ == '__main__':
-    print(datetime.now())
-    DownloadMexOhlc.download_data()
-    print('completed download data')
+    print(DownloadMexOhlc.bot_ohlc_download_latest(1))
+    #print(datetime.now())
+    #DownloadMexOhlc.download_data()
+    #print('completed download data')
 
 

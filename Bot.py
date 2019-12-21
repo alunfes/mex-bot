@@ -29,7 +29,7 @@ import pickle
 
 class Bot:
     def __init__(self, sim_data_path):
-        pws = PrivateWS()
+        #pws = PrivateWS()
         self.pt_ratio, self.lc_ratio, self.pred_method, self.upper_kijun, self.avert_onemine, self.avert_period_kijun, self.avert_val_kijun = self.__read_config_data()
         Trade.initialize()
         self.ac = Account()
@@ -42,6 +42,7 @@ class Bot:
         self.sim_ac = RealtimeSimAccount()
         self.sim_ac2 = RealtimeSimAccount()
         self.sim_log = pd.DataFrame()
+        self.sim_log_dict = {}
         self.sim_data_path = sim_data_path
         if os.path.exists(self.sim_data_path):
             os.remove(self.sim_data_path)
@@ -115,6 +116,7 @@ class Bot:
 
             LineNotification.send_free_message('pred='+self.lgb_model.get_pred()+', posi_side:'+self.sim_ac.holding_side+', posi_price:'+str(self.sim_ac.holding_price)+', posi_size:'+str(self.sim_ac.holding_size) + '\r\n'
                                                +'total_pl:'+str(self.sim_ac.total_pl)+', total_fee:'+str(self.sim_ac.total_fee)+', num_trade:'+str(self.sim_ac.num_trade)+', win_rate:'+str(self.sim_ac.win_rate))
+            self.__write_sim_log()
 
 
 
@@ -158,11 +160,15 @@ class Bot:
             order_side = order_side + self.sim_ac.order_side[oid] + ':'
             order_price = order_price + str(self.sim_ac.order_price[oid]) + ':'
             order_size = order_size + str(self.sim_ac.order_size[oid]) + ':'
-        self.sim_log.append({'dt':self.omd.ohlc.dt[-1], 'open':self.omd.ohlc.open[-1], 'high':self.omd.ohlc.high[-1], 'low':self.omd.ohlc.low[-1], 'close':self.omd.ohlc.close[-1],
-                             'posi_side':self.sim_ac.holding_side, 'posi_price':self.sim_ac.holding_price, 'posi_size':self.sim_ac.holding_size,
-                             'order_side':order_side, 'order_price':order_price, 'order_size':order_size,
-                             'total_pl':self.sim_ac.total_pl, 'total_fee':self.sim_ac.total_fee, 'num_trade':self.sim_ac.num_trade, 'win_rate':self.sim_ac.win_rate})
+
+        '''
+        self.sim_log_list.append()
+        self.sim_log = self.sim_log.append(pd.DataFrame({'dt': self.omd.ohlc.dt[-1], 'open': self.omd.ohlc.open[-1], 'high': self.omd.ohlc.high[-1], 'low': self.omd.ohlc.low[-1], 'close': self.omd.ohlc.close[-1],
+             'posi_side': self.sim_ac.holding_side, 'posi_price': self.sim_ac.holding_price, 'posi_size': self.sim_ac.holding_size,
+             'order_side': order_side, 'order_price': order_price, 'order_size': order_size,
+             'total_pl': self.sim_ac.total_pl, 'total_fee': self.sim_ac.total_fee, 'num_trade': self.sim_ac.num_trade, 'win_rate': self.sim_ac.win_rate}),ignore_index=True)
         self.sim_log.to_csv(self.sim_data_path)
+        '''
 
 
 

@@ -53,7 +53,7 @@ class LgbModel:
                     ini_data_flg = True
                 time.sleep(0.5)
 
-            time.sleep(0.5)
+            time.sleep(1)
             if OneMinMarketData.get_flg_ohlc_update():
                 df = OneMinMarketData.get_df()
                 if df is not None:
@@ -69,7 +69,13 @@ class LgbModel:
                             prediction = self.bpsp_prediction2_kai(self.model, df)
                         elif self.pred_method == 3:
                             prediction = self.bpsp_prediction3(self.model, df, self.upper_kijun)
-                        self.set_pred({0: 'No', 1: 'Buy', 2: 'Sell', 3: 'Both'}[prediction[-1]])
+                        else:
+                            print('invalid pred_method!', self.pred_method)
+                        if len(prediction) > 0:
+                            self.set_pred({0: 'No', 1: 'Buy', 2: 'Sell', 3: 'Both'}[prediction[-1]])
+                        else:
+                            print('prediciton length==0!', prediction)
+                            print(df)
                         OneMinMarketData.set_flg_ohlc_update(False)
                         print('prediction = ', self.pred)
                         self.write_df_pred(df, self.pred)

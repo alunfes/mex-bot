@@ -26,11 +26,14 @@ class RealtimeSim:
                         ac.entry_order('Buy' if ac.holding_side == 'Sell' else 'Sell', 0, ac.holding_size, 'Market', ltp, datetime.now())
                 else:  # not losscut
                     if ds.posi_side != ac.holding_side and ds.posi_side != '':
-                        if ac.holding_side =='':
+                        if ac.holding_side == '':
+                            print('kita1')
                             ac.entry_order(ds.posi_side, 0, ds.posi_size, 'Market', ltp, datetime.now())
                         else:
+                            print('kita2')
                             ac.entry_order(ds.posi_side, 0, ds.posi_size + ac.holding_size, 'Market', ltp, datetime.now())
-                    elif ds.order_type == 'PT':
+                    elif ds.order_type == 'PT' and (ds.order_side not in ac.order_side.values()):
+                        print('kita3')
                         ac.entry_order('Buy' if ac.holding_side == 'Sell' else 'Sell', pt_price, ac.holding_size, 'Limit', ltp, datetime.now())
                     elif ds.posi_side == ac.holding_side and ds.posi_size != ac.holding_size:
                         print('position size unmatched!')

@@ -211,7 +211,7 @@ class TickData:
                 size = [d.get('size') for d in target_data]
                 dt = dateutil.parser.parse(target_data[-1]['timestamp'])
                 OneMinMarketData.add_tmp_ohlc(dt.timestamp(), dt, p[0], max(p), min(p), p[-1], sum(size))
-                #print(dt, dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
+                print('RealtimeWSAPI: ', dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
                 target_min = target_min + 1 if target_min + 1 < 60 else 0
                 next_min = target_min + 1 if target_min + 1 < 60 else 0
             else:
@@ -261,5 +261,5 @@ if __name__ == '__main__':
     SystemFlg.initialize()
     rwa = RealtimeWSAPI()
     while True:
-        print(TickData.get_bid(), TickData.get_ask())
+        #print(TickData.get_bid(), TickData.get_ask())
         time.sleep(1)

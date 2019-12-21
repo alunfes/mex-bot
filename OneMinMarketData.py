@@ -31,7 +31,7 @@ class OneMinMarketData:
         cls.lock_flg_ohlc = threading.Lock()
         cls.df = None
         cls.pred = -1
-        cls.lock_pred=  threading.Lock()
+        cls.lock_pred = threading.Lock()
         cls.lock_df = threading.Lock()
         cls.term_list = cls.generate_term_list2(cls.__read_numterm_data())
         cls.kijun_period = cls.__read_kijunperiod()
@@ -125,20 +125,29 @@ class OneMinMarketData:
         #loop for generate 1m ohlc and calc df
         while SystemFlg.get_system_flg():
             tmp_ohlc_loop_flg = True
+            flg_5m_ohlc = False
             if __check_next_min(cls.ohlc.dt[-1].minute):
                 target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes, 01分時点でもtaget min=58
-                while tmp_ohlc_loop_flg:
+
+                if datetime.now(cls.JST).minute == 0 and flg_5m_ohlc == False:  # 60分に一回max termまでのデータをダウンロードしてcsvに記録し、market dataをrefreshする。
+                    print('5min ohlc download all')
+                    time.sleep(20) #wait until data is ready in bitmex
+                    DownloadMexOhlc.initial_data_download(cls.max_term + cls.ohlc_buffer, './Data/bot_ohlc.csv')
+                    cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
+                    flg_5m_ohlc = True
+
+                while tmp_ohlc_loop_flg and flg_5m_ohlc == False:
                     if len(cls.tmp_ohlc.dt) > 0:
                         #print('tmp=', cls.tmp_ohlc.dt[-1], ', target_min', target_min)
                         if cls.tmp_ohlc.dt[-1].minute is target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
                             cls.ohlc.add_and_pop(cls.tmp_ohlc.unix_time[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],
                                                  cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
                             tmp_ohlc_loop_flg = False
-                            print('ws ohlc:', datetime.now(cls.JST), cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],
-                                                 cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
+                            print('ws ohlc:', datetime.now(cls.JST), cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
                             break
-                    if datetime.now(cls.JST).second > 2: #2秒以上経過してwsからのohlc更新がない場合はdownload ohlc、latest dt.minuteから
-                        res = DownloadMexOhlc.bot_ohlc_download_latest(cls.max_term+cls.ohlc_buffer) #latest ohlc dtからdatetime.now().minute-1分までのデータを取得すべき。
+
+                    if datetime.now(cls.JST).second > 2: #2秒以上経過してwsからのohlc更新がない場合は必要なデータをダウンロード
+                        res = DownloadMexOhlc.bot_ohlc_download_latest(1)  # latest ohlc dtからdatetime.now().minute-1分までのデータを取得すべき。
                         if res is not None:
                             cls.ohlc.add_and_pop(res[0], res[1], res[2], res[3], res[4], res[5], res[6])
                             tmp_ohlc_loop_flg = False
@@ -147,21 +156,10 @@ class OneMinMarketData:
                             print('download ohlc is none!')
                         break
                     time.sleep(0.3)
-                if tmp_ohlc_loop_flg == False: #when download was successfull
-                    cls.__calc_all_index_dict()
-                    cls.set_df(cls.generate_df_from_dict_for_bot())
-                    cls.set_flg_ohlc_update(True)
-                else: #failed to update ohlc
-                    print('failed to update ohlc skill index calc !')
 
-            '''
-            if (datetime.now(cls.JST).minute % 5) == 0 and datetime.now(cls.JST).second > 20: #5分に一回max termまでのデータをダウンロードしてcsvに記録し、market dataをrefreshする。
-                print('5min ohlc download all')
-                DownloadMexOhlc.initial_data_download(cls.max_term)
-                cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
-                #cls.__calc_all_index_dict()
-                #cls.set_df(cls.generate_df_from_dict_for_bot())
-            '''
+                cls.__calc_all_index_dict()
+                cls.set_df(cls.generate_df_from_dict_for_bot())
+                cls.set_flg_ohlc_update(True)
             time.sleep(0.1)
 
 
