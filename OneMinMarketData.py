@@ -33,7 +33,9 @@ class OneMinMarketData:
         cls.pred = -1
         cls.lock_pred=  threading.Lock()
         cls.lock_df = threading.Lock()
-        cls.term_list = cls.generate_term_list(num_term)
+        #cls.term_list = cls.generate_term_list(num_term)
+        cls.term_list = cls.generate_term_list2(cls.__read_numterm_data())
+        cls.kijun_period = cls.__read_kijunperiod()
         cls.max_term = cls.detect_max_term()
         DownloadMexOhlc.initial_data_download(cls.max_term+cls.ohlc_buffer, './Data/bot_ohlc.csv')
         cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
@@ -47,6 +49,17 @@ class OneMinMarketData:
         print('time for market data initialization=',time.time() - start)
         th = threading.Thread(target=cls.__main_thread)
         th.start()
+
+
+    @classmethod
+    def __read_numterm_data(self):
+        config = pd.read_csv('./Model/bpsp_config.csv', index_col=0)
+        return int(config['num_term'])
+
+    @classmethod
+    def __read_kijunperiod(self):
+        config = pd.read_csv('./Model/bpsp_config.csv', index_col=0)
+        return int(config['kijun_period'])
 
     #to be used by another process
     @classmethod
@@ -66,8 +79,6 @@ class OneMinMarketData:
         cls.__calc_all_index_dict()
 
 
-
-
     @classmethod
     def initialize_for_marketdata_test(cls):
         DownloadMexOhlc.download_data()
@@ -83,17 +94,6 @@ class OneMinMarketData:
         df.to_csv('./Data/test_df.csv')
         print('time for market data initialization=', time.time() - start)
 
-
-    @classmethod
-    def set_pred(cls, pred):
-        with cls.lock_pred:
-            cls.pred =  pred
-
-    @classmethod
-    def get_pred(cls):
-        with cls.lock_pred:
-            return cls.pred
-
     @classmethod
     def set_flg_ohlc_update(cls, flg):
         with cls.lock_flg_ohlc:
@@ -103,8 +103,6 @@ class OneMinMarketData:
     def get_flg_ohlc_update(cls):
         with cls.lock_flg_ohlc:
             return cls.flg_update_ohlc
-
-
 
     '''
     1.毎分00秒からws ohlcの更新を確認。
@@ -123,6 +121,7 @@ class OneMinMarketData:
             else:
                 return False
 
+        #loop for generate 1m ohlc and calc df
         while SystemFlg.get_system_flg():
             tmp_ohlc_loop_flg = True
             if __check_next_min(cls.ohlc.dt[-1].minute):
@@ -147,7 +146,6 @@ class OneMinMarketData:
                             print('download ohlc is none!')
                         break
                     time.sleep(0.3)
-
                 if tmp_ohlc_loop_flg == False: #when download was successfull
                     cls.__calc_all_index_dict()
                     cls.set_df(cls.generate_df_from_dict_for_bot())
@@ -258,7 +256,6 @@ class OneMinMarketData:
     all func listからkeyが一致するものだけを正規のfunc listとして残す
     正規のリストに対してindex計算
     '''
-
     @classmethod
     def __generate_all_func_dict(cls):
         for term in cls.term_list:
@@ -295,7 +292,8 @@ class OneMinMarketData:
             if term <= 300:
                 cls.ohlc.func_dict['calc_high_kairi:' + str(term)] = (OneMinMarketData.calc_high_kairi, term)
                 cls.ohlc.func_dict['calc_low_kairi:' + str(term)] = (OneMinMarketData.calc_low_kairi, term)
-                '''
+
+            '''
             cls.ohlc.func_dict['makairi_momentum:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_momentum, term)
             cls.ohlc.func_dict['makairi_rate_of_change:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_rate_of_change, term)
             cls.ohlc.func_dict['makairi_rsi:'+str(term)] = (OneMinMarketData.generate_makairi,OneMinMarketData.calc_rsi, term)
@@ -332,22 +330,22 @@ class OneMinMarketData:
             cls.ohlc.func_dict['diff_cci:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_cci, term)
             cls.ohlc.func_dict['diff_dx:'+str(term)] = (OneMinMarketData.generate_diff,OneMinMarketData.calc_dx, term)
             '''
+
         cls.ohlc.func_dict['normalized_ave_true_range:' + str(0)] = (OneMinMarketData.calc_normalized_ave_true_range, 0)
         cls.ohlc.func_dict['three_outside_updown:' + str(0)] = (OneMinMarketData.calc_three_outside_updown, 0)
         cls.ohlc.func_dict['breakway:' + str(0)] = (OneMinMarketData.calc_breakway, 0)
         cls.ohlc.func_dict['dark_cloud_cover:' + str(0)] = (OneMinMarketData.calc_dark_cloud_cover, 0)
         cls.ohlc.func_dict['dragonfly_doji:' + str(0)] = (OneMinMarketData.calc_dragonfly_doji, 0)
-        cls.ohlc.func_dict['updown_sidebyside_white_lines:' + str(0)] = (
-        OneMinMarketData.calc_updown_sidebyside_white_lines, 0)
+        cls.ohlc.func_dict['updown_sidebyside_white_lines:' + str(0)] = (OneMinMarketData.calc_updown_sidebyside_white_lines, 0)
         cls.ohlc.func_dict['haramisen:' + str(0)] = (OneMinMarketData.calc_haramisen, 0)
         cls.ohlc.func_dict['hikkake_pattern:' + str(0)] = (OneMinMarketData.calc_hikkake_pattern, 0)
         cls.ohlc.func_dict['neck_pattern:' + str(0)] = (OneMinMarketData.calc_neck_pattern, 0)
-        cls.ohlc.func_dict['upsidedownside_gap_three_method:' + str(0)] = (
-        OneMinMarketData.calc_upsidedownside_gap_three_method, 0)
+        cls.ohlc.func_dict['upsidedownside_gap_three_method:' + str(0)] = (OneMinMarketData.calc_upsidedownside_gap_three_method, 0)
         cls.ohlc.func_dict['sar:' + str(0)] = (OneMinMarketData.calc_sar, 0)
         cls.ohlc.func_dict['bop:' + str(0)] = (OneMinMarketData.calc_bop, 0)
         cls.ohlc.func_dict['uwahige:' + str(0)] = (OneMinMarketData.calc_uwahige_length, 0)
         cls.ohlc.func_dict['shitahige:' + str(0)] = (OneMinMarketData.calc_shitahige_length, 0)
+
 
     @classmethod
     def __calc_all_index_dict(cls):
@@ -358,10 +356,7 @@ class OneMinMarketData:
 
         for k in cls.ohlc.func_dict:
             if int(k.split(':')[1]) > 0:
-                if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and k.split(':')[0] not in ['ema_kairi',
-                                                                                                          'ema_gra',
-                                                                                                          'dema_kairi',
-                                                                                                          'dema_gra']:
+                if k.split('_')[0] != 'makairi' and k.split('_')[0] != 'diff' and k.split(':')[0] not in ['ema_kairi','ema_gra','dema_kairi','dema_gra']:
                     cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
             else:
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
@@ -380,7 +375,7 @@ class OneMinMarketData:
         print('completed calc makairi diff index. time=', time.time() - start_time)
 
     @classmethod
-    def genrate_df_from_dict(cls):
+    def generate_df_from_dict(cls):
         start_time = time.time()
         cut_size = cls.term_list[-1] + 1
         end = len(cls.ohlc.close) - cls.kijun_period  # due to bpsp
@@ -389,9 +384,18 @@ class OneMinMarketData:
         OneMinMarketData.ohlc.index_data_dict['close'] = cls.ohlc.close
         df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
         df = df.iloc[cut_size:end]
-        df = df.assign(future_side=cls.ohlc.future_side[cut_size:])
+        #df = df.assign(future_side=cls.ohlc.future_side[cut_size:])
         print('completed generate df from dict. time=', time.time() - start_time)
         return df
+
+    @classmethod
+    def generate_df_from_dict_for_bot(cls):
+        df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
+        cols = list(df.columns)
+        cols.sort()
+        # df = df.loc[:,cols]
+        df = df[cols]
+        return df.iloc[-1:]
 
     @classmethod
     def remove_cols_contains_nan2(cls, df):
@@ -437,11 +441,7 @@ class OneMinMarketData:
             cls.ohlc.cci[term] = cls.calc_cci(term, cls.ohlc.high, cls.ohlc.low, cls.ohlc.close)
             cls.ohlc.dx[term] = cls.calc_dx(term, cls.ohlc.high, cls.ohlc.low, cls.ohlc.close)
             if term >= 10:
-                cls.ohlc.macd[term], cls.ohlc.macdsignal[term], cls.ohlc.macdhist[term] = cls.calc_macd(cls.ohlc.close,
-                                                                                                        int(float(
-                                                                                                            term) / 2.0),
-                                                                                                        term, int(
-                        float(term) / 3.0))
+                cls.ohlc.macd[term], cls.ohlc.macdsignal[term], cls.ohlc.macdhist[term] = cls.calc_macd(cls.ohlc.close,int(float(term) / 2.0),term, int(float(term) / 3.0))
                 cls.ohlc.macd[term] = list(cls.ohlc.macd[term])
                 cls.ohlc.macdsignal[term] = list(cls.ohlc.macdsignal[term])
                 cls.ohlc.macdhist[term] = list(cls.ohlc.macdhist[term])
@@ -659,7 +659,7 @@ class OneMinMarketData:
             for r in reader:
                 cols.append(r)
         for col in cols[0]:
-            if col not in ['open', 'high', 'low', 'close']:
+            if ':' in col:
                 if max_term < int(col.split(':')[1]):
                     max_term = int(col.split(':')[1])
         return max_term
@@ -752,24 +752,19 @@ class OneMinMarketData:
         print('removed ' + str(len(to_drop)) + ' colums', 'remaining col=' + str(len(df.columns)))
         return df_res
 
+
     # 5min, 15min, 1hの足でのヒゲにしたほうがいい
     @classmethod
     def calc_uwahige_length(cls):
-        return list(map(
-            lambda i: (cls.ohlc.high[i] - cls.ohlc.close[i]) / cls.ohlc.open[i] if cls.ohlc.close[i] > cls.ohlc.open[
-                i] else (cls.ohlc.high[i] - cls.ohlc.open[i]) / cls.ohlc.open[i], range(0, len(cls.ohlc.close))))
+        return list(map(lambda i: (cls.ohlc.high[i] - cls.ohlc.close[i]) / cls.ohlc.open[i] if cls.ohlc.close[i] > cls.ohlc.open[i] else (cls.ohlc.high[i] - cls.ohlc.open[i]) / cls.ohlc.open[i], range(0, len(cls.ohlc.close))))
 
     @classmethod
     def calc_5min_uwahige_length(cls):
-        return list(map(
-            lambda i: (cls.ohlc.high[i] - cls.ohlc.close[i]) / cls.ohlc.open[i] if cls.ohlc.close[i] > cls.ohlc.open[
-                i] else (cls.ohlc.high[i] - cls.ohlc.open[i]) / cls.ohlc.open[i], range(0, len(cls.ohlc.close))))
+        return list(map(lambda i: (cls.ohlc.high[i] - cls.ohlc.close[i]) / cls.ohlc.open[i] if cls.ohlc.close[i] > cls.ohlc.open[i] else (cls.ohlc.high[i] - cls.ohlc.open[i]) / cls.ohlc.open[i], range(0, len(cls.ohlc.close))))
 
     @classmethod
     def calc_shitahige_length(cls):
-        return list(map(
-            lambda i: (cls.ohlc.open[i] - cls.ohlc.low[i]) / cls.ohlc.open[i] if cls.ohlc.close[i] > cls.ohlc.open[
-                i] else (cls.ohlc.close[i] - cls.ohlc.low[i]) / cls.ohlc.open[i], range(0, len(cls.ohlc.close))))
+        return list(map(lambda i: (cls.ohlc.open[i] - cls.ohlc.low[i]) / cls.ohlc.open[i] if cls.ohlc.close[i] > cls.ohlc.open[i] else (cls.ohlc.close[i] - cls.ohlc.low[i]) / cls.ohlc.open[i], range(0, len(cls.ohlc.close))))
 
     @classmethod
     def calc_high_kairi(cls, term):
@@ -797,13 +792,11 @@ class OneMinMarketData:
 
     @classmethod
     def calc_ema_kairi(cls, term):
-        return list(map(lambda c, e: (c - e) / e, np.array(cls.ohlc.close, dtype='f8'),
-                        np.array(cls.ohlc.index_data_dict['ema:' + str(term)], dtype='f8')))
+        return list(map(lambda c, e: (c - e) / e, np.array(cls.ohlc.close, dtype='f8'), np.array(cls.ohlc.index_data_dict['ema:' + str(term)], dtype='f8')))
 
     @classmethod
     def calc_dema_kairi(cls, term):
-        return list(map(lambda c, d: (c - d) / d, np.array(cls.ohlc.close, dtype='f8'),
-                        np.array(cls.ohlc.index_data_dict['dema:' + str(term)], dtype='f8')))
+        return list(map(lambda c, d: (c - d) / d, np.array(cls.ohlc.close, dtype='f8'), np.array(cls.ohlc.index_data_dict['dema:' + str(term)], dtype='f8')))
 
     @classmethod
     def calc_ema_gra(cls, term):
@@ -821,25 +814,21 @@ class OneMinMarketData:
     @classmethod
     def calc_adx(cls, term):
         return list(
-            ta.ADX(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
-                   np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
+            ta.ADX(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
 
     @classmethod
     def calc_aroon_os(cls, term):
-        return list(
-            ta.AROONOSC(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), timeperiod=term))
+        return list(ta.AROONOSC(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), timeperiod=term))
 
     @classmethod
     def calc_cci(cls, term):
         return list(
-            ta.CCI(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
-                   np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
+            ta.CCI(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
 
     @classmethod
     def calc_dx(cls, term):
         return list(
-            ta.DX(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
-                  np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
+            ta.DX(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
 
     @classmethod
     def calc_midprice(cls, term, high, low):
@@ -850,8 +839,7 @@ class OneMinMarketData:
         slowperiod = term
         fastperiod = int(term / 2.0)
         signalperiod = int(term / 3.0)
-        macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'),
-                                     np.array(slowperiod, dtype='i8'), np.array(signalperiod, dtype='i8'))
+        macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'), np.array(slowperiod, dtype='i8'), np.array(signalperiod, dtype='i8'))
         return macd
 
     @classmethod
@@ -859,8 +847,7 @@ class OneMinMarketData:
         slowperiod = term
         fastperiod = int(term / 2.0)
         signalperiod = int(term / 3.0)
-        macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'),
-                                     np.array(slowperiod, dtype='i8'),
+        macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'), np.array(slowperiod, dtype='i8'),
                                      np.array(signalperiod, dtype='i8'))
         return signal
 
@@ -869,8 +856,7 @@ class OneMinMarketData:
         slowperiod = term
         fastperiod = int(term / 2.0)
         signalperiod = int(term / 3.0)
-        macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'),
-                                     np.array(slowperiod, dtype='i8'),
+        macd, signal, hist = ta.MACD(np.array(cls.ohlc.close, dtype='f8'), np.array(fastperiod, dtype='i8'), np.array(slowperiod, dtype='i8'),
                                      np.array(signalperiod, dtype='i8'))
         return hist
 
@@ -892,8 +878,7 @@ class OneMinMarketData:
 
     @classmethod
     def calc_williams_R(cls, term):
-        return list(ta.WILLR(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
-                             np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
+        return list(ta.WILLR(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8'), timeperiod=term))
 
     @classmethod
     def calc_beta(cls, term):
@@ -937,71 +922,59 @@ class OneMinMarketData:
 
     @classmethod
     def calc_normalized_ave_true_range(cls):
-        return list(ta.NATR(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
-                            np.array(cls.ohlc.close, dtype='f8')))
+        return list(ta.NATR(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_three_outside_updown(cls):
-        return list(ta.CDL3OUTSIDE(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                   np.array(cls.ohlc.low, dtype='f8'),
+        return list(ta.CDL3OUTSIDE(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
                                    np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_breakway(cls):
-        return list(ta.CDLBREAKAWAY(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                    np.array(cls.ohlc.low, dtype='f8'),
+        return list(ta.CDLBREAKAWAY(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
                                     np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_dark_cloud_cover(cls):
-        return list(ta.CDLDARKCLOUDCOVER(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                         np.array(cls.ohlc.low, dtype='f8'),
+        return list(ta.CDLDARKCLOUDCOVER(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
                                          np.array(cls.ohlc.close, dtype='f8'), penetration=0))
 
     @classmethod
     def calc_dragonfly_doji(cls):
-        return list(ta.CDLDRAGONFLYDOJI(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                        np.array(cls.ohlc.low, dtype='f8'),
+        return list(ta.CDLDRAGONFLYDOJI(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
                                         np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_updown_sidebyside_white_lines(cls):
         return list(
-            ta.CDLGAPSIDESIDEWHITE(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                   np.array(cls.ohlc.low, dtype='f8'),
+            ta.CDLGAPSIDESIDEWHITE(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
                                    np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_haramisen(cls):
-        return list(ta.CDLHARAMI(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                 np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
+        return list(ta.CDLHARAMI(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_hikkake_pattern(cls):
-        return list(ta.CDLHIKKAKEMOD(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                     np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
+        return list(ta.CDLHIKKAKEMOD(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_neck_pattern(cls):
-        return list(ta.CDLINNECK(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                 np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
+        return list(ta.CDLINNECK(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_sar(cls):
         accelation = 0.02
         maximum = 0.2
-        return list(ta.SAR(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'),
-                           np.array(accelation, dtype='f8'), np.array(maximum, dtype='f8')))
+        return list(ta.SAR(np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(accelation, dtype='f8'), np.array(maximum, dtype='f8')))
 
     @classmethod
     def calc_bop(cls):
-        return list(ta.BOP(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                           np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
+        return list(ta.BOP(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
 
     @classmethod
     def calc_upsidedownside_gap_three_method(cls):
-        return list(ta.CDLXSIDEGAP3METHODS(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'),
-                                           np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
+        return list(ta.CDLXSIDEGAP3METHODS(np.array(cls.ohlc.open, dtype='f8'), np.array(cls.ohlc.high, dtype='f8'), np.array(cls.ohlc.low, dtype='f8'), np.array(cls.ohlc.close, dtype='f8')))
 
 
 if __name__ == '__main__':

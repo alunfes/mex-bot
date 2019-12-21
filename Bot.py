@@ -21,28 +21,7 @@ import pickle
 
 
 '''
-initialize class
-load model
-start ws
-download ohlc
-calc all index
-downlod ohlc for latest (after last donwload till completion of calc, maybe few minutes data)
-calc index only for last downloaded data
-predict bpsp
 
-'''
-
-#ohlc data
-'''
-最初はその時点のutまで普通にapiでohlc dataを最低必要なデータ数ダウンロード(数秒かかる）
-その後index計算（数秒かかる）
-bot稼働中のohlcはws経由で取得
-・最初のohlc取得計算後にbot稼働する際のohlcは1分データ以上の間隔が開く可能性がある。
-->
-
-
-戦略は複雑で、2つのACを使うものや複数モデルの運用により意思決定するものがあるため、
-Botでは戦略意思決定、トレード、口座、Line, Logなどの管理を役割とする。
 '''
 
 
@@ -59,7 +38,8 @@ class Bot:
         self.amount = 10
 
         self.sim = RealtimeSim()
-        self.ac = RealtimeSimAccount()
+        self.sim_ac = RealtimeSimAccount()
+        self.sim_ac2 = RealtimeSimAccount()
 
         th = threading.Thread(target=self.__bot_thread)
         th2 = threading.Thread(target=self.__bot_sub_thread)
@@ -73,10 +53,9 @@ class Bot:
         while SystemFlg.get_system_flg():
             pred = self.lgb_model.get_pred()
 
-            self.ac = self.sim.sim_model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, TickData.get_ltp(), self.ac)
+            self.sim_ac = self.sim.sim_model_pred_onemin_avert(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun)
 
-
-'''
+            '''
             ds = BotStrategy.model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, self.ac, self.amount)
             pt_price = int(round(position['price'] * (1.0 + pt_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 - pt_ratio)))
             position = self.ac.get_position()
@@ -109,7 +88,8 @@ class Bot:
                         Trade.order(ds.order_side, )
                     elif ds.order_side != '' and len(order_side) > 0:
                         pass
-'''
+            '''
+            pass
 
 
 
@@ -122,6 +102,14 @@ class Bot:
         while SystemFlg.get_system_flg():
             time.sleep(60)
             print(datetime.now())
+
+            self.sim_ac.onemine_process(TickData.get_ltp(), datetime.now())
+            print('posi_side:',self.sim_ac.holding_side, ', posi_price:',self.sim_ac.holding_price, ', posi_size:',self.sim_ac.holding_size)
+            for oid in self.sim_ac.order_serial_list:
+                print('order_side:',self.sim_ac.order_side[oid], ', order_price:',self.sim_ac.order_price, ', order_size:',self.sim_ac.order_size, ', order_type:',self.sim_ac.order_type)
+            print('total_pl:',self.sim_ac.total_pl, 'total_fee:',self.total_fee)
+
+            '''
             print(self.ac.get_position())
             order_side, order_price, order_size, order_dt = self.ac.get_orders()
             for o in order_side:
@@ -143,50 +131,13 @@ class Bot:
                                'num_public_access':Trade.num_public_access, 'pnl':performance['total_pnl'], 'pnl_per_min':performance['total_pnl_per_min'],
                                'num_trade':performance['num_trade'], 'win_rate':performance['win_rate'], 'prediction':LgbModel.get_pred(), 'api_error':'', 'action_message':'Move to next'})
             LineNotification.send_performance_notification()
+            '''
+            pass
 
 
     def __read_config_data(self):
         config = pd.read_csv('./Model/bpsp_config.csv', index_col=0)
         return config['pt_ratio'], config['lc_ratio'], config['pred_method'], config['upper_kijun'], config['avert_onemine'], config['avert_period_kijun'], config['avert_val_kijun']
-
-
-
-    def combine_status_data(self, status):
-        side = ''
-        size = 0
-        price = 0
-        for s in status:
-            side = s['side'].lower()
-            size += float(s['size'])
-            price += float(s['price']) * float(s['size'])
-        price = round(price / size)
-        return side, round(size, 8), round(price)
-
-    def sync_position_order(self):
-        position = Trade.get_positions()
-        orders = Trade.get_orders()
-        if len(position) > 0:
-            posi_side, posi_size, posi_price = self.combine_status_data(position)
-            if self.posi_side != posi_side or self.posi_price != posi_price or self.posi_size != posi_size:
-                print('position unmatch was detected! Synchronize with account position data.')
-                print('posi_side={},posi_price={},posi_size={}'.format(self.posi_side, self.posi_price, self.posi_size))
-            self.posi_side, self.posi_size, self.posi_price = posi_side, posi_size, posi_price
-            self.posi_status = 'fully executed'
-            print('synchronized position data, side=' + str(self.posi_side) + ', size=' + str(
-                self.posi_size) + ', price=' + str(self.posi_price))
-        else:
-            self.posi_initialzie()
-        if len(orders) > 0:  # need to update order status
-            if len(orders) > 1:
-                print('multiple orders are found! Only the first one will be synchronized!')
-            self.order_id = orders[0]['info']['child_order_acceptance_id']
-            self.order_side = orders[0]['info']['side'].lower()
-            self.order_size = float(orders[0]['info']['size'])
-            self.order_price = round(float(orders[0]['info']['price']))
-            print('synchronized order data, side=' + str(self.order_side) + ', size=' + str(
-                self.order_size) + ', price=' + str(self.order_price))
-        else:
-            self.order_initailize()
 
 
 

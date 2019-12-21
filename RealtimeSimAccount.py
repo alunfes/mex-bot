@@ -57,12 +57,10 @@ class RealtimeSimAccount:
         self.holding_side = ''
         self.holding_price = 0
         self.holding_size = 0
-        self.holding_i = 0
         self.holding_dt = ''
-        self.holding_ut = 0
 
 
-    def onemine_process(self, ltp, i, dt):
+    def onemine_process(self, ltp, dt):
         self.total_pl_log.append(self.total_pl)
         # self.__add_log('i:'+str(i), i)
 

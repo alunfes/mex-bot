@@ -202,7 +202,7 @@ class OneMinMarketData:
 
 
     @classmethod
-    def genrate_df_from_dict(cls):
+    def generate_df_from_dict(cls):
         cut_size = cls.max_term + 1
         end = len(cls.ohlc.close) - cls.kijun_period #due to bpsp
         df = pd.DataFrame(OneMinMarketData.ohlc.index_data_dict)
