@@ -44,6 +44,7 @@ class Bot:
         self.sim_log = pd.DataFrame()
         self.sim_log_dict = {}
         self.sim_data_path = sim_data_path
+
         if os.path.exists(self.sim_data_path):
             os.remove(self.sim_data_path)
 
@@ -54,13 +55,16 @@ class Bot:
 
 
     def __bot_thread(self):
+        while TickData.get_ltp() <= 0:
+            time.sleep(1)
+
         next_min = datetime.now().minute +1 if datetime.now().minute +1 < 60 else 0
         flg = False
         while SystemFlg.get_system_flg():
             pred = self.lgb_model.get_pred()
 
-            self.sim_ac = self.sim.sim_model_pred_onemin_avert(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun)
-
+            self.sim_ac = self.sim.sim_model_pred_onemin_avert(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
+            time.sleep(3) #simをsleep無しで回し続けるとtickdataがlockされてltp取れなくなる
             '''
             ds = BotStrategy.model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, self.ac, self.amount)
             pt_price = int(round(position['price'] * (1.0 + pt_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 - pt_ratio)))
@@ -114,8 +118,9 @@ class Bot:
                 print('order_side:',self.sim_ac.order_side[oid], ', order_price:',self.sim_ac.order_price, ', order_size:',self.sim_ac.order_size, ', order_type:',self.sim_ac.order_type)
             print('total_pl:',self.sim_ac.total_pl, 'total_fee:',self.sim_ac.total_fee, 'num_trade:', self.sim_ac.num_trade, 'win_rate:',self.sim_ac.win_rate)
 
-            LineNotification.send_free_message('pred='+self.lgb_model.get_pred()+', posi_side:'+self.sim_ac.holding_side+', posi_price:'+str(self.sim_ac.holding_price)+', posi_size:'+str(self.sim_ac.holding_size) + '\r\n'
-                                               +'total_pl:'+str(self.sim_ac.total_pl)+', total_fee:'+str(self.sim_ac.total_fee)+', num_trade:'+str(self.sim_ac.num_trade)+', win_rate:'+str(self.sim_ac.win_rate))
+            LineNotification.send_free_message('\r\n'+'total_pl:' + str(self.sim_ac.total_pl) + ', total_fee:' + str(self.sim_ac.total_fee) + ', num_trade:' + str(self.sim_ac.num_trade) + ', win_rate:' + str(self.sim_ac.win_rate) +'\r\n'
+                                               +'pred=' + self.lgb_model.get_pred() + ', posi_side:' + self.sim_ac.holding_side + ', posi_price:' + str(self.sim_ac.holding_price) +
+                                               ', posi_size:' + str(self.sim_ac.holding_size))
             self.__write_sim_log()
 
 

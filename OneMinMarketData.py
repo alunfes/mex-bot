@@ -8,6 +8,7 @@ import pandas as pd
 import csv
 import pytz
 import time
+import copy
 from SystemFlg import SystemFlg
 
 '''
@@ -102,8 +103,7 @@ class OneMinMarketData:
 
     @classmethod
     def get_flg_ohlc_update(cls):
-        with cls.lock_flg_ohlc:
-            return cls.flg_update_ohlc
+        return cls.flg_update_ohlc
 
     '''
     1.毎分00秒からws ohlcの更新を確認。
@@ -130,15 +130,16 @@ class OneMinMarketData:
                 target_min = datetime.now(cls.JST).minute -1 if datetime.now(cls.JST).minute > 0 else 59 #取得すべきohlcのminutes, 01分時点でもtaget min=58
 
                 if datetime.now(cls.JST).minute == 0 and flg_5m_ohlc == False:  # 60分に一回max termまでのデータをダウンロードしてcsvに記録し、market dataをrefreshする。
-                    print('5min ohlc download all')
+                    print('1h ohlc download all')
                     time.sleep(20) #wait until data is ready in bitmex
+                    tmp_func_dict = copy.copy(cls.ohlc.func_dict) #func_dictは今のものを使う
                     DownloadMexOhlc.initial_data_download(cls.max_term + cls.ohlc_buffer, './Data/bot_ohlc.csv')
                     cls.ohlc = cls.read_from_csv('./Data/bot_ohlc.csv')
+                    cls.ohlc.func_dict = tmp_func_dict
                     flg_5m_ohlc = True
 
                 while tmp_ohlc_loop_flg and flg_5m_ohlc == False:
                     if len(cls.tmp_ohlc.dt) > 0:
-                        #print('tmp=', cls.tmp_ohlc.dt[-1], ', target_min', target_min)
                         if cls.tmp_ohlc.dt[-1].minute is target_min: #2.ws tickdataからのohlc更新があり、それが現在の最新のデータの次の1分のデータの場合はそのohlcを採用
                             cls.ohlc.add_and_pop(cls.tmp_ohlc.unix_time[-1], cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],
                                                  cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
@@ -146,7 +147,7 @@ class OneMinMarketData:
                             print('ws ohlc:', datetime.now(cls.JST), cls.tmp_ohlc.dt[-1], cls.tmp_ohlc.open[-1],cls.tmp_ohlc.high[-1], cls.tmp_ohlc.low[-1], cls.tmp_ohlc.close[-1],cls.tmp_ohlc.size[-1])
                             break
 
-                    if datetime.now(cls.JST).second > 2: #2秒以上経過してwsからのohlc更新がない場合は必要なデータをダウンロード
+                    if datetime.now(cls.JST).second > 5: #x秒以上経過してwsからのohlc更新がない場合は必要なデータをダウンロード
                         res = DownloadMexOhlc.bot_ohlc_download_latest(1)  # latest ohlc dtからdatetime.now().minute-1分までのデータを取得すべき。
                         if res is not None:
                             cls.ohlc.add_and_pop(res[0], res[1], res[2], res[3], res[4], res[5], res[6])
@@ -155,12 +156,12 @@ class OneMinMarketData:
                         else:
                             print('download ohlc is none!')
                         break
-                    time.sleep(0.3)
+                    time.sleep(1)
 
                 cls.__calc_all_index_dict()
                 cls.set_df(cls.generate_df_from_dict_for_bot())
                 cls.set_flg_ohlc_update(True)
-            time.sleep(0.1)
+            time.sleep(1)
 
 
     @classmethod

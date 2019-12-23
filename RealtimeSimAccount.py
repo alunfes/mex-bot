@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import time
+from OneMinData import OneMinData
 
 class RealtimeSimAccount:
     def __init__(self):
@@ -14,10 +16,12 @@ class RealtimeSimAccount:
         self.exec_slip = 0.5 #process execution when price + exec_slip or price - exec_slip depends on side
         self.initial_asset = 1500000
 
+        self.start_time = time.time()
 
         self.total_pl = 0
         self.realized_pl = 0
         self.unrealized_pl = 0
+        self.pl_per_min = 0
         self.total_fee = 0
         self.num_trade = 0
         self.num_sell = 0
@@ -67,7 +71,7 @@ class RealtimeSimAccount:
 
     def update_pnl(self, ltp):
         self.__calc_unrealized_pl(ltp)
-        self.total_pl = self.realized_pl + self.unrealized_pl - self.total_fee
+        self.total_pl = round(self.realized_pl + self.unrealized_pl - self.total_fee, 6)
         self.asset = self.initial_asset + self.total_pl
 
     def entry_order(self, side, price, size, type, ltp, dt):
@@ -106,13 +110,21 @@ class RealtimeSimAccount:
         for oid in self.order_side:
             self.__del_order(oid)
 
-    def check_execution(self, ltp, dt):
+    '''
+    ltpだけの判定では本当は約定している場合があっても捕捉できないことがある。ohlcも使う必要がある。
+    '''
+    def check_execution(self, ltp, dt, ohlc:OneMinData):
         for oid in self.order_serial_list:
             if self.order_type[oid] == 'Limit':
                 if self.order_side[oid] == 'Buy' and self.order_price[oid] >= ltp + self.exec_slip:
                     self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
                 elif self.order_side[oid] == 'Sell' and self.order_price[oid] <= ltp - self.exec_slip:
                     self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
+                elif self.order_side[oid] == 'Buy' and self.order_price[oid] >= ohlc.low[-1] + self.exec_slip:
+                    self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
+                elif self.order_side[oid] == 'Sell' and self.order_price[oid] <= ohlc.high[-1] - self.exec_slip:
+                    self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
+
 
 
     def __process_execution(self, side, exec_price, size, type, dt):
@@ -140,8 +152,8 @@ class RealtimeSimAccount:
 
 
     def __calc_executed_pl(self, exec_price, size, type):
-        pl = (exec_price - self.holding_price) * size if self.holding_side == 'buy' else (self.holding_price - exec_price) * size
-        self.realized_pl += round(pl, 4)
+        pl = (exec_price - self.holding_price) * size if self.holding_side == 'Buy' else (self.holding_price - exec_price) * size
+        self.realized_pl += round(pl, 6)
         self.num_trade += 1
         if pl > 0:
             self.num_win += 1
@@ -150,26 +162,24 @@ class RealtimeSimAccount:
 
     def __calc_fee(self, size, price, type):
         if type == 'Limit':
-            self.total_fee += size * price * self.maker_fee
+            self.total_fee += round(size * price * self.maker_fee, 6)
         elif type == 'Market':
-            self.total_fee += size * price * self.taker_fee
+            self.total_fee += round(size * price * self.taker_fee, 6)
         else:
             print('invalid maker_taker flg!')
 
     def __calc_unrealized_pl(self, ltp):
         if self.holding_side != '':
-            self.unrealized_pl = (ltp - self.holding_price) * self.holding_size if self.holding_side == 'buy' else (self.holding_price - ltp) * self.holding_size
+            self.unrealized_pl = round((ltp - self.holding_price) * self.holding_size if self.holding_side == 'Buy' else (self.holding_price - ltp) * self.holding_size, 6)
         else:
-            self.unrealized_pl= 0
+            self.unrealized_pl = 0
 
     def __calc_pl_stability(self):
-        base_line = np.linspace(self.performance_total_pl_log[0], self.performance_total_pl_log[-1],
-                                num=len(self.performance_total_pl_log))
+        base_line = np.linspace(self.performance_total_pl_log[0], self.performance_total_pl_log[-1], num=len(self.performance_total_pl_log))
         sum_diff = 0
         for i in range(len(base_line)):
             sum_diff += (base_line[i] - self.performance_total_pl_log[i]) ** 2
-        self.pl_stability = round(1.0 / ((sum_diff ** 0.5) * self.total_pl / float(len(self.performance_total_pl_log))),
-                                  4)
+        self.pl_stability = round(1.0 / ((sum_diff ** 0.5) * self.total_pl / float(len(self.performance_total_pl_log))), 4)
 
     def __add_log(self, log, i, dt):
         self.total_pl_log.append(self.total_pl)

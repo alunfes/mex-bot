@@ -15,7 +15,7 @@ import datetime
 class LgbModel:
     def __init__(self, pred_method, upper_kijun):
         self.model = None
-        self.pred = ""
+        self.pred = ''
         self.lock_pred = threading.Lock()
         self.upper_kijun = upper_kijun
         self.pred_method = pred_method
@@ -33,7 +33,6 @@ class LgbModel:
             self.pred = pred
 
     def get_pred(self):
-        with self.lock_pred:
             return self.pred
 
     def write_df_pred(self, df, pred):
@@ -53,7 +52,7 @@ class LgbModel:
                     ini_data_flg = True
                 time.sleep(0.5)
 
-            time.sleep(1)
+
             if OneMinMarketData.get_flg_ohlc_update():
                 df = OneMinMarketData.get_df()
                 if df is not None:
@@ -74,24 +73,14 @@ class LgbModel:
                         if len(prediction) > 0:
                             self.set_pred({0: 'No', 1: 'Buy', 2: 'Sell', 3: 'Both'}[prediction[-1]])
                         else:
-                            print('prediciton length==0!', prediction)
+                            print('prediction length==0!', prediction)
                             print(df)
                         OneMinMarketData.set_flg_ohlc_update(False)
                         print('prediction = ', self.pred)
                         self.write_df_pred(df, self.pred)
-            '''
-            df = OneMinMarketData.get_df()
-            if df is not None:
-                dt = df['dt'].iloc[-1]
-                if dt.minute == self.next_min:
-                    df = df.drop(['dt'], axis =1)
-                    self.set_pred(self.bp_prediciton(self.model, df, self.upper_kijun)[-1])
-                    self.next_min = int(dt.minute) +1 if dt.minute != 59 else 0
-                    OneMinMarketData.set_pred(self.pred)
-                    OneMinMarketData.set_flg_ohlc_update(False)
-                    print('prediction = ', self.pred, 'next min=',self.next_min)
-                    self.sim(self.pred)
-            '''
+                else:
+                    print('df is None after completed generation!')
+            time.sleep(1)
         print('Lgb main thread ended.')
 
     def check_train_test_index_duplication(self, train_x, test_x):

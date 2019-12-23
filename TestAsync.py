@@ -1,6 +1,6 @@
 import time
 import asyncio
-
+import threading
 
 class ws:
     def __init__(self):
@@ -36,6 +36,50 @@ class TestAsync:
         ot.task_loop()
 
 
+
+class thread1:
+    @classmethod
+    def initialize(cls):
+        cls.data = 0
+        cls.lock = threading.Lock()
+
+    @classmethod
+    def set_data(cls, d):
+        with cls.lock:
+            cls.data = d
+
+    @classmethod
+    def get_data(cls):
+        with cls.lock:
+            return cls.data
+
+
+class Update1:
+    def thread1(self):
+        while True:
+            thread1.set_data(1)
+            print('th1-', thread1.get_data())
+            time.sleep(0.1)
+
+class Update2:
+    def thread2(self):
+        while True:
+            thread1.set_data(2)
+            print('th2-', thread1.get_data())
+            time.sleep(3)
+
+
+
 if __name__ == '__main__':
-    ts = TestAsync()
-    ts.start()
+    thread1.initialize()
+    u1 = Update1()
+    u2 = Update2()
+    th = threading.Thread(target=u1.thread1)
+    th.start()
+    th2 = threading.Thread(target=u2.thread2)
+    th2.start()
+
+    while True:
+        time.sleep(1)
+
+

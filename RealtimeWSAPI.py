@@ -77,6 +77,7 @@ class RealtimeWSAPI:
 
     def on_message(self, ws, message):
         #message = dict(message)
+        s = time.time()
         message = json.loads(message)
         if message['table'] == 'tradeBin1m':
             d = message['data'][-1]
@@ -89,13 +90,15 @@ class RealtimeWSAPI:
             TickData.set_ltp(message['data'][-1]['price'])
             TickData.add_tmp_exec_data(message['data'])
         elif message['table'] == 'quote':
-            TickData.set_bid(message['data'][-1]['bidPrice'])
-            TickData.set_ask(message['data'][-1]['askPrice'])
+            pass
+            #TickData.set_bid(message['data'][-1]['bidPrice'])
+            #TickData.set_ask(message['data'][-1]['askPrice'])
         elif message['table'] == 'orderBook10':
             TickData.set_bid(message[0]['bids'][0][0])
             TickData.set_ask(message[0]['asks'][0][0])
         else:
             print('unknown message in RealtimeWSAPI!')
+        #print('wsapi time=',time.time() - s)
 
 
     def on_close(self, ws):
@@ -129,8 +132,7 @@ class TickData:
 
     @classmethod
     def get_bid(cls):
-        with cls.lock_data:
-            return cls.bidprice
+        return cls.bidprice
 
     @classmethod
     def set_ask(cls, p):
@@ -139,8 +141,7 @@ class TickData:
 
     @classmethod
     def get_ask(cls):
-        with cls.lock_data:
-            return cls.askprice
+        return cls.askprice
 
     @classmethod
     def set_ltp(cls, p):
@@ -149,8 +150,7 @@ class TickData:
 
     @classmethod
     def get_ltp(cls):
-        with cls.lock_data:
-            return cls.ltp
+        return cls.ltp
 
     @classmethod
     def add_exec_data(cls, exec):
@@ -193,7 +193,7 @@ class TickData:
 
         while SystemFlg.get_system_flg():
             data = cls.get_tmp_exec_data()
-            if len(data) > 0 and int(data[-1]['timestamp'].split('T')[1].split(':')[1]) == next_min: #次の分のデータが入り出したらohlc計算する
+            if len(data) > 0 and int(data[-1]['timestamp'].split('T')[1].split(':')[1]) == next_min or (datetime.now().minute == next_min and datetime.now().second > 2): #次の分のデータが入り出したらohlc計算する
                 next_data = []
                 target_data = []
                 for d in data:
@@ -207,11 +207,13 @@ class TickData:
                     cls.add_tmp_exec_data(next_data)
                 if len(target_data) == 0:
                     print('target data len is 0!')
-                p = [d.get('price') for d in target_data]
-                size = [d.get('size') for d in target_data]
-                dt = dateutil.parser.parse(target_data[-1]['timestamp'])
-                OneMinMarketData.add_tmp_ohlc(dt.timestamp(), dt, p[0], max(p), min(p), p[-1], sum(size))
-                print('RealtimeWSAPI: ', dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
+                else:
+                    p = [d.get('price') for d in target_data]
+                    size = [d.get('size') for d in target_data]
+                    dt = dateutil.parser.parse(target_data[-1]['timestamp'])
+                    OneMinMarketData.add_tmp_ohlc(dt.timestamp(), dt, p[0], max(p), min(p), p[-1], sum(size))
+                    print(datetime.now())
+                    print('RealtimeWSAPI: ', dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
                 target_min = target_min + 1 if target_min + 1 < 60 else 0
                 next_min = target_min + 1 if target_min + 1 < 60 else 0
             else:
@@ -219,47 +221,9 @@ class TickData:
             time.sleep(1)
 
 
-
-#多分消していい
-'''
-    @classmethod
-    def __calc_ohlc(cls):
-        if int(datetime.now(cls.JST).minute) > cls.last_ohlc_min or (int(cls.last_ohlc_min) == 59 and int(datetime.now(cls.JST).minute) == 0):
-            executions = cls.get_exe_data()
-            dlist = [d.get('timestamp') for d in executions]
-            p = [d.get('price') for d in executions]
-            size = [d.get('size') for d in executions]
-            i = 1
-            target_min = int(datetime.now(cls.JST).minute - 1 if datetime.now(cls.JST).minute > 0 else 59)
-            plist = []
-            sizelist = []
-            while int(dlist[-i].split('T')[1].split(':')[1]) != target_min:
-                i += 1
-            while int(dlist[-i].split('T')[1].split(':')[1]) == target_min:
-                plist.append(p[-i])
-                sizelist.append(size[-i])
-                i += 1
-            zurashi_time = target_min + 1 if target_min != 59 else 0  # to consist with cryptowatch data
-            cls.ohlc.dt.append(
-                datetime(datetime.now(cls.JST).year, datetime.now(cls.JST).month, datetime.now(cls.JST).day,
-                         datetime.now(cls.JST).hour, zurashi_time, 0))
-
-            ut = cls.ohlc.dt[-1].timestamp()
-            dt = datetime.fromtimestamp(int(ut))
-            open = (plist[-1])
-            high = max(plist)
-            low = min(plist)
-            close = plist[0]
-            vol = sum(sizelist)
-            #OneMinMarketData.add_tmp_ohlc(ut, dt, open, high, low, close, vol)
-            print('genrated ohlc:', dt, open, high, low, close, datetime.now())
-            cls.last_ohlc_min = datetime.now(cls.JST).minute
-'''
-
-
 if __name__ == '__main__':
     SystemFlg.initialize()
     rwa = RealtimeWSAPI()
+    #OneMinMarketData.initialize_for_bot()
     while True:
-        #print(TickData.get_bid(), TickData.get_ask())
         time.sleep(1)
