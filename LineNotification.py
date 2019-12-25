@@ -47,7 +47,7 @@ class LineNotification:
     @classmethod
     async def __send_error(cls, message):
         if len(message) > 0:
-            await cls.__send_message('\r\n' + str(message))
+            await cls.__send_message('\r\n' + '[Error]' + '\r\n' +str(message))
 
 
     @classmethod

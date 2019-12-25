@@ -2,6 +2,7 @@ from Trade import Trade
 from OneMinMarketData import OneMinMarketData
 from PrivateWS import PrivateWS
 from Account import Account
+from RestAccount import RestAccount
 from SystemFlg import SystemFlg
 from LgbModel import LgbModel
 from BotStrategy import BotStrategy, BotStateData
@@ -31,11 +32,12 @@ class Bot:
     def __init__(self, sim_data_path):
         #pws = PrivateWS()
         self.pt_ratio, self.lc_ratio, self.pred_method, self.upper_kijun, self.avert_onemine, self.avert_period_kijun, self.avert_val_kijun = self.__read_config_data()
+        LineNotification.initialize()
         Trade.initialize()
-        self.ac = Account()
+        #self.ac = Account()
+        self.ac = RestAccount()
         self.omd = OneMinMarketData
         self.lgb_model = LgbModel(self.pred_method, self.upper_kijun)
-        LineNotification.initialize()
         self.amount = 10
 
         self.sim = RealtimeSim()
@@ -60,11 +62,62 @@ class Bot:
 
         next_min = datetime.now().minute +1 if datetime.now().minute +1 < 60 else 0
         flg = False
+        pre_order_side = ''
+        pre_order_size = 0 #for detection of pt execution
         while SystemFlg.get_system_flg():
             pred = self.lgb_model.get_pred()
 
             self.sim_ac = self.sim.sim_model_pred_onemin_avert(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
             time.sleep(3) #simをsleep無しで回し続けるとtickdataがlockされてltp取れなくなる
+
+            '''
+            botにおけるpt約定の捕捉：
+            bot.side != '' and bot.order_side !='' and sim.order_side != '' and sim.order_size > bot.order_size (全部約定してbot order size =0になったときに捕捉できない）
+            bot.order_side =='' and sim.order_side != '' and local.order_side != '' and local.order_size > 0(botのlocal varianceとしてorder sizeを記録しておき、それがRestAcで0になったとき。pt完了したときにはbot.posi_side = '', bot.order_side = ''になっている）
+            
+            sim_acへのbotからのpt約定の更新：
+            sim_acにbot_process_execution作る
+            
+            '''
+            posi = self.ac.get_position()
+            order_side, order_price, order_size, order_dt = self.ac.get_orders()
+            mk = -1
+            if len(order_side) > 0:
+                mk = max(order_side.keys())
+
+            if len(order_side) > 1:
+                print('bot order len is bigger than 1!')
+                print(order_side)
+            if len(self.sim_ac.order_side) > 1:
+                print('sim_ac order len is bigger than 1!')
+                print(order_side)
+
+            if len(order_side) > 0 and order_side == '' and self.sim_ac.order_side[mk] != '' and pre_order_side != '' and pre_order_size > 0: #pt exec check in bot
+                self.sim_ac.bot_procedss_execution(self.sim_ac.order_side[mk], self.sim_ac.order_price[mk], self.sim_ac.order_size[mk], 'Limit', datetime.now())
+                print('BOT: pt completion was detected and process sim_ac execution from bot.')
+            elif posi['side'] != self.sim_ac.holding_side: #to have same position side (botで先にpt約定完了してno posiになった時はsimに合わせるべきではない、botでpt約定を感知したらsim_acにも反映させるべき）
+                size = self.sim_ac.holding_size if posi['side'] == '' else self.sim_ac.holding_size + posi['size']
+                order_info = Trade.order(self.sim_ac.holding_side, 0, 'Market', size)
+                if order_info is not None:
+                    self.ac.add(order_info['orderID'], order_info['side'], order_info['price'], order_info['orderQty'], order_info['ordType'])
+                    print('BOT: entry order', order_info['side'], order_info['price'], order_info['orderQty'], order_info['ordType'])
+                else:
+                    print('BOT: entry order failed!')
+            elif len(order_side) > 0 and order_side != self.sim_ac.order_side[mk] and posi['side'] == self.sim_ac.holding_side: #position side is matched but order side in unmatch
+                for oid in order_side:
+                    Trade.cancel_order(oid)
+                    self.ac.bot_cancel_order(oid)
+                    print('BOT: cancel order', oid)
+                order_info = Trade.order(self.sim_ac.order_side[mk], self.sim_ac.order_price[-1], self.sim_ac.order_type[mk], self.amount)
+                if order_info is not None:
+                    print('BOT: pt order', order_info['side'], order_info['price'], order_info['orderQty'], order_info['ordType'])
+                else:
+                    print('BOT: pt order failed!')
+
+            pre_order_side = order_side
+            pre_order_size = order_size
+
+
             '''
             ds = BotStrategy.model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, self.ac, self.amount)
             pt_price = int(round(position['price'] * (1.0 + pt_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 - pt_ratio)))
@@ -122,6 +175,10 @@ class Bot:
                                                +'pred=' + self.lgb_model.get_pred() + ', posi_side:' + self.sim_ac.holding_side + ', posi_price:' + str(self.sim_ac.holding_price) +
                                                ', posi_size:' + str(self.sim_ac.holding_size))
             self.__write_sim_log()
+
+
+            print('BOT: performance')
+            print(self.ac.get_performance())
 
 
 

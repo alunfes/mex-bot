@@ -13,6 +13,15 @@ import pandas as pd
 PrivateWSからのexec dataを元に常時約定状況をモニタリングしてbotとしてのポジションを自炊する。
 '''
 
+
+'''
+rest account:
+get orders for confirm order
+check cancel
+check order execution
+
+'''
+
 class Account:
     def __init__(self):
         self.lock_posi = threading.Lock()
@@ -78,10 +87,6 @@ class Account:
             self.__remove_order(order_id)
 
 
-    def bot_sync_order_position(self):
-        pass
-
-
     #to confirm added order in actual order data from ws
     def __confirm_order(self, order_id, side, price, size, order_type):
         if order_id in self.order_ids:
@@ -100,6 +105,7 @@ class Account:
             self.order_status[order_type] = 'Onboarded'
         else:
             print('Order ID unmacthed in confirm order!', order_id)
+
 
 
     def get_orders(self):

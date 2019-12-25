@@ -150,6 +150,9 @@ class RealtimeSimAccount:
         else:
             print('unknown situation in __process_execution!')
 
+    def bot_procedss_execution(self, side, exec_price, size, type, dt):
+        self.__process_execution(side, exec_price, size, type, dt)
+
 
     def __calc_executed_pl(self, exec_price, size, type):
         pl = (exec_price - self.holding_price) * size if self.holding_side == 'Buy' else (self.holding_price - exec_price) * size

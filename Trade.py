@@ -6,6 +6,7 @@ import pprint
 from datetime import datetime
 from SystemFlg import SystemFlg
 from LogMaster import LogMaster
+from LineNotification import LineNotification
 import pandas as pd
 
 
@@ -27,6 +28,9 @@ class Trade:
         })
         cls.num_private_access = 0
         cls.num_public_access = 0
+        cls.error_trial = 5
+        cls.rest_interval = 1
+
 
     @classmethod
     def monitor_api(cls):
@@ -455,19 +459,26 @@ class Trade:
     '''
     @classmethod
     def order(cls, side, price, type, amount):
-        order_info = ''
-        try:
-            order_info = cls.bm.create_order(
-                symbol='BTC/USD',
-                type=type,
-                side=side,
-                price=price,
-                amount=amount  #×0.0001btc
-            )
-        except Exception as e:
-            print('Trade-order error!, '+str(e))
-            print('side=',side, ', price=',price, ', type', type, ', amount', amount)
-        return order_info
+        for i in range(cls.error_trial):
+            cls.num_private_access += 1
+            order_info = ''
+            try:
+                order_info = cls.bm.create_order(
+                    symbol='BTC/USD',
+                    type=type,
+                    side=side,
+                    price=price,
+                    amount=amount  #×0.0001btc
+                )
+            except Exception as e:
+                print('Trade-order error!, '+str(e))
+                print('side=',side, ', price=',price, ', type', type, ', amount', amount)
+                LineNotification.send_error('error in order! ' + '\r\n' + order_info + '\r\n' + str(e))
+            finally:
+                if 'error' not in order_info:
+                    return order_info
+                else:
+                    time.sleep(cls.rest_interval)
 
     '''
     {'amount': 1.0,
@@ -521,14 +532,20 @@ class Trade:
     '''
     @classmethod
     def cancel_order(cls, order_id):
-        cls.num_private_access += 1
-        cancel = ''
-        try:
-            cancel = cls.bm.cancel_order(id=order_id, symbol='BTC/USD')
-        except Exception as e:
-            print('error in cancel_order ' + str(e), cancel)
-            LogMaster.add_log({'dt': datetime.now(), 'api_error': 'Trade-get cancel_order error! ' + str(e)})
-        return cancel
+        for i in range(cls.error_trial):
+            cls.num_private_access += 1
+            cancel = ''
+            try:
+                cancel = cls.bm.cancel_order(id=order_id, symbol='BTC/USD')
+            except Exception as e:
+                print('error in cancel_order ' + str(e), cancel)
+                LogMaster.add_log({'dt': datetime.now(), 'api_error': 'Trade-get cancel_order error! ' + str(e)})
+                LineNotification.send_error('error in cancel order! ' + '\r\n' + cancel + '\r\n' + str(e))
+            finally:
+                if 'error' not in cancel:
+                    return cancel
+                else:
+                    time.sleep(cls.rest_interval)
 
     @classmethod
     def cancel_and_wait_completion(cls, order_id):
@@ -616,10 +633,9 @@ class Trade:
     {'info': {'orderID': '114a7300-ece3-cfe4-17d6-2749c96f1172', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'simpleOrderQty': None, 'orderQty': 40, 'price': 7136, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 40, 'avgPx': 7136.25, 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'transactTime': '2019-12-15T08:48:06.681Z', 'timestamp': '2019-12-15T08:57:45.558Z'}, 'id': '114a7300-ece3-cfe4-17d6-2749c96f1172', 'timestamp': 1576400265558, 'datetime': '2019-12-15T08:57:45.558Z', 'lastTradeTimestamp': 1576399686681, 'symbol': 'BTC/USD', 'type': 'limit', 'side': 'sell', 'price': 7136.0, 'amount': 40.0, 'cost': 285450.0, 'average': 7136.25, 'filled': 40.0, 'remaining': 0.0, 'status': 'closed', 'fee': None}]
     '''
     @classmethod
-    def get_order_byid(cls, order_id):
+    def get_order_byid(cls, order_id, count):
         cls.num_private_access += 1
         orders = None
-        count = 50
         try:
             orders = cls.bm.fetch_orders(symbol='BTC/USD', since=None, limit=None, params={'count': count, 'reverse': True})
             if len(order_id) > 0:
@@ -629,9 +645,21 @@ class Trade:
                     order_id = None
         except Exception as e:
             print('error in get_order_byid' + str(e))
+            LineNotification.send_error('error in get_order_byid! '  + '\r\n' + str(e))
         return orders
 
-
+    '''
+    [{'info': {'execID': '891dac5d-08c2-ab94-9cda-fa5e0a2e67e8', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 500, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 107051, 'simpleCumQty': None, 'cumQty': 192949, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '92c70d6b-868d-4872-b014-eb9bdfbdda63', 'execCost': 6564500, 'execComm': -1641, 'homeNotional': -0.065645, 'foreignNotional': 500, 'transactTime': '2019-12-23T02:00:30.761Z', 'timestamp': '2019-12-23T02:00:30.761Z'}, 'timestamp': 1577066430761, 'datetime': '2019-12-23T02:00:30.761Z', 'symbol': 'BTC/USD', 'id': '92c70d6b-868d-4872-b014-eb9bdfbdda63', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 0.065645, 'amount': 500.0, 'fee': {'cost': -1.641e-05, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': 'e0a106ca-3b12-cdc7-e600-0bb5e23038e2', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 1000, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 106051, 'simpleCumQty': None, 'cumQty': 193949, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '55f5962a-2e08-1743-c265-758cdfdad591', 'execCost': 13129000, 'execComm': -3282, 'homeNotional': -0.13129, 'foreignNotional': 1000, 'transactTime': '2019-12-23T02:00:31.059Z', 'timestamp': '2019-12-23T02:00:31.059Z'}, 'timestamp': 1577066431059, 'datetime': '2019-12-23T02:00:31.059Z', 'symbol': 'BTC/USD', 'id': '55f5962a-2e08-1743-c265-758cdfdad591', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 0.13129, 'amount': 1000.0, 'fee': {'cost': -3.282e-05, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': 'bcb65f68-f299-af87-d079-a751481b09ba', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 645, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 105406, 'simpleCumQty': None, 'cumQty': 194594, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': 'b014fdc0-589e-e9e9-2e91-6e6ddd1d1146', 'execCost': 8468205, 'execComm': -2117, 'homeNotional': -0.08468205, 'foreignNotional': 645, 'transactTime': '2019-12-23T02:00:31.373Z', 'timestamp': '2019-12-23T02:00:31.373Z'}, 'timestamp': 1577066431373, 'datetime': '2019-12-23T02:00:31.373Z', 'symbol': 'BTC/USD', 'id': 'b014fdc0-589e-e9e9-2e91-6e6ddd1d1146', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 0.08468205, 'amount': 645.0, 'fee': {'cost': -2.117e-05, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': 'a3412f80-dd34-c767-1705-eec8b5ef2884', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 50000, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 55406, 'simpleCumQty': None, 'cumQty': 244594, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': 'a7157d88-f78f-0bb8-228d-81f92a8eba4d', 'execCost': 656450000, 'execComm': -164112, 'homeNotional': -6.5645, 'foreignNotional': 50000, 'transactTime': '2019-12-23T02:00:33.784Z', 'timestamp': '2019-12-23T02:00:33.784Z'}, 'timestamp': 1577066433784, 'datetime': '2019-12-23T02:00:33.784Z', 'symbol': 'BTC/USD', 'id': 'a7157d88-f78f-0bb8-228d-81f92a8eba4d', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 6.5645, 'amount': 50000.0, 'fee': {'cost': -0.00164112, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': 'a7ba42ae-a20b-02b4-e421-1e5772f2d900', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 1200, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 54206, 'simpleCumQty': None, 'cumQty': 245794, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': 'fb4ad3b7-8342-1c3d-88af-2e38c41c570d', 'execCost': 15754800, 'execComm': -3938, 'homeNotional': -0.157548, 'foreignNotional': 1200, 'transactTime': '2019-12-23T02:00:34.023Z', 'timestamp': '2019-12-23T02:00:34.023Z'}, 'timestamp': 1577066434023, 'datetime': '2019-12-23T02:00:34.023Z', 'symbol': 'BTC/USD', 'id': 'fb4ad3b7-8342-1c3d-88af-2e38c41c570d', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 0.157548, 'amount': 1200.0, 'fee': {'cost': -3.938e-05, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': '343e5385-2eea-8fb7-75d3-dc04e152c825', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 10000, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 44206, 'simpleCumQty': None, 'cumQty': 255794, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '8c9cd8ff-cc65-dada-bfc2-bcf3a5319033', 'execCost': 131290000, 'execComm': -32822, 'homeNotional': -1.3129, 'foreignNotional': 10000, 'transactTime': '2019-12-23T02:00:34.296Z', 'timestamp': '2019-12-23T02:00:34.296Z'}, 'timestamp': 1577066434296, 'datetime': '2019-12-23T02:00:34.296Z', 'symbol': 'BTC/USD', 'id': '8c9cd8ff-cc65-dada-bfc2-bcf3a5319033', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 1.3129, 'amount': 10000.0, 'fee': {'cost': -0.00032822, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': 'b73d321b-a75e-0dbe-234f-ac52ef66c113', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 5000, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 39206, 'simpleCumQty': None, 'cumQty': 260794, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '5ae9ae75-3398-e297-07c2-14aefdb5e1fb', 'execCost': 65645000, 'execComm': -16411, 'homeNotional': -0.65645, 'foreignNotional': 5000, 'transactTime': '2019-12-23T02:00:34.554Z', 'timestamp': '2019-12-23T02:00:34.554Z'}, 'timestamp': 1577066434554, 'datetime': '2019-12-23T02:00:34.554Z', 'symbol': 'BTC/USD', 'id': '5ae9ae75-3398-e297-07c2-14aefdb5e1fb', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 0.65645, 'amount': 5000.0, 'fee': {'cost': -0.00016411, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': '8135ed27-431b-5fd3-a2e5-7c381c161862', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 5000, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 34206, 'simpleCumQty': None, 'cumQty': 265794, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '915af080-b81c-ee66-6062-5a60e305fa5e', 'execCost': 65645000, 'execComm': -16411, 'homeNotional': -0.65645, 'foreignNotional': 5000, 'transactTime': '2019-12-23T02:00:36.121Z', 'timestamp': '2019-12-23T02:00:36.121Z'}, 'timestamp': 1577066436121, 'datetime': '2019-12-23T02:00:36.121Z', 'symbol': 'BTC/USD', 'id': '915af080-b81c-ee66-6062-5a60e305fa5e', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 0.65645, 'amount': 5000.0, 'fee': {'cost': -0.00016411, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': 'a8dd345d-0955-8983-b145-c437ab449769', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 1250, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'PartiallyFilled', 'triggered': '', 'workingIndicator': True, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 32956, 'simpleCumQty': None, 'cumQty': 267044, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': '8400b80a-7c4d-b142-e41e-a5f088144ba9', 'execCost': 16411250, 'execComm': -4102, 'homeNotional': -0.1641125, 'foreignNotional': 1250, 'transactTime': '2019-12-23T02:00:36.410Z', 'timestamp': '2019-12-23T02:00:36.410Z'}, 'timestamp': 1577066436410, 'datetime': '2019-12-23T02:00:36.410Z', 'symbol': 'BTC/USD', 'id': '8400b80a-7c4d-b142-e41e-a5f088144ba9', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 0.1641125, 'amount': 1250.0, 'fee': {'cost': -4.102e-05, 'currency': 'BTC', 'rate': -0.00025}}, 
+    {'info': {'execID': 'f366df8b-fdb7-864c-56c9-dd1168a1d0ce', 'orderID': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'clOrdID': '', 'clOrdLinkID': '', 'account': 243795, 'symbol': 'XBTUSD', 'side': 'Sell', 'lastQty': 32956, 'lastPx': 7617, 'underlyingLastPx': None, 'lastMkt': 'XBME', 'lastLiquidityInd': 'AddedLiquidity', 'simpleOrderQty': None, 'orderQty': 300000, 'price': 7617, 'displayQty': None, 'stopPx': None, 'pegOffsetValue': None, 'pegPriceType': '', 'currency': 'USD', 'settlCurrency': 'XBt', 'execType': 'Trade', 'ordType': 'Limit', 'timeInForce': 'GoodTillCancel', 'execInst': '', 'contingencyType': '', 'exDestination': 'XBME', 'ordStatus': 'Filled', 'triggered': '', 'workingIndicator': False, 'ordRejReason': '', 'simpleLeavesQty': None, 'leavesQty': 0, 'simpleCumQty': None, 'cumQty': 300000, 'avgPx': 7617, 'commission': -0.00025, 'tradePublishIndicator': 'PublishTrade', 'multiLegReportingType': 'SingleSecurity', 'text': 'Submission from www.bitmex.com', 'trdMatchID': 'baba7b83-4453-aa4f-89d0-e596aeb7dde0', 'execCost': 432679324, 'execComm': -108169, 'homeNotional': -4.32679324, 'foreignNotional': 32956, 'transactTime': '2019-12-23T02:00:37.119Z', 'timestamp': '2019-12-23T02:00:37.119Z'}, 'timestamp': 1577066437119, 'datetime': '2019-12-23T02:00:37.119Z', 'symbol': 'BTC/USD', 'id': 'baba7b83-4453-aa4f-89d0-e596aeb7dde0', 'order': 'a49b56a1-d3ad-9ddd-af2e-67906ea042a7', 'type': 'limit', 'takerOrMaker': 'taker', 'side': 'sell', 'price': 7617.0, 'cost': 4.32679324, 'amount': 32956.0, 'fee': {'cost': -0.00108169, 'currency': 'BTC', 'rate': -0.00025}}]
+    '''
     @classmethod
     def get_trades(cls,count):
         cls.num_private_access += 1
@@ -655,9 +683,15 @@ class Trade:
 
 if __name__ == '__main__':
     Trade.initialize()
+    LineNotification.initialize()
     LogMaster.initialize()
 
-    print(Trade.bm.fetch_orders(symbol='BTC/USD', since=None, limit=None,params={'count': 10, 'reverse':True}))
+    print(Trade.get_trades(10))
+
+    #order = Trade.order('Buy', 5000, 'Limit', 10)
+    #print(Trade.cancel_order(order['info']['orderID']))
+
+    #print(Trade.bm.fetch_orders(symbol='BTC/USD', since=None, limit=None,params={'count': 10, 'reverse':True}))
 
     #pprint.pprint(Trade.get_orders())
     #pprint.pprint(Trade.get_positions())

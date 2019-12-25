@@ -1,19 +1,16 @@
-import random
 from datetime import datetime
-from Trade import Trade
-from RealtimeWSAPI import TickData
+from RestAccount import RestAccount
 
 
 class BotStrategy:
     @classmethod
-    def model_pred_onemin(cls, prediction, pt_ratio, lc_ratio, ac, amount, ltp):
+    def model_pred_onemin(cls, prediction, pt_ratio, lc_ratio, ac:RestAccount, amount, ltp):
         ds = BotStateData()
         position = ac.get_position()
         order_side, order_price, order_size, order_dt = ac.get_orders()
         lc_price = int(round(position['price'] * (1.0 - lc_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 + lc_ratio)))
-
         if (position['side'] == 'Buy' and ltp <= lc_price) or (position['side'] == 'Sell' and ltp >= lc_price):
-            ds.set_state(False,'', 0, '', 0, 0, 'Market') #do losscut
+            ds.set_state(False,'', 0, '', 0, 0, 'LC') #do losscut
         elif prediction == 'Buy' or prediction == 'Sell': #prediction通りのposi_sideにしてpt orderを出す
             ds.set_state(False, prediction, amount, 'Buy' if prediction == 'Sell' else 'Sell', 0, 0, 'PT')
         elif (prediction != 'Buy' and prediction != 'Sell') and (position['side'] != prediction):
@@ -31,7 +28,7 @@ class BotStateData:
         self.order_side = ''
         self.order_price = 0
         self.order_size = 0
-        self.order_type = '' #Limit, Market, PT
+        self.order_type = '' #Limit, Market, PT, LC
 
     def set_state(self, flg_noaction, posi_side, posi_size, order_side, order_price, order_size, order_type):
         self.flg_noaction = flg_noaction
