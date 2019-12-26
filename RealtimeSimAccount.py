@@ -57,6 +57,8 @@ class RealtimeSimAccount:
             del self.order_size[target_serial]
             del self.order_dt[target_serial]
             del self.order_type[target_serial]
+        else:
+            print('RealtimeSimAccount.__del_order: can not remove inactive order id!')
 
     def __initialize_holding(self):
         self.holding_side = ''
@@ -82,23 +84,28 @@ class RealtimeSimAccount:
 
         self.order_serial[self.order_serial_num] = self.order_serial_num
         self.order_side[self.order_serial_num] = side
-        self.order_price[self.order_serial_num] = price
-        self.order_size[self.order_serial_num] = size
+        self.order_price[self.order_serial_num] = round(float(price),1)
+        self.order_size[self.order_serial_num] = int(size)
         self.order_dt[self.order_serial_num] = dt
         self.order_type[self.order_serial_num] = type  # Limit, Market
         self.order_serial_list.append(self.order_serial_num)
 
         if type == 'Market': #即時約定
-            self.__process_execution(side, ltp, size, 'Market', dt)
-            self.__del_order(self.order_serial_list[-1])
-
+            self.__process_execution(side, ltp, int(size), 'Market', dt)
+            self.__del_order(self.order_serial_num)
         self.order_serial_num += 1
+
+    def get_latest_order(self):
+        if len(self.order_serial_list) > 0:
+            return {'side':self.order_side[self.order_serial_list[-1]], 'price':self.order_price[self.order_serial_list[-1]], 'size':self.order_size[self.order_serial_list[-1]], 'type':self.order_type[self.order_serial_list[-1]]}
+        else:
+            return {'side':'', 'price':0, 'size':0, 'type':''}
 
 
     def __update_holding(self, side, price, size, dt):
         self.holding_side = side
-        self.holding_price = price
-        self.holding_size = size
+        self.holding_price = round(float(price),1)
+        self.holding_size = int(size)
         self.holding_dt = dt
 
     # always cancel latest order
@@ -107,23 +114,31 @@ class RealtimeSimAccount:
             self.__del_order(order_serial_num)
 
     def cancel_all_orders(self):
-        for oid in self.order_side:
+        oids = self.order_serial_list[:]
+        for oid in oids:
             self.__del_order(oid)
 
     '''
     ltpだけの判定では本当は約定している場合があっても捕捉できないことがある。ohlcも使う必要がある。
     '''
     def check_execution(self, ltp, dt, ohlc:OneMinData):
-        for oid in self.order_serial_list:
+        oids = self.order_serial_list[:]
+        for oid in oids:
             if self.order_type[oid] == 'Limit':
                 if self.order_side[oid] == 'Buy' and self.order_price[oid] >= ltp + self.exec_slip:
                     self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
+                    self.__del_order(oid)
                 elif self.order_side[oid] == 'Sell' and self.order_price[oid] <= ltp - self.exec_slip:
                     self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
+                    self.__del_order(oid)
                 elif self.order_side[oid] == 'Buy' and self.order_price[oid] >= ohlc.low[-1] + self.exec_slip:
                     self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
+                    self.__del_order(oid)
                 elif self.order_side[oid] == 'Sell' and self.order_price[oid] <= ohlc.high[-1] - self.exec_slip:
                     self.__process_execution(self.order_side[oid], self.order_price[oid], self.order_size[oid], self.order_type[oid], dt)
+                    self.__del_order(oid)
+                else:
+                    pass #no execution occurred
 
 
 
@@ -151,7 +166,7 @@ class RealtimeSimAccount:
             print('unknown situation in __process_execution!')
 
     def bot_procedss_execution(self, side, exec_price, size, type, dt):
-        self.__process_execution(side, exec_price, size, type, dt)
+        self.__process_execution(side, round(float(exec_price),1), int(size), type, dt)
 
 
     def __calc_executed_pl(self, exec_price, size, type):

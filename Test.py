@@ -10,7 +10,7 @@ class Test:
     def start(self):
         OneMinMarketData.initialize_for_bot()
         ws = RealtimeWSAPI()
-        bot = Bot('./Data/sim_log.csv')
+        bot = Bot('./Data/sim_log.csv', True)
         while True:
            time.sleep(1)
 

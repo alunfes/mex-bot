@@ -25,13 +25,11 @@ class RealtimeSim:
                 else:  # not losscut
                     if ds.posi_side != ac.holding_side and ds.posi_side != '':
                         if ac.holding_side == '':
-                            print('kita1')
-                            ac.entry_order(ds.posi_side, 0, ds.posi_size, 'Market', ltp, datetime.now())
+                            ac.entry_order(ds.posi_side, ltp-100, ds.posi_size, 'Market', ltp, datetime.now())
                         else:
-                            print('kita2')
-                            ac.entry_order(ds.posi_side, 0, ds.posi_size + ac.holding_size, 'Market', ltp, datetime.now())
+                            ac.entry_order(ds.posi_side, ltp-100, ds.posi_size + ac.holding_size, 'Market', ltp, datetime.now())
+                            ac.cancel_all_orders() #to cancel old pt order after changed position
                     elif ds.order_type == 'PT' and (ds.order_side not in ac.order_side.values()):
-                        print('kita3')
                         ac.entry_order('Buy' if ac.holding_side == 'Sell' else 'Sell', pt_price, ac.holding_size, 'Limit', ltp, datetime.now())
                     elif ds.posi_side == ac.holding_side and ds.posi_size != ac.holding_size:
                         print('position size unmatched!')
@@ -46,7 +44,7 @@ class RealtimeSim:
         if len(ac2.total_pl_log) > avert_period_kijun:  # pl_check_term以上のpl logが溜まったらcheckを開始
             if np.gradient(ta.MA(np.array(ac2.total_pl_log[-avert_period_kijun:], dtype='f8'), timeperiod=avert_period_kijun))[-1] > avert_val_kijun:
                 if ac2.holding_side != ac.holding_side and ac2.holding_side != '':
-                    ac.entry_order(ac.holding_side, 0, ac2.holding_size, 'Market')
+                    ac.entry_order(ac.holding_side, ltp-100, ac2.holding_size, 'Market')
                     print('sim onemin avert: Market order for position  {', ac.holding_side, ' x ', ac.holding_size, ' @', ac.holding_price + '}')
                 elif ac2.order_side != ac.order_side:
                     if ac.order_side != '':

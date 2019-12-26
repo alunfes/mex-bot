@@ -61,35 +61,37 @@ class RestAccount:
 
     def add_order(self, order_id, side, price, size, type):  # call from bot
         with self.lock_order:
-            print('entry order', order_id)
+            print('BOT: placed ', type ,' order.', side, price, size)
             self.order_ids_active.append(order_id)
             self.order_side[order_id] = side
-            self.order_price[order_id] = price
-            self.order_size[order_id] = size
+            self.order_price[order_id] = round(float(price),1)
+            self.order_size[order_id] = int(size)
             self.order_dt[order_id] = datetime.now()
             self.order_type[order_id] = type
             self.order_status[order_id] = 'Sent'
             self.order_checkced_execid[order_id] = ['dummy']
-            if type == 'Market':
-                i = 0
-                while order_id not in self.removed_order_ids:
-                    self.__check_execution(order_id)
-                    time.sleep(1)
-                    i += 1
-                    if i > 10:
-                        print('add_order - execution of market order can not be confirmed!')
-                        print(order_id)
-            else:
+        if type == 'Market':
+            i = 0
+            while order_id not in self.order_ids_removed:
+                self.__check_execution(order_id)
+                time.sleep(1)
+                i += 1
+                if i > 10:
+                    print('add_order - execution of market order can not be confirmed!')
+                    print(order_id)
+                    break
+        else:
+            with self.lock_order:
                 self.__confirm_order(order_id)
 
 
     def bot_cancel_order(self, order_id):  # call from bot
+        print('BOT: caneled order', self.order_side[order_id], self.order_price[order_id], self.order_size[order_id], self.order_type[order_id])
         trades = Trade.get_trades(10)
         api_exec_data = list(map(lambda x: x['info'] if x['info']['orderID'] == order_id and str(x['info']['execComm']) != 'None' else None, trades))
         api_exec_data = [x for x in api_exec_data if x != None]
         if len(api_exec_data) > 0:
-            self.__calc_fee(order_id, list(map(lambda x: x['execComm'], api_exec_data)))
-            self.__execute_order(api_exec_data[-1]['orderID'], '', api_exec_data[-1]['side'], api_exec_data[-1]['price'], self.order_size[order_id] - api_exec_data[-1]['leavesQty'], api_exec_data[-1]['ordStatus'])
+            self.__execute_order(api_exec_data[-1]['orderID'], '', api_exec_data[-1]['side'], api_exec_data[-1]['price'], self.order_size[order_id] - api_exec_data[-1]['leavesQty'], 'Canceled')
         else:
             self.__remove_order(order_id)
 
@@ -106,22 +108,29 @@ class RestAccount:
             if self.order_size[order_id] != order_data[-1]['orderQty']:
                 print('order size is not matched !')
                 self.order_size[order_id] = order_data[-1]['orderQty']
-            if self.order_type[order_id].upper() != order_data[-1]['type'].upper():
+            if self.order_type[order_id].upper() != order_data[-1]['ordType'].upper():
                 print('order type is not matched !')
-                self.order_type[order_id] = order_data[-1]['type']
+                self.order_type[order_id] = order_data[-1]['ordType']
             self.order_status[order_id] = 'Onboarded'
         else:
             print('__confirm_order: order id not found in order data!')
 
     def get_orders(self):
-        return self.order_side, self.order_price, self.order_size, self.order_dt
+        return self.order_side, self.order_price, self.order_size, self.order_type, self.order_dt
+
+
+    def get_latest_order(self):
+        if len(self.order_side) > 0:
+            return {'side':self.order_side[self.order_ids_active[-1]], 'price':self.order_price[self.order_ids_active[-1]], 'size':self.order_size[self.order_ids_active[-1]], 'type':self.order_type[self.order_ids_active[-1]]}
+        else:
+            return {'side':'', 'price':0, 'size':0, 'type':''}
 
     def get_order_ids(self):
         return self.order_ids
 
     def get_performance(self):
         with self.lock_performance:
-            return {'total_pl': self.realized_pnl + self.unrealized_pnl + self.total_fee, 'num_trade': self.num_trade, 'win_rate': self.win_rate, 'total_fee': self.total_fee,
+            return {'total_pl': self.total_pnl, 'num_trade': self.num_trade, 'win_rate': self.win_rate, 'total_fee': self.total_fee,
                     'total_pnl_per_min': self.total_pnl_per_min}
 
     def get_position(self):
@@ -138,7 +147,7 @@ class RestAccount:
 
     def __remove_order(self, order_id):
         with self.lock_order:
-            print('remove order', order_id)
+            print('BOT: remove order', self.order_side[order_id], self.order_size[order_id], self.order_type[order_id], order_id)
             self.order_ids_removed.append(order_id)
             self.order_ids_active.remove(order_id)
             del self.order_size[order_id]
@@ -148,18 +157,21 @@ class RestAccount:
             del self.order_type[order_id]
             del self.order_status[order_id]
             del self.order_checkced_execid[order_id]
-            self.removed_order_ids.append(order_id)
 
 
     def __execute_order(self, order_id, exec_id, exec_side, exec_price, exec_qty, status):
         self.order_checkced_execid[order_id].append(exec_id)
         self.exec_ids_completed.append(exec_id)
         if status == 'Filled' or status == 'Canceled':
-            self.__calc_realized_pnl(exec_side, exec_price, exec_qty)
+            print('BOT: order has been ', status, exec_side, exec_price, exec_qty)
+            self.__calc_fee(order_id)
+            pl = self.__calc_realized_pnl(exec_side, exec_price, exec_qty)
+            self.__calc_win_rate(pl)
             self.__update_position(exec_side, exec_price, exec_qty)
             self.__remove_order(order_id)
         elif status == 'PartiallyFilled':
             if exec_id not in self.order_exec_ids[order_id]:
+                print('BOT: order has been partilly filled', exec_side, exec_price, exec_qty)
                 with self.lock_order:
                     self.order_exec_ids[order_id].append(exec_id)
                 self.__update_position(exec_side, exec_price, exec_qty)
@@ -169,14 +181,26 @@ class RestAccount:
             print('Invalid order status in __execute_order!', status)
 
     def __check_execution(self, order_id):
-        order_data = Trade.get_order_byid(order_id, 10)
-        if self.order_size[order_id] > order_data[-1]['leavesQty']:
-            trades = Trade.get_trades(50)
-            api_exec_data = list(map(lambda x: x['info'] if x['info']['orderID'] == order_id and str(x['info']['execComm']) != 'None' else None, trades))
-            api_exec_data = [x for x in api_exec_data if x != None]
-            for d in api_exec_data:
-                if api_exec_data['execID'] not in self.order_checkced_execid[order_id]:
-                    self.__execute_order(order_id, api_exec_data['execID'], api_exec_data['side'], api_exec_data['avgPx'], int(round(self.order_size[order_id] - api_exec_data['leavesQty'])), api_exec_data['ordStatus'])
+        if order_id in self.order_ids_active:
+            order_data = Trade.get_order_byid(order_id, 10)
+            if len(order_data) > 0:
+                if self.order_size[order_id] > order_data[-1]['leavesQty']:
+                    trades = Trade.get_trades(50)
+                    api_exec_data = list(map(lambda x: x['info'] if x['info']['orderID'] == order_id and str(x['info']['execComm']) != 'None' else None, trades))
+                    api_exec_data = [x for x in api_exec_data if x != None]
+                    try:
+                        for d in api_exec_data:
+                            if 'execID' in d:
+                                if d['execID'] not in self.order_checkced_execid[order_id]:
+                                    self.__execute_order(order_id, d['execID'], d['side'], d['avgPx'], int(round(self.order_size[order_id] - d['leavesQty'])), d['ordStatus'])
+                            else:
+                                print('execID is not exist!', d)
+                    except Exception as e:
+                        print('RestAccount.__check_execution - Exception Occurred!', str(e))
+                        LineNotification.send_error('RestAccount.__check_execution - Exception Occurred!', str(e))
+        else:
+            print('RestAccount.__check_execution - can not to check execute for inactive order id!', order_id, self.get_orders())
+            LineNotification.send_error('RestAccount.__check_execution - can not to check execute for inactive order id!', order_id)
 
 
     def __calc_pnl(self):  # called every 1min
@@ -186,16 +210,19 @@ class RestAccount:
         with self.lock_performance:
             self.total_pnl = round(self.realized_pnl + self.unrealized_pnl - self.total_fee, 4)
             if abs(self.total_pnl) > 0:
-                self.total_pnl_per_min = round(self.total_pnl / ((time.time() - self.start_dt) / 60.0), 4)
+                self.total_pnl_per_min = round(self.total_pnl / ((time.time() - self.start_dt) / 60.0), 6)
             else:
                 self.total_pnl_per_min = 0
 
+
     def __calc_realized_pnl(self, exec_side, exec_price, exec_size):
+        pl = 0
         if self.posi_side != '' and (self.posi_side != exec_side):
             pl = (1.0 / self.posi_price - 1.0 / exec_price) * exec_size if self.posi_side == 'Buy' else (1.0 / exec_price - 1.0 / self.posi_price) * exec_size
-            self.realized_pnl += pl
+            self.realized_pnl += pl * TickData.get_ltp()
         else:  # additional execution
             pass
+        return pl
 
     def __calc_win_rate(self, pl):
         self.num_trade += 1
@@ -203,14 +230,17 @@ class RestAccount:
             self.num_win += 1
         self.win_rate = round(self.num_win / self.num_trade, 2)
 
-    def __calc_fee(self, oid, api_exec_data):
-        self.total_fee += sum(api_exec_data) / 100000000
-        # self.total_fee += sum(list(map(lambda x: x['execComm'], api_exec_data))) / 100000000
+    def __calc_fee(self, order_id):
+        trades = Trade.get_trades(100)
+        api_exec_data = list(map(lambda x: x['info'] if x['info']['orderID'] == order_id and str(x['info']['execComm']) != 'None' else None, trades))
+        api_exec_data = [x for x in api_exec_data if x != None]
+        self.total_fee += round(TickData.get_ltp() * sum(list(map(lambda x: x['execComm'], api_exec_data))) / 100000000.0, 6) #usd
 
     def __calc_unrealized_pnl(self, ltp):
         with self.lock_performance:
+            ltp = TickData.get_ltp()
             if self.posi_side != '':
-                self.unrealized_pnl = (1.0 / self.posi_price - 1.0 / ltp) * self.posi_size if self.posi_side == 'Buy' else (1.0 / ltp - 1.0 / self.posi_price) * self.posi_size
+                self.unrealized_pnl = ltp * (1.0 / self.posi_price - 1.0 / ltp) * self.posi_size if self.posi_side == 'Buy' else ltp * (1.0 / ltp - 1.0 / self.posi_price) * self.posi_size
             else:
                 self.unrealized_pnl = 0
 
@@ -235,7 +265,7 @@ class RestAccount:
             for oid in self.order_ids_active:
                 ltp = TickData.get_ltp()
                 #check if execution of limit order is possible
-                if ltp <= self.order_price[oid] and self.order_side[oid] == 'Buy' or ltp >= self.order_price[oid] and self.order_side[oid] == 'Sell':
+                if ltp <= self.order_price[oid] and (self.order_side[oid] == 'Buy' or ltp >= self.order_price[oid]) and self.order_side[oid] == 'Sell' and self.order_type[oid] == 'Limit':
                     self.__check_execution(oid)
             time.sleep(1)
 

@@ -29,15 +29,15 @@ import pickle
 
 
 class Bot:
-    def __init__(self, sim_data_path):
+    def __init__(self, sim_data_path, real_trade=False):
         #pws = PrivateWS()
         self.pt_ratio, self.lc_ratio, self.pred_method, self.upper_kijun, self.avert_onemine, self.avert_period_kijun, self.avert_val_kijun = self.__read_config_data()
         LineNotification.initialize()
         Trade.initialize()
-        #self.ac = Account()
         self.ac = RestAccount()
         self.omd = OneMinMarketData
         self.lgb_model = LgbModel(self.pred_method, self.upper_kijun)
+        self.real_trade = real_trade
         self.amount = 10
 
         self.sim = RealtimeSim()
@@ -68,144 +68,101 @@ class Bot:
             pred = self.lgb_model.get_pred()
 
             self.sim_ac = self.sim.sim_model_pred_onemin_avert(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
-            time.sleep(3) #simをsleep無しで回し続けるとtickdataがlockされてltp取れなくなる
 
-            '''
-            botにおけるpt約定の捕捉：
-            bot.side != '' and bot.order_side !='' and sim.order_side != '' and sim.order_size > bot.order_size (全部約定してbot order size =0になったときに捕捉できない）
-            bot.order_side =='' and sim.order_side != '' and local.order_side != '' and local.order_size > 0(botのlocal varianceとしてorder sizeを記録しておき、それがRestAcで0になったとき。pt完了したときにはbot.posi_side = '', bot.order_side = ''になっている）
-            
-            sim_acへのbotからのpt約定の更新：
-            sim_acにbot_process_execution作る
-            
-            '''
-            posi = self.ac.get_position()
-            order_side, order_price, order_size, order_dt = self.ac.get_orders()
-            mk = -1
-            if len(order_side) > 0:
-                mk = max(order_side.keys())
+            if self.real_trade:
+                posi = self.ac.get_position()
 
-            if len(order_side) > 1:
-                print('bot order len is bigger than 1!')
-                print(order_side)
-            if len(self.sim_ac.order_side) > 1:
-                print('sim_ac order len is bigger than 1!')
-                print(order_side)
+                bot_order = self.ac.get_latest_order()
+                sim_order = self.sim_ac.get_latest_order()
 
-            if len(order_side) > 0 and order_side == '' and self.sim_ac.order_side[mk] != '' and pre_order_side != '' and pre_order_size > 0: #pt exec check in bot
-                self.sim_ac.bot_procedss_execution(self.sim_ac.order_side[mk], self.sim_ac.order_price[mk], self.sim_ac.order_size[mk], 'Limit', datetime.now())
-                print('BOT: pt completion was detected and process sim_ac execution from bot.')
-            elif posi['side'] != self.sim_ac.holding_side: #to have same position side (botで先にpt約定完了してno posiになった時はsimに合わせるべきではない、botでpt約定を感知したらsim_acにも反映させるべき）
-                size = self.sim_ac.holding_size if posi['side'] == '' else self.sim_ac.holding_size + posi['size']
-                order_info = Trade.order(self.sim_ac.holding_side, 0, 'Market', size)
-                if order_info is not None:
-                    self.ac.add(order_info['orderID'], order_info['side'], order_info['price'], order_info['orderQty'], order_info['ordType'])
-                    print('BOT: entry order', order_info['side'], order_info['price'], order_info['orderQty'], order_info['ordType'])
-                else:
-                    print('BOT: entry order failed!')
-            elif len(order_side) > 0 and order_side != self.sim_ac.order_side[mk] and posi['side'] == self.sim_ac.holding_side: #position side is matched but order side in unmatch
-                for oid in order_side:
-                    Trade.cancel_order(oid)
-                    self.ac.bot_cancel_order(oid)
-                    print('BOT: cancel order', oid)
-                order_info = Trade.order(self.sim_ac.order_side[mk], self.sim_ac.order_price[-1], self.sim_ac.order_type[mk], self.amount)
-                if order_info is not None:
-                    print('BOT: pt order', order_info['side'], order_info['price'], order_info['orderQty'], order_info['ordType'])
-                else:
-                    print('BOT: pt order failed!')
+                '''
+                if len(order_side) > 1:
+                    print('bot order len is bigger than 1!')
+                    print(order_side)
+                if len(self.sim_ac.order_side) > 1:
+                    print('sim_ac order len is bigger than 1!')
+                    print(order_side)
+                '''
 
-            pre_order_side = order_side
-            pre_order_size = order_size
+                if bot_order['side'] == '' and sim_order['side'] != '' and pre_order_side != '' and pre_order_size > 0: #pt exec check in bot
+                    print('BOT: pt completion was detected and process sim_ac execution from bot.')
+                    self.sim_ac.bot_procedss_execution(sim_order['side'], sim_order['price'], sim_order['size'], 'Limit', datetime.now())
+                elif posi['side'] != self.sim_ac.holding_side: #to have same position side (botで先にpt約定完了してno posiになった時はsimに合わせるべきではない、botでpt約定を感知したらsim_acにも反映させるべき）
+                    size = self.sim_ac.holding_size if posi['side'] == '' else self.sim_ac.holding_size + posi['size']
+                    order_info = Trade.order(self.sim_ac.holding_side, self.sim_ac.holding_price, 'Market', size)
+                    if order_info is not None:
+                        print('BOT: entry order', order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'], order_info['info']['orderID'])
+                        self.ac.add_order(order_info['info']['orderID'], order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'])
+                    else:
+                        print('BOT: entry order failed!')
+                elif bot_order['side'] != sim_order['side'] and posi['side'] == self.sim_ac.holding_side: #position side is matched but order side in unmatch
+                    for oid in self.ac.order_ids_active:
+                        Trade.cancel_order(oid)
+                        print('BOT: cancel order', oid)
+                        self.ac.bot_cancel_order(oid)
+                    order_info = Trade.order(sim_order['side'], sim_order['price'], sim_order['type'], self.amount)
+                    if order_info is not None:
+                        print('BOT: pt order', order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'], order_info['info']['orderID'])
+                        self.ac.add_order(order_info['info']['orderID'], order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'])
+                    else:
+                        print('BOT: pt order failed!')
 
+                pre_order_side = bot_order['side']
+                pre_order_size = bot_order['size']
 
-            '''
-            ds = BotStrategy.model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, self.ac, self.amount)
-            pt_price = int(round(position['price'] * (1.0 + pt_ratio))) if position['side'] == 'Buy' else int(round(position['price'] * (1.0 - pt_ratio)))
-            position = self.ac.get_position()
-            order_side, order_price, order_size, order_dt = self.ac.get_orders()
-            if ds.flg_noaction == False:
-                if ds.posi_side == '' and ds.order_price == 0 and ds.order_type == 'Market':#losscut
-                    for oid in order_side: #cancel all orders before losscut
-                        cancel = Trade.cancel_order(oid)
-                        if 'info' not in cancel:
-                            print('cancel failed in bot!', cancel)
-                        else:
-                            self.ac.bot_cancel_order(oid)
-                    if position['side'] != '': #do losscut
-                        res = Trade.order('Buy' if position['side'] == ' Sell' else 'Sell', 0, 'Market', position['size'])
-                        if 'info' not in res:
-                            print('order error in bot!'), res
-                        else:
-                            self.ac.add_order(res['info']['orderID'], res['info']['side'], res['info']['price'], res['info']['orderQty'], res['info']['ordType'])
-                else: #not losscut
-
-                    if ds.posi_side != position['side'] and ds.posi_side != '':
-                        flg_trade_error = False
-                        res = Trade.order(ds.posi_side, 0, 'Market', position['size']+ds.posi_size) #making same position as ds
-                        if 'info' not in res:
-                            print('order error in bot!', res)
-                            flg_trade_error = True
-                        else:
-                            self.ac.add_order(res['info']['orderID'], res['info']['side'], res['info']['price'],res['info']['orderQty'], res['info']['ordType'])
-                    if ds.order_type == 'PT' and flg_trade_error == False:
-                        Trade.order(ds.order_side, )
-                    elif ds.order_side != '' and len(order_side) > 0:
-                        pass
-            '''
-            pass
-
-
-
+            time.sleep(3)  # simをsleep無しで回し続けるとtickdataがlockされてltp取れなくなる
+        print('exited from bot main loop')
 
 
     '''
     for minutes process
     '''
     def __bot_sub_thread(self):
+        num_bot_main_loop = 0
         while SystemFlg.get_system_flg():
             time.sleep(60)
 
+            print('')
+            print('')
+            print('*********************************************')
+            print('num_bot_loop:',num_bot_main_loop, ' : ', datetime.now())
+            print('*********************************************')
+            print('')
+            print('---------------------sim---------------------')
             self.sim_ac.onemine_process(TickData.get_ltp(), datetime.now())
-            print('posi_side:',self.sim_ac.holding_side, ', posi_price:',self.sim_ac.holding_price, ', posi_size:',self.sim_ac.holding_size)
+            print('sim_posi_side:',self.sim_ac.holding_side, ', sim_posi_price:',self.sim_ac.holding_price, ', sim_posi_size:',self.sim_ac.holding_size)
             for oid in self.sim_ac.order_serial_list:
-                print('order_side:',self.sim_ac.order_side[oid], ', order_price:',self.sim_ac.order_price, ', order_size:',self.sim_ac.order_size, ', order_type:',self.sim_ac.order_type)
-            print('total_pl:',self.sim_ac.total_pl, 'total_fee:',self.sim_ac.total_fee, 'num_trade:', self.sim_ac.num_trade, 'win_rate:',self.sim_ac.win_rate)
+                print('sim_order_side:',self.sim_ac.order_side[oid], ', sim_order_price:',self.sim_ac.order_price[oid], ', sim_order_size:',self.sim_ac.order_size[oid], ', sim_order_type:',self.sim_ac.order_type[oid])
+            print('sim_total_pl:',self.sim_ac.total_pl, 'sim_total_fee:',self.sim_ac.total_fee, 'sim_num_trade:', self.sim_ac.num_trade, 'sim_win_rate:',self.sim_ac.win_rate)
 
-            LineNotification.send_free_message('\r\n'+'total_pl:' + str(self.sim_ac.total_pl) + ', total_fee:' + str(self.sim_ac.total_fee) + ', num_trade:' + str(self.sim_ac.num_trade) + ', win_rate:' + str(self.sim_ac.win_rate) +'\r\n'
-                                               +'pred=' + self.lgb_model.get_pred() + ', posi_side:' + self.sim_ac.holding_side + ', posi_price:' + str(self.sim_ac.holding_price) +
-                                               ', posi_size:' + str(self.sim_ac.holding_size))
+            if self.real_trade is False:
+                LineNotification.send_free_message('\r\n'+'sim_total_pl:' + str(self.sim_ac.total_pl) + ', sim_total_fee:' + str(self.sim_ac.total_fee) + ', sim_num_trade:' + str(self.sim_ac.num_trade) + ', sim_win_rate:' + str(self.sim_ac.win_rate) +'\r\n'
+                                                   +'pred=' + self.lgb_model.get_pred() + ', sim_posi_side:' + self.sim_ac.holding_side + ', sim_posi_price:' + str(self.sim_ac.holding_price) +
+                                                   ', sim_posi_size:' + str(self.sim_ac.holding_size))
             self.__write_sim_log()
 
 
-            print('BOT: performance')
-            print(self.ac.get_performance())
+            if self.real_trade:
+                print('')
+                print('---------------------bot---------------------')
+                #print('BOT: performance')
+                performance = self.ac.get_performance()
+                print('BOT Performance:', performance)
+                #print('BOT: Position')
+                posi = self.ac.get_position()
+                print('BOT Position:', 'bot_posi_side:',posi['side'], ', bot_posi_price:', posi['price'], ', bot_posi_size:', posi['size'])
+                #print('BOT: Orders')
+                order_side, order_price, order_size, order_type, order_dt = self.ac.get_orders()
+                for oid in order_side:
+                    print('BOT Order:', 'bot_order_side:', order_side[oid], ', bot_order_price:', order_price[oid], ', bot_order_size:', order_size[oid], ', bot_order_type:', order_type[oid])
 
+                LineNotification.send_free_message('\r\n' + 'total_pl:' + str(performance['total_pl']) + ', total_fee:' + str(performance['total_fee']) + ', num_trade:' + str(performance['num_trade']) +
+                                                   ', win_rate:' + str(performance['win_rate']) + '\r\n'
+                                                   + 'pred=' + self.lgb_model.get_pred() + ', posi_side:' + posi['side'] + ', posi_price:' + str(posi['price']) +
+                                                   ', posi_size:' + str(posi['size']))
 
-
-            '''
-            print(self.ac.get_position())
-            order_side, order_price, order_size, order_dt = self.ac.get_orders()
-            for o in order_side:
-                print('order ', o, ', side=', order_side[o], ', price=', order_price[o], ', size=', order_size[o])
-            print(self.ac.get_performance())
-
-            posi_side, posi_price, posi_size, posi_dt = self.ac.get_position()
-            order_side, order_price, order_size, order_dt = self.ac.get_orders()
-            order_sides, order_prices, order_sizes, order_dts = ''
-            for oid in order_side:
-                order_sides = order_sides + ' : ' + order_side[oid]
-                order_prices = order_prices + ' : ' + order_price[oid]
-                order_sizes = order_sizes + ' : ' + order_size[oid]
-                order_dts = order_dts + ' : ' + order_dt[oid]
-            performance = self.ac.get_performance() #{'total_pl':self.realized_pnl + self.unrealized_pnl + self.total_fee, 'num_trade':self.num_trade, 'win_rate':self.win_rate, 'total_fee':self.total_fee}
-            LogMaster.add_log({'log_dt':datetime.now(), 'dt':self.omd.ohlc.dt[-1], 'open':self.omd.ohlc.open[-1], 'high':self.omd.ohlc.high[-1],
-                               'low':self.omd.ohlc.low[-1], 'close':self.omd.ohlc.close[-1], 'posi_side':posi_side, 'posi_price':posi_price, 'posi_size':posi_size,
-                               'order_side':order_sides,'order_price':order_prices, 'order_size':order_sizes, 'num_private_access':Trade.num_private_access,
-                               'num_public_access':Trade.num_public_access, 'pnl':performance['total_pnl'], 'pnl_per_min':performance['total_pnl_per_min'],
-                               'num_trade':performance['num_trade'], 'win_rate':performance['win_rate'], 'prediction':LgbModel.get_pred(), 'api_error':'', 'action_message':'Move to next'})
-            LineNotification.send_performance_notification()
-            '''
-            pass
+            num_bot_main_loop += 1
+        print('exited from bot sub-loop')
 
 
     def __read_config_data(self):

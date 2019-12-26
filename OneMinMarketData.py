@@ -349,7 +349,7 @@ class OneMinMarketData:
 
     @classmethod
     def __calc_all_index_dict(cls):
-        print('calculating all index dict')
+        #print('calculating all index dict')
         start_time = time.time()
 
         for k in cls.ohlc.func_dict:
@@ -358,7 +358,7 @@ class OneMinMarketData:
                     cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
             else:
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0]()
-        print('completed non makairi diff index. time=', time.time() - start_time)
+        #print('completed non makairi diff index. time=', time.time() - start_time)
 
         start_time = time.time()
         for k in cls.ohlc.func_dict:
@@ -368,8 +368,7 @@ class OneMinMarketData:
             elif k.split('_')[0] == 'diff':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
-
-        print('completed calc makairi diff index. time=', time.time() - start_time)
+        #print('completed calc makairi diff index. time=', time.time() - start_time)
 
     @classmethod
     def generate_df_from_dict(cls):

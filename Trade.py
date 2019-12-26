@@ -462,23 +462,34 @@ class Trade:
         for i in range(cls.error_trial):
             cls.num_private_access += 1
             order_info = ''
+            error_message = ''
             try:
-                order_info = cls.bm.create_order(
-                    symbol='BTC/USD',
-                    type=type,
-                    side=side,
-                    price=price,
-                    amount=amount  #×0.0001btc
-                )
+                if type == 'Limit':
+                    order_info = cls.bm.create_order(
+                        symbol='BTC/USD',
+                        type=type,
+                        side=side,
+                        price=price,
+                        amount=amount  #×0.0001btc
+                    )
+                elif type == 'Market':
+                    order_info = cls.bm.create_order(
+                        symbol='BTC/USD',
+                        type=type,
+                        side=side,
+                        amount=amount  # ×0.0001btc
+                    )
             except Exception as e:
+                error_message = str(e)
                 print('Trade-order error!, '+str(e))
                 print('side=',side, ', price=',price, ', type', type, ', amount', amount)
                 LineNotification.send_error('error in order! ' + '\r\n' + order_info + '\r\n' + str(e))
             finally:
-                if 'error' not in order_info:
+                if 'error' not in error_message:
                     return order_info
                 else:
                     time.sleep(cls.rest_interval)
+        return None
 
     '''
     {'amount': 1.0,
@@ -535,17 +546,20 @@ class Trade:
         for i in range(cls.error_trial):
             cls.num_private_access += 1
             cancel = ''
+            error_message = ''
             try:
                 cancel = cls.bm.cancel_order(id=order_id, symbol='BTC/USD')
             except Exception as e:
+                error_message = str(e)
                 print('error in cancel_order ' + str(e), cancel)
                 LogMaster.add_log({'dt': datetime.now(), 'api_error': 'Trade-get cancel_order error! ' + str(e)})
                 LineNotification.send_error('error in cancel order! ' + '\r\n' + cancel + '\r\n' + str(e))
             finally:
-                if 'error' not in cancel:
+                if 'error' not in error_message:
                     return cancel
                 else:
                     time.sleep(cls.rest_interval)
+        return None
 
     @classmethod
     def cancel_and_wait_completion(cls, order_id):
@@ -686,7 +700,9 @@ if __name__ == '__main__':
     LineNotification.initialize()
     LogMaster.initialize()
 
-    print(Trade.get_trades(10))
+    Trade.cancel_order('44')
+
+
 
     #order = Trade.order('Buy', 5000, 'Limit', 10)
     #print(Trade.cancel_order(order['info']['orderID']))

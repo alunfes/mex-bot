@@ -32,6 +32,7 @@ class LgbModel:
         with self.lock_pred:
             self.pred = pred
 
+
     def get_pred(self):
             return self.pred
 
