@@ -92,9 +92,11 @@ class Bot:
                     order_info = Trade.order(self.sim_ac.holding_side, self.sim_ac.holding_price, 'Market', size)
                     if order_info is not None:
                         print('BOT: entry order', order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'], order_info['info']['orderID'])
+                        LineNotification.send_free_message('BOT: entry order'+'\r\n'+ order_info['info']['side']+'\r\n'+ str(order_info['info']['price'])+'\r\n'+ str(order_info['info']['orderQty'])+'\r\n'+ order_info['info']['ordType']+'\r\n'+ order_info['info']['orderID'])
                         self.ac.add_order(order_info['info']['orderID'], order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'])
                     else:
                         print('BOT: entry order failed!')
+                        LineNotification.send_error('BOT: entry order failed!')
                 elif bot_order['side'] != sim_order['side'] and posi['side'] == self.sim_ac.holding_side: #position side is matched but order side in unmatch
                     for oid in self.ac.order_ids_active:
                         Trade.cancel_order(oid)
@@ -103,9 +105,11 @@ class Bot:
                     order_info = Trade.order(sim_order['side'], sim_order['price'], sim_order['type'], self.amount)
                     if order_info is not None:
                         print('BOT: pt order', order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'], order_info['info']['orderID'])
+                        LineNotification.send_free_message('BOT: pt order'+'\r\n'+ order_info['info']['side']+'\r\n'+ str(order_info['info']['price'])+'\r\n'+ str(order_info['info']['orderQty'])+'\r\n'+ order_info['info']['ordType']+'\r\n'+ order_info['info']['orderID'])
                         self.ac.add_order(order_info['info']['orderID'], order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'])
                     else:
                         print('BOT: pt order failed!')
+                        LineNotification.send_error('BOT: pt order failed!')
 
                 pre_order_side = bot_order['side']
                 pre_order_size = bot_order['size']

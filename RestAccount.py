@@ -97,23 +97,34 @@ class RestAccount:
 
     # to confirm added order in actual order data from ws
     def __confirm_order(self, order_id):
-        order_data = Trade.get_order_byid(order_id, 10)
-        if len(order_data) > 0:
-            if self.order_side[order_id] != order_data[-1]['side']:
-                print('order side is not matched !')
-                self.order_side[order_id] = order_data[-1]['side']
-            if self.order_price[order_id] != order_data[-1]['price']:
-                print('order price is not matched !')
-                self.order_price[order_id] = order_data[-1]['price']
-            if self.order_size[order_id] != order_data[-1]['orderQty']:
-                print('order size is not matched !')
-                self.order_size[order_id] = order_data[-1]['orderQty']
-            if self.order_type[order_id].upper() != order_data[-1]['ordType'].upper():
-                print('order type is not matched !')
-                self.order_type[order_id] = order_data[-1]['ordType']
-            self.order_status[order_id] = 'Onboarded'
-        else:
-            print('__confirm_order: order id not found in order data!')
+        for i in range(10):
+            order_data = Trade.get_order_byid(order_id, 10)
+            if len(order_data) > 0:
+                if self.order_side[order_id] != order_data[-1]['side']:
+                    print('order side is not matched !')
+                    LineNotification.send_error('order side is not matched !')
+                    self.order_side[order_id] = order_data[-1]['side']
+                if self.order_price[order_id] != order_data[-1]['price']:
+                    print('order price is not matched !')
+                    LineNotification.send_error('order price is not matched !')
+                    self.order_price[order_id] = order_data[-1]['price']
+                if self.order_size[order_id] != order_data[-1]['orderQty']:
+                    print('order size is not matched !')
+                    LineNotification.send_error('order size is not matched !')
+                    self.order_size[order_id] = order_data[-1]['orderQty']
+                if self.order_type[order_id].upper() != order_data[-1]['ordType'].upper():
+                    print('order type is not matched !')
+                    LineNotification.send_error('order type is not matched !')
+                    self.order_type[order_id] = order_data[-1]['ordType']
+                self.order_status[order_id] = 'Onboarded'
+                return 0
+            else:
+                time.sleep(1)
+        print('__confirm_order: order id not found in order data!')
+        LineNotification.send_error('__confirm_order: order id not found in order data!')
+        return None
+
+
 
     def get_orders(self):
         return self.order_side, self.order_price, self.order_size, self.order_type, self.order_dt
@@ -164,6 +175,7 @@ class RestAccount:
         self.exec_ids_completed.append(exec_id)
         if status == 'Filled' or status == 'Canceled':
             print('BOT: order has been ', status, exec_side, exec_price, exec_qty)
+            LineNotification.send_free_message('BOT: order has been ' + status + '\r\n'+ exec_side + '\r\n'+ str(exec_price) +'\r\n' + str(exec_qty))
             self.__calc_fee(order_id)
             pl = self.__calc_realized_pnl(exec_side, exec_price, exec_qty)
             self.__calc_win_rate(pl)
@@ -172,6 +184,7 @@ class RestAccount:
         elif status == 'PartiallyFilled':
             if exec_id not in self.order_exec_ids[order_id]:
                 print('BOT: order has been partilly filled', exec_side, exec_price, exec_qty)
+                LineNotification.send_free_message('BOT: order has been partilly filled' + '\r\n' + exec_side + '\r\n'+ str(exec_price) + '\r\n'+  str(exec_qty))
                 with self.lock_order:
                     self.order_exec_ids[order_id].append(exec_id)
                 self.__update_position(exec_side, exec_price, exec_qty)
@@ -179,6 +192,7 @@ class RestAccount:
                 pass  # exec id is already processed
         else:
             print('Invalid order status in __execute_order!', status)
+            LineNotification.send_free_message('Invalid order status in __execute_order!' +'\r\n'+ status)
 
     def __check_execution(self, order_id):
         if order_id in self.order_ids_active:
@@ -195,12 +209,13 @@ class RestAccount:
                                     self.__execute_order(order_id, d['execID'], d['side'], d['avgPx'], int(round(self.order_size[order_id] - d['leavesQty'])), d['ordStatus'])
                             else:
                                 print('execID is not exist!', d)
+                                LineNotification.send_free_message('execID is not exist!' + '\r\n' + d)
                     except Exception as e:
                         print('RestAccount.__check_execution - Exception Occurred!', str(e))
-                        LineNotification.send_error('RestAccount.__check_execution - Exception Occurred!', str(e))
+                        LineNotification.send_error('RestAccount.__check_execution - Exception Occurred!' + '\r\n'+ str(e))
         else:
             print('RestAccount.__check_execution - can not to check execute for inactive order id!', order_id, self.get_orders())
-            LineNotification.send_error('RestAccount.__check_execution - can not to check execute for inactive order id!', order_id)
+            LineNotification.send_error('RestAccount.__check_execution - can not to check execute for inactive order id!'+ '\r\n' + order_id)
 
 
     def __calc_pnl(self):  # called every 1min
@@ -238,7 +253,6 @@ class RestAccount:
 
     def __calc_unrealized_pnl(self, ltp):
         with self.lock_performance:
-            ltp = TickData.get_ltp()
             if self.posi_side != '':
                 self.unrealized_pnl = ltp * (1.0 / self.posi_price - 1.0 / ltp) * self.posi_size if self.posi_side == 'Buy' else ltp * (1.0 / ltp - 1.0 / self.posi_price) * self.posi_size
             else:

@@ -33,7 +33,7 @@ class LineNotification:
         #loop = asyncio.get_event_loop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(cls.__send_free_data(message))
+        loop.run_until_complete(cls.__send_free_data(str(message)))
 
 
     @classmethod
@@ -41,7 +41,7 @@ class LineNotification:
         #loop = asyncio.new_event_loop()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(cls.__send_error(message))
+        loop.run_until_complete(cls.__send_error(str(message)))
 
 
     @classmethod
@@ -63,7 +63,7 @@ class LineNotification:
 
     @classmethod
     async def __send_free_data(cls, message):
-        await cls.__send_message(message)
+        await cls.__send_message(str(message))
 
 
 
