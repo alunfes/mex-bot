@@ -9,7 +9,7 @@ import pytz
 from SystemFlg import SystemFlg
 import pprint
 #from WSData import WSData
-
+from LineNotification import LineNotification
 
 
 class RealtimeWSAPI:
@@ -102,9 +102,12 @@ class RealtimeWSAPI:
 
 
     def on_close(self, ws):
+        LineNotification.send_error('closed public ws')
         print('closed public ws')
 
     def on_error(self, ws, error):
+        LineNotification.send_error('Error occurred in public webscoket! restart the ws thread.')
+        LineNotification.send_error(str(error))
         print('Error occurred in public webscoket! restart the ws thread.', error)
         self.__init__()
 
@@ -206,7 +209,12 @@ class TickData:
                 if len(next_data) > 0:
                     cls.add_tmp_exec_data(next_data)
                 if len(target_data) == 0:
-                    print('RealtimeWSAPI: target data len is 0!')
+                    print('RealtimeWSAPI: target data len is 0 !')
+                    LineNotification.send_error('RealtimeWSAPI: target data len is 0 !')
+                    #reset target min
+                    target_min = int(data[-1]['timestamp'].split('T')[1].split(':')[1])
+                    target_min = target_min + 1 if target_min + 1 < 60 else 0
+                    next_min = target_min + 1 if target_min + 1 < 60 else 0
                 else:
                     p = [d.get('price') for d in target_data]
                     size = [d.get('size') for d in target_data]

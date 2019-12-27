@@ -2,6 +2,7 @@ import lightgbm as lgb
 from sklearn.model_selection import train_test_split
 from SystemFlg import SystemFlg
 from OneMinMarketData import OneMinMarketData
+from LineNotification import LineNotification
 from RealtimeWSAPI import TickData
 import numpy as np
 import pandas as pd
@@ -59,6 +60,7 @@ class LgbModel:
                 if df is not None:
                     if True in df.isnull().any():
                         print('null is in df!')
+                        LineNotification.send_error('LgbModel:' + 'null is in df!')
                         self.set_pred("null")
                     else:
                         if self.pred_method == 0:
@@ -71,16 +73,19 @@ class LgbModel:
                             prediction = self.bpsp_prediction3(self.model, df, self.upper_kijun)
                         else:
                             print('invalid pred_method!', self.pred_method)
+                            LineNotification.send_error('LgbModel:'+'invalid pred_method!' +  str(self.pred_method))
                         if len(prediction) > 0:
                             self.set_pred({0: 'No', 1: 'Buy', 2: 'Sell', 3: 'Both'}[prediction[-1]])
                         else:
                             print('prediction length==0!', prediction)
+                            LineNotification.send_error('LgbModel:'+'prediction length==0!')
                             print(df)
                         OneMinMarketData.set_flg_ohlc_update(False)
                         print('prediction = ', self.pred)
                         self.write_df_pred(df, self.pred)
                 else:
                     print('df is None after completed generation!')
+                    LineNotification.send_error('LgbModel:'  + 'df is None after completed generation!')
             time.sleep(1)
         print('Lgb main thread ended.')
 
@@ -90,6 +95,7 @@ class LgbModel:
         dupli = set(train_list) & set(test_list)
         if len(dupli) > 0:
             print('Index duplication in train and test df was found!')
+            LineNotification.send_error('LgbModel:' + 'Index duplication in train and test df was found!')
             print(dupli)
 
 

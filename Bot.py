@@ -30,15 +30,13 @@ import pickle
 
 class Bot:
     def __init__(self, sim_data_path, real_trade=False):
-        #pws = PrivateWS()
         self.pt_ratio, self.lc_ratio, self.pred_method, self.upper_kijun, self.avert_onemine, self.avert_period_kijun, self.avert_val_kijun = self.__read_config_data()
-        LineNotification.initialize()
         Trade.initialize()
         self.ac = RestAccount()
         self.omd = OneMinMarketData
         self.lgb_model = LgbModel(self.pred_method, self.upper_kijun)
         self.real_trade = real_trade
-        self.amount = 10
+        self.amount = 50
 
         self.sim = RealtimeSim()
         self.sim_ac = RealtimeSimAccount()
@@ -171,6 +169,14 @@ class Bot:
 
     def __read_config_data(self):
         config = pd.read_csv('./Model/bpsp_config.csv', index_col=0)
+        print('config data:')
+        print('pt_ratio:', config['pt_ratio'])
+        print('lc_ratio:', config['lc_ratio'])
+        print('pred_method:', config['pred_method'])
+        print('upper_kijun:', config['upper_kijun'])
+        print('avert_onemine:', config['avert_onemine'])
+        print('avert_period_kijun:', config['avert_period_kijun'])
+        print('avert_val_kijun:', config['avert_val_kijun'])
         return float(config['pt_ratio']), float(config['lc_ratio']), int(config['pred_method']), float(config['upper_kijun']), int(config['avert_onemine']), \
                int(config['avert_period_kijun']), float(config['avert_val_kijun'])
 

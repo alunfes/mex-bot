@@ -700,7 +700,7 @@ if __name__ == '__main__':
     LineNotification.initialize()
     LogMaster.initialize()
 
-    Trade.cancel_order('44')
+    print(Trade.cancel_order('a49b56a1-d3ad-9ddd-af2e-67906ea042a7'))
 
 
 

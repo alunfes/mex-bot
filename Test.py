@@ -5,9 +5,11 @@ from Bot import Bot
 from LogMaster import LogMaster
 from SystemFlg import SystemFlg
 import time
+from LineNotification import LineNotification
 
 class Test:
     def start(self):
+        LineNotification.initialize()
         OneMinMarketData.initialize_for_bot()
         ws = RealtimeWSAPI()
         bot = Bot('./Data/sim_log.csv', True)
