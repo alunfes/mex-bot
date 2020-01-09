@@ -65,7 +65,8 @@ class Bot:
         while SystemFlg.get_system_flg():
             pred = self.lgb_model.get_pred()
 
-            self.sim_ac = self.sim.sim_model_pred_onemin_avert(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
+            #self.sim_ac = self.sim.sim_model_pred_onemin_avert(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
+            self.sim_ac = self.sim.sim_model_pred_onemin_avert_limit_entry(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
 
             if self.real_trade:
                 posi = self.ac.get_position()
@@ -82,6 +83,8 @@ class Bot:
                     print(order_side)
                 '''
 
+                #market entry
+                '''
                 if bot_order['side'] == '' and sim_order['side'] != '' and pre_order_side != '' and pre_order_size > 0: #pt exec check in bot
                     print('BOT: pt completion was detected and process sim_ac execution from bot.')
                     self.sim_ac.bot_procedss_execution(sim_order['side'], sim_order['price'], sim_order['size'], 'Limit', datetime.now())
@@ -108,9 +111,40 @@ class Bot:
                     else:
                         print('BOT: pt order failed!')
                         LineNotification.send_error('BOT: pt order failed!')
+                '''
+
+                #Limit entry
+                '''
+                if bot_order['side'] == '' and sim_order['side'] != '' and pre_order_side != '' and pre_order_size > 0:  # pt exec check in bot
+                    print('BOT: pt completion was detected and process sim_ac execution from bot.')
+                    self.sim_ac.bot_procedss_execution(sim_order['side'], sim_order['price'], sim_order['size'], 'Limit', datetime.now())
+                elif posi['side'] != self.sim_ac.holding_side and :  # to have same position side (botで先にpt約定完了してno posiになった時はsimに合わせるべきではない、botでpt約定を感知したらsim_acにも反映させるべき）
+                    size = self.sim_ac.holding_size if posi['side'] == '' else self.sim_ac.holding_size + posi['size']
+                    order_info = Trade.order(self.sim_ac.holding_side, self.sim_ac.holding_price, 'Limit', size)
+                    if order_info is not None:
+                        print('BOT: entry order', order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'], order_info['info']['orderID'])
+                        LineNotification.send_free_message('BOT: entry order' + '\r\n' + order_info['info']['side'] + '\r\n' + str(order_info['info']['price']) + '\r\n' + str(order_info['info']['orderQty']) + '\r\n' + order_info['info']['ordType'] + '\r\n' + order_info['info']['orderID'])
+                        self.ac.add_order(order_info['info']['orderID'], order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'])
+                    else:
+                        print('BOT: entry order failed!')
+                        LineNotification.send_error('BOT: entry order failed!')
+                elif bot_order['side'] != sim_order['side'] and posi['side'] == self.sim_ac.holding_side:  # position side is matched but order side in unmatch
+                    for oid in self.ac.order_ids_active:
+                        Trade.cancel_order(oid)
+                        print('BOT: cancel order', oid)
+                        self.ac.bot_cancel_order(oid)
+                    order_info = Trade.order(sim_order['side'], sim_order['price'], sim_order['type'], self.amount)
+                    if order_info is not None:
+                        print('BOT: pt order', order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'], order_info['info']['orderID'])
+                        LineNotification.send_free_message('BOT: pt order' + '\r\n' + order_info['info']['side'] + '\r\n' + str(order_info['info']['price']) + '\r\n' + str(order_info['info']['orderQty']) + '\r\n' + order_info['info']['ordType'] + '\r\n' + order_info['info']['orderID'])
+                        self.ac.add_order(order_info['info']['orderID'], order_info['info']['side'], order_info['info']['price'], order_info['info']['orderQty'], order_info['info']['ordType'])
+                    else:
+                        print('BOT: pt order failed!')
+                        LineNotification.send_error('BOT: pt order failed!')
 
                 pre_order_side = bot_order['side']
                 pre_order_size = bot_order['size']
+                '''
 
             time.sleep(3)  # simをsleep無しで回し続けるとtickdataがlockされてltp取れなくなる
         print('exited from bot main loop')
