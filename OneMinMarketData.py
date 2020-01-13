@@ -262,10 +262,10 @@ class OneMinMarketData:
             cls.ohlc.func_dict['ema:' + str(term)] = (OneMinMarketData.calc_ema, term)
             cls.ohlc.func_dict['ema_size:' + str(term)] = (OneMinMarketData.calc_ema_size, term)
             cls.ohlc.func_dict['ema_kairi:' + str(term)] = (OneMinMarketData.calc_ema_kairi, term)
-            # cls.ohlc.func_dict['ema_gra:'+str(term)] = (OneMinMarketData.calc_ema_gra,term)
+            cls.ohlc.func_dict['ema_gra:'+str(term)] = (OneMinMarketData.calc_ema_gra,term)
             cls.ohlc.func_dict['dema:' + str(term)] = (OneMinMarketData.calc_dema, term)
-            # cls.ohlc.func_dict['dema_kairi:'+str(term)] = (OneMinMarketData.calc_dema_kairi,term)
-            # cls.ohlc.func_dict['dema_gra:'+str(term)] = (OneMinMarketData.calc_dema_gra,term)
+            cls.ohlc.func_dict['dema_kairi:'+str(term)] = (OneMinMarketData.calc_dema_kairi,term)
+            cls.ohlc.func_dict['dema_gra:'+str(term)] = (OneMinMarketData.calc_dema_gra,term)
             cls.ohlc.func_dict['momentum:' + str(term)] = (OneMinMarketData.calc_momentum, term)
             cls.ohlc.func_dict['momentum_size:' + str(term)] = (OneMinMarketData.calc_momentum_size, term)
             cls.ohlc.func_dict['rate_of_change:' + str(term)] = (OneMinMarketData.calc_rate_of_change, term)
@@ -368,7 +368,10 @@ class OneMinMarketData:
             elif k.split('_')[0] == 'diff':
                 data = cls.ohlc.func_dict[k][1](cls.ohlc.func_dict[k][2])
                 cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](data)
+            elif k.split(':')[0] in ['ema_kairi', 'ema_gra', 'dema_kairi', 'dema_gra']:
+                cls.ohlc.index_data_dict[k] = cls.ohlc.func_dict[k][0](cls.ohlc.func_dict[k][1])
         #print('completed calc makairi diff index. time=', time.time() - start_time)
+
 
     @classmethod
     def generate_df_from_dict(cls):
@@ -643,7 +646,7 @@ class OneMinMarketData:
     @classmethod
     def generate_term_list2(cls, max_term):
         term_list = []
-        term_list = list(np.linspace(10, max_term, num=(max_term - 10) / 20))
+        term_list = list(np.linspace(10, max_term, num=int(round((max_term - 10) / 20))))
         return list(map(int, term_list))
 
     @classmethod
@@ -788,19 +791,27 @@ class OneMinMarketData:
 
     @classmethod
     def calc_ema_kairi(cls, term):
-        return list(map(lambda c, e: (c - e) / e, np.array(cls.ohlc.close, dtype='f8'), np.array(cls.ohlc.index_data_dict['ema:' + str(term)], dtype='f8')))
+        ema = cls.calc_ema(term)
+        # return list(map(lambda c, e: (c - e) / e, np.array(cls.ohlc.close, dtype='f8'), np.array(cls.ohlc.index_data_dict['ema:'+str(term)], dtype='f8')))
+        return list(map(lambda c, e: (c - e) / e, np.array(cls.ohlc.close, dtype='f8'), np.array(ema, dtype='f8')))
 
     @classmethod
     def calc_dema_kairi(cls, term):
-        return list(map(lambda c, d: (c - d) / d, np.array(cls.ohlc.close, dtype='f8'), np.array(cls.ohlc.index_data_dict['dema:' + str(term)], dtype='f8')))
+        dema = cls.calc_dema(term)
+        # return list(map(lambda c, d: (c - d) / d, np.array(cls.ohlc.close, dtype='f8'), np.array(cls.ohlc.index_data_dict['dema:'+str(term)], dtype='f8')))
+        return list(map(lambda c, d: (c - d) / d, np.array(cls.ohlc.close, dtype='f8'), np.array(dema, dtype='f8')))
 
     @classmethod
     def calc_ema_gra(cls, term):
-        return list(pd.Series(cls.ohlc.index_data_dict['ema:' + str(term)]).diff())
+        ema = cls.calc_ema(term)
+        # return list(pd.Series(cls.ohlc.index_data_dict['ema:'+str(term)]).diff())
+        return list(pd.Series(ema).diff())
 
     @classmethod
     def calc_dema_gra(cls, term):
-        return list(pd.Series(cls.ohlc.index_data_dict['dema:' + str(term)]).diff())
+        dema = cls.calc_dema(term)
+        # return list(pd.Series(cls.ohlc.index_data_dict['dema:'+str(term)]).diff())
+        return list(pd.Series(dema).diff())
 
     @classmethod
     def calc_dema(cls, term):

@@ -71,6 +71,8 @@ class LgbModel:
                             prediction = self.bpsp_prediction2_kai(self.model, df)
                         elif self.pred_method == 3:
                             prediction = self.bpsp_prediction3(self.model, df, self.upper_kijun)
+                        elif self.pred_method == 4:
+                            prediction = self.bpsp_prediction4(self.model, df)
                         else:
                             print('invalid pred_method!', self.pred_method)
                             LineNotification.send_error('LgbModel:'+'invalid pred_method!' +  str(self.pred_method))
@@ -146,6 +148,9 @@ class LgbModel:
             else:
                 prediction.append(0)
         return prediction
+
+    def bpsp_prediction4(self, model, test_x):
+        return list(np.argmax(model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration, raw_score=True), axis=1))
 
     def calc_bpsp_accuracy(self, prediction, test_y):
         num = len(prediction)

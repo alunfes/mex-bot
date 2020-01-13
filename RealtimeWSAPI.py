@@ -6,6 +6,7 @@ from datetime import datetime
 import dateutil
 from OneMinMarketData import OneMinMarketData
 import pytz
+import copy
 from SystemFlg import SystemFlg
 import pprint
 #from WSData import WSData
@@ -172,7 +173,7 @@ class TickData:
     @classmethod
     def get_tmp_exec_data(cls):
         with cls.lock_tmp_data:
-            res = cls.tmp_exec_data[:]
+            res = copy.copy(cls.tmp_exec_data[:])
             cls.tmp_exec_data = []
             return res
 
@@ -183,50 +184,63 @@ class TickData:
 
     @classmethod
     def __calc_ohlc_thread(cls):
-        target_min = -1
-        next_min = -1
-        while SystemFlg.get_system_flg():#計算開始の基準minuteを決定
-            data = cls.get_tmp_exec_data()
-            if len(data) > 0:
-                target_min = int(data[-1]['timestamp'].split('T')[1].split(':')[1]) #計算開始の基準minuteを決定
-                target_min = target_min +1 if target_min +1 < 60 else 0
-                next_min = target_min +1 if target_min +1 < 60 else 0
-                break
-            time.sleep(0.1)
-
         while SystemFlg.get_system_flg():
-            data = cls.get_tmp_exec_data()
-            if len(data) > 0 and int(data[-1]['timestamp'].split('T')[1].split(':')[1]) == next_min or (datetime.now().minute == next_min and datetime.now().second > 2): #次の分のデータが入り出したらohlc計算する
-                next_data = []
-                target_data = []
-                for d in data:
-                    minut = int(d['timestamp'].split('T')[1].split(':')[1])
-                    #if (next_min != 0 and minut >= next_min) or (next_min == 0 and minut >= 0):
-                    if minut == next_min:
-                        next_data.append(d) #次回の分のデータは次に回す
-                    elif minut == target_min:
-                        target_data.append(d)
-                if len(next_data) > 0:
-                    cls.add_tmp_exec_data(next_data)
-                if len(target_data) == 0:
-                    print('RealtimeWSAPI: target data len is 0 !')
-                    LineNotification.send_error('RealtimeWSAPI: target data len is 0 !')
-                    #reset target min
-                    target_min = int(data[-1]['timestamp'].split('T')[1].split(':')[1])
+            target_min = -1
+            next_min = -1
+            flg_init_kijunu = True
+            flg_ohlc_loop = True
+
+            while flg_init_kijunu:#計算開始の基準minuteを決定
+                data = cls.get_tmp_exec_data()
+                if len(data) > 0:
+                    target_min = int(data[-1]['timestamp'].split('T')[1].split(':')[1]) #計算開始の基準minuteを決定
+                    target_min = target_min +1 if target_min +1 < 60 else 0
+                    next_min = target_min +1 if target_min +1 < 60 else 0
+                    flg_init_kijunu = False
+                    break
+                time.sleep(0.1)
+
+            while flg_ohlc_loop:
+                data = cls.get_tmp_exec_data()
+                if len(data) > 0 and int(data[-1]['timestamp'].split('T')[1].split(':')[1]) == next_min or (datetime.now().minute == next_min and datetime.now().second > 2): #次の分のデータが入り出したらohlc計算する
+                    next_data = []
+                    target_data = []
+                    for d in data:
+                        minut = int(d['timestamp'].split('T')[1].split(':')[1])
+                        #if (next_min != 0 and minut >= next_min) or (next_min == 0 and minut >= 0):
+                        if minut == next_min:
+                            next_data.append(d) #次回の分のデータは次に回す
+                        elif minut == target_min:
+                            target_data.append(d)
+                    if len(next_data) > 0:
+                        cls.add_tmp_exec_data(next_data)
+                    if len(target_data) == 0:
+                        print('RealtimeWSAPI: target data len is 0 !')
+                        LineNotification.send_error('RealtimeWSAPI: target data len is 0 !')
+                        #ここに来たら、計算開始の基準minuteを決定まで戻ったほうがいい。
+                        #reset target min
+                        flg_init_kijunu = True
+                        flg_ohlc_loop = False
+                        break
+                        #if len(data) > 0:
+                        #    target_min = int(data[-1]['timestamp'].split('T')[1].split(':')[1])
+                        #    target_min = target_min + 1 if target_min + 1 < 60 else 0
+                        #    next_min = target_min + 1 if target_min + 1 < 60 else 0
+                        #else:
+                        #    print('RealtimeWSAPI: data len is 0 !')
+                        #    LineNotification.send_error('RealtimeWSAPI: data len is 0 !')
+                    else:
+                        p = [d.get('price') for d in target_data]
+                        size = [d.get('size') for d in target_data]
+                        dt = dateutil.parser.parse(target_data[-1]['timestamp'])
+                        OneMinMarketData.add_tmp_ohlc(dt.timestamp(), dt, p[0], max(p), min(p), p[-1], sum(size))
+                        #print(datetime.now())
+                        #print('RealtimeWSAPI: ', dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
                     target_min = target_min + 1 if target_min + 1 < 60 else 0
                     next_min = target_min + 1 if target_min + 1 < 60 else 0
                 else:
-                    p = [d.get('price') for d in target_data]
-                    size = [d.get('size') for d in target_data]
-                    dt = dateutil.parser.parse(target_data[-1]['timestamp'])
-                    OneMinMarketData.add_tmp_ohlc(dt.timestamp(), dt, p[0], max(p), min(p), p[-1], sum(size))
-                    #print(datetime.now())
-                    #print('RealtimeWSAPI: ', dt.timestamp(), p[0], max(p), min(p), p[-1], sum(size))
-                target_min = target_min + 1 if target_min + 1 < 60 else 0
-                next_min = target_min + 1 if target_min + 1 < 60 else 0
-            else:
-                cls.add_tmp_exec_data(data)
-            time.sleep(1)
+                    cls.add_tmp_exec_data(data)
+                time.sleep(1)
 
 
 if __name__ == '__main__':

@@ -36,7 +36,7 @@ class Bot:
         self.omd = OneMinMarketData
         self.lgb_model = LgbModel(self.pred_method, self.upper_kijun)
         self.real_trade = real_trade
-        self.amount = 50
+        self.amount = 10000
 
         self.sim = RealtimeSim()
         self.sim_ac = RealtimeSimAccount()
@@ -65,8 +65,9 @@ class Bot:
         while SystemFlg.get_system_flg():
             pred = self.lgb_model.get_pred()
 
+            self.sim_ac = self.sim.sim_model_pred_onemin(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, OneMinMarketData.ohlc)
             #self.sim_ac = self.sim.sim_model_pred_onemin_avert(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
-            self.sim_ac = self.sim.sim_model_pred_onemin_avert_limit_entry(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
+            #self.sim_ac = self.sim.sim_model_pred_onemin_avert_limit_entry(pred, self.pt_ratio, self.lc_ratio, self.amount, TickData.get_ltp(), self.sim_ac, self.sim_ac2, self.avert_period_kijun, self.avert_val_kijun, OneMinMarketData.ohlc)
 
             if self.real_trade:
                 posi = self.ac.get_position()
@@ -84,7 +85,6 @@ class Bot:
                 '''
 
                 #market entry
-                '''
                 if bot_order['side'] == '' and sim_order['side'] != '' and pre_order_side != '' and pre_order_size > 0: #pt exec check in bot
                     print('BOT: pt completion was detected and process sim_ac execution from bot.')
                     self.sim_ac.bot_procedss_execution(sim_order['side'], sim_order['price'], sim_order['size'], 'Limit', datetime.now())
@@ -111,7 +111,6 @@ class Bot:
                     else:
                         print('BOT: pt order failed!')
                         LineNotification.send_error('BOT: pt order failed!')
-                '''
 
                 #Limit entry
                 '''

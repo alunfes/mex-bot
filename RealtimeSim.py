@@ -55,8 +55,6 @@ class RealtimeSim:
         return ac
 
 
-
-
     @classmethod
     def sim_model_pred_onemin_avert(cls, pred, pt_ratio, lc_ratio, amount, ltp, ac:RealtimeSimAccount, ac2:RealtimeSimAccount, avert_period_kijun, avert_val_kijun, ohlc:OneMinData):
         ac2 = cls.sim_model_pred_onemin(pred, pt_ratio, lc_ratio, amount, ltp, ac2, ohlc)

@@ -1,6 +1,14 @@
 from RealtimeSimAccount import RealtimeSimAccount
 
 
+'''
+realistic state - current ac holding - current ac order = action
+
+realistic state: buy / sell holding and pt order
+current ac holding 
+
+'''
+
 class RealtimeSimStrategy:
     @classmethod
     def model_prediction_onemin(cls, prediction, lc_ratio, amount, ac:RealtimeSimAccount, ltp):

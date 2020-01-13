@@ -113,7 +113,6 @@ class DownloadMexOhlc:
                         import traceback
                         traceback.print_exc()
                     since = tmp_to +60
-
                 return df
             else:
                 print('to should be larger than since')
@@ -148,15 +147,8 @@ class DownloadMexOhlc:
         since = to - (60 * max_term) - 60
         flg = True
         counter = 0
-        while flg:
-            df = cls.download_latest_ohlc()
-            if df is not None:
-                return df
-            else:
-                if counter > 10:
-                    print('failed download ohlc in bot !')
-                    return None
-            time.sleep(1)
+        df = cls.download_latest_ohlc()
+        return df
 
 
 
