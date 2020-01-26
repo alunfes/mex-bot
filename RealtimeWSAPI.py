@@ -126,8 +126,20 @@ class TickData:
         cls.JST = pytz.timezone('Asia/Tokyo')
         #cls.last_ohlc_min = int(datetime.now(cls.JST).minute)+1 if datetime.now(cls.JST).minute != 59 else 0
         cls.last_ohlc_min = int(datetime.now(cls.JST).minute)
+        cls.flg_ohlc_loop = True
         th = threading.Thread(target=cls.__calc_ohlc_thread)
         th.start()
+
+    @classmethod
+    def restart_thread(cls):
+        LineNotification.send_error('restarted ws ohlc thread.')
+        with cls.lock_tmp_data:
+            cls.tmp_exec_data = []
+        cls.last_ohlc_min = int(datetime.now(cls.JST).minute)
+        cls.flg_ohlc_loop = True
+        th = threading.Thread(target=cls.__calc_ohlc_thread)
+        th.start()
+
 
     @classmethod
     def set_bid(cls, p):
@@ -184,23 +196,20 @@ class TickData:
 
     @classmethod
     def __calc_ohlc_thread(cls):
-        while SystemFlg.get_system_flg():
+        while cls.flg_ohlc_loop:
             target_min = -1
             next_min = -1
-            flg_init_kijunu = True
-            flg_ohlc_loop = True
 
-            while flg_init_kijunu:#計算開始の基準minuteを決定
+            while SystemFlg.get_system_flg():
                 data = cls.get_tmp_exec_data()
                 if len(data) > 0:
                     target_min = int(data[-1]['timestamp'].split('T')[1].split(':')[1]) #計算開始の基準minuteを決定
                     target_min = target_min +1 if target_min +1 < 60 else 0
                     next_min = target_min +1 if target_min +1 < 60 else 0
-                    flg_init_kijunu = False
                     break
                 time.sleep(0.1)
 
-            while flg_ohlc_loop:
+            while SystemFlg.get_system_flg():
                 data = cls.get_tmp_exec_data()
                 if len(data) > 0 and int(data[-1]['timestamp'].split('T')[1].split(':')[1]) == next_min or (datetime.now().minute == next_min and datetime.now().second > 2): #次の分のデータが入り出したらohlc計算する
                     next_data = []
@@ -219,8 +228,7 @@ class TickData:
                         LineNotification.send_error('RealtimeWSAPI: target data len is 0 !')
                         #ここに来たら、計算開始の基準minuteを決定まで戻ったほうがいい。
                         #reset target min
-                        flg_init_kijunu = True
-                        flg_ohlc_loop = False
+                        cls.flg_ohlc_loop = False
                         break
                         #if len(data) > 0:
                         #    target_min = int(data[-1]['timestamp'].split('T')[1].split(':')[1])
@@ -241,6 +249,10 @@ class TickData:
                 else:
                     cls.add_tmp_exec_data(data)
                 time.sleep(1)
+
+        if cls.flg_ohlc_loop == False:
+            cls.restart_thread()
+
 
 
 if __name__ == '__main__':
