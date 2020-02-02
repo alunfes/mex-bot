@@ -332,6 +332,7 @@ class OneMinMarketData:
             '''
 
         cls.ohlc.func_dict['normalized_ave_true_range:' + str(0)] = (OneMinMarketData.calc_normalized_ave_true_range, 0)
+        '''
         cls.ohlc.func_dict['three_outside_updown:' + str(0)] = (OneMinMarketData.calc_three_outside_updown, 0)
         cls.ohlc.func_dict['breakway:' + str(0)] = (OneMinMarketData.calc_breakway, 0)
         cls.ohlc.func_dict['dark_cloud_cover:' + str(0)] = (OneMinMarketData.calc_dark_cloud_cover, 0)
@@ -343,6 +344,7 @@ class OneMinMarketData:
         cls.ohlc.func_dict['upsidedownside_gap_three_method:' + str(0)] = (OneMinMarketData.calc_upsidedownside_gap_three_method, 0)
         cls.ohlc.func_dict['sar:' + str(0)] = (OneMinMarketData.calc_sar, 0)
         cls.ohlc.func_dict['bop:' + str(0)] = (OneMinMarketData.calc_bop, 0)
+        '''
         cls.ohlc.func_dict['uwahige:' + str(0)] = (OneMinMarketData.calc_uwahige_length, 0)
         cls.ohlc.func_dict['shitahige:' + str(0)] = (OneMinMarketData.calc_shitahige_length, 0)
 
@@ -646,7 +648,8 @@ class OneMinMarketData:
     @classmethod
     def generate_term_list2(cls, max_term):
         term_list = []
-        term_list = list(np.linspace(10, max_term, num=int(round((max_term - 10) / 20))))
+        # term_list = list(np.linspace(10, max_term, num=int(round((max_term-10)/20))))
+        term_list = list(np.linspace(10, max_term, num=100))
         return list(map(int, term_list))
 
     @classmethod
@@ -673,40 +676,6 @@ class OneMinMarketData:
     def generate_diff(cls, data):
         return list(ta.ROC(np.array(data, dtype='f8'), timeperiod=1))
         # return [0] + list(np.diff(np.array(data, dtype='f8')))
-
-    @classmethod
-    def calc_future_side2(cls):
-        future_side = []
-        num_buy = 0
-        num_sell = 0
-        num_no = 0
-        num_both = 0
-        for i in range(len(cls.ohlc.close) - cls.kijun_period):
-            buy_max = 0
-            sell_max = 0
-            entry_p = cls.ohlc.close[i]
-            kijun_price = cls.ohlc.close[i] * cls.kijun_ratio
-            for j in range(cls.kijun_period):
-                buy_max = max(buy_max, cls.ohlc.close[i + j] - entry_p)
-                sell_max = max(sell_max, entry_p - cls.ohlc.close[i + j])
-            if buy_max >= kijun_price and sell_max >= kijun_price:
-                future_side.append('both')
-                num_both += 1
-            elif buy_max >= kijun_price and sell_max < kijun_price:
-                future_side.append('buy')
-                num_buy += 1
-            elif buy_max < kijun_price and sell_max >= kijun_price:
-                future_side.append('sell')
-                num_sell += 1
-            elif buy_max < kijun_price and sell_max < kijun_price:
-                future_side.append('no')
-                num_no += 1
-
-        print('future_side allocation in Market Data:')
-        tsum = float(len(future_side))
-        print('no:', round(float(num_no) / tsum, 4), 'buy:', round(float(num_buy) / tsum, 4), 'sell:',
-              round(float(num_sell) / tsum, 4), 'both:', round(float(num_both) / tsum, 4))
-        return future_side
 
 
     @classmethod

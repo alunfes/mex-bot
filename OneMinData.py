@@ -29,10 +29,24 @@ class OneMinData:
         self.low_change = self.low_change[-num_data:]
         self.close_change = self.close_change[-num_data:]
         self.size = self.size[-num_data:]
-        self.future_side = self.future_side[-num_data:]
+
+    def cut_data2(self, from_ind, to_ind):
+        for k in self.index_data_dict:
+            self.index_data_dict[k] = self.index_data_dict[k][from_ind:to_ind]
+        self.unix_time = self.unix_time[from_ind:to_ind]
+        self.dt = self.dt[from_ind:to_ind]
+        self.open = self.open[from_ind:to_ind]
+        self.high = self.high[from_ind:to_ind]
+        self.low = self.low[from_ind:to_ind]
+        self.close = self.close[from_ind:to_ind]
+        self.open_change = self.open_change[from_ind:to_ind]
+        self.high_change = self.high_change[from_ind:to_ind]
+        self.low_change = self.low_change[from_ind:to_ind]
+        self.close_change = self.close_change[from_ind:to_ind]
+        self.size = self.size[from_ind:to_ind]
 
     def del_data(self, num_remain_data):
-        if len(self.unix_time) > num_remain_data:
+        if len(self.dt) > num_remain_data:
             for k in self.index_data_dict:
                 del self.index_data_dict[k][:-num_remain_data]
             del self.unix_time[:-num_remain_data]
@@ -46,10 +60,9 @@ class OneMinData:
             del self.low_change[:-num_remain_data]
             del self.close_change[:-num_remain_data]
             del self.size[:-num_remain_data]
-            del self.future_side[:-num_remain_data]
 
     def extract_data(self, ex_from, to):
-        if len(self.unix_time) > ex_from:
+        if len(self.dt) > ex_from:
             for k in self.index_data_dict:
                 del self.index_data_dict[k][-ex_from:-to]
             del self.unix_time[-ex_from:-to]
@@ -63,7 +76,6 @@ class OneMinData:
             del self.low_change[-ex_from:-to]
             del self.close_change[-ex_from:-to]
             del self.size[-ex_from:-to]
-            del self.future_side[-ex_from:-to]
 
     def add_and_pop(self, unix_time, dt, open, high, low, close, size):
         self.unix_time.append(unix_time)
