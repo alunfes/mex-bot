@@ -15,8 +15,8 @@ import time
 
 class RealtimeSim:
     @classmethod
-    def sim_model_pred_onemin(cls, pred, pt_ratio, lc_ratio, amount, ltp, ac:RealtimeSimAccount, ohlc:OneMinData):
-            ds = RealtimeSimStrategy.model_prediction_onemin(pred, lc_ratio, amount, ac, ltp)
+    def sim_model_pred_onemin(cls, pred, pt_ratio, lc_ratio, amount, ltp, ac:RealtimeSimAccount, ohlc:OneMinData, flg_only_large, kyuhen_period, kyuhen_kijun):
+            ds = RealtimeSimStrategy.model_prediction_onemin(pred, lc_ratio, amount, ac, ltp, flg_only_large, kyuhen_period, kyuhen_kijun)
             pt_price = int(round(ac.holding_price * (1.0 + pt_ratio))) if ac.holding_side == 'Buy' else int(round(ac.holding_price * (1.0 - pt_ratio)))
             if ds.flg_noaction == False:
                 if ds.order_type == 'LC':  # losscut
@@ -58,8 +58,8 @@ class RealtimeSim:
     @classmethod
     def sim_model_pred_onemin_avert(cls, pred, pt_ratio, lc_ratio, amount, ltp, ac:RealtimeSimAccount, ac2:RealtimeSimAccount, avert_period_kijun, avert_val_kijun, ohlc:OneMinData):
         ac2 = cls.sim_model_pred_onemin(pred, pt_ratio, lc_ratio, amount, ltp, ac2, ohlc)
-        if len(ac2.total_pl_log) > avert_period_kijun:  # pl_check_term以上のpl logが溜まったらcheckを開始
-            if np.gradient(ta.MA(np.array(ac2.total_pl_log[-avert_period_kijun:], dtype='f8'), timeperiod=avert_period_kijun))[-1] > avert_val_kijun:
+        if len(ac2.total_pl_log) > avert_period_kijun + 10:  # pl_check_term以上のpl logが溜まったらcheckを開始
+            if np.gradient(ta.MA(np.array(ac2.total_pl_log[-avert_period_kijun-10:], dtype='f8'), timeperiod=avert_period_kijun))[-1] > avert_val_kijun:
                 if ac2.holding_side != ac.holding_side and ac2.holding_side != '':
                     ac.entry_order(ac.holding_side, ltp-100, ac2.holding_size, 'Market')
                     print('sim onemin avert: Market order for position  {', ac.holding_side, ' x ', ac.holding_size, ' @', ac.holding_price + '}')

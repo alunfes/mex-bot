@@ -679,7 +679,7 @@ class OneMinMarketData:
 
 
     @classmethod
-    def remove_all_correlated_cols4(cls, df, corr_kijun):
+    def remove_all_correlated_cols4(cls, df, corr_kijun, flg_abs):
         print('removing all correlated columns..')
         start_time = time.time()
         dff = df.copy()
@@ -689,7 +689,11 @@ class OneMinMarketData:
         corr_matrix = np.corrcoef(np.array(dff).transpose())
         df_new = pd.DataFrame(data=corr_matrix, index=cols, columns=cols, dtype='float')
         upper = df_new.where(np.triu(np.ones(df_new.shape), k=1).astype(np.bool))
-        to_drop = [column for column in upper.columns if any(upper[column] > corr_kijun)]
+        to_drop = None
+        if flg_abs:
+            to_drop = [column for column in upper.columns if any(abs(upper[column]) > corr_kijun)]
+        else:
+            to_drop = [column for column in upper.columns if any(abs(upper[column]) > corr_kijun)]
         excludes = ['dt', 'open', 'high', 'low', 'close', 'close_change', 'future_side', 'size']
         for ex in excludes:
             if ex in to_drop:

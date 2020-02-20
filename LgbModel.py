@@ -54,7 +54,6 @@ class LgbModel:
                     ini_data_flg = True
                 time.sleep(0.5)
 
-
             if OneMinMarketData.get_flg_ohlc_update():
                 df = OneMinMarketData.get_df()
                 if df is not None:
@@ -77,7 +76,7 @@ class LgbModel:
                             print('invalid pred_method!', self.pred_method)
                             LineNotification.send_error('LgbModel:'+'invalid pred_method!' +  str(self.pred_method))
                         if len(prediction) > 0:
-                            self.set_pred({0: 'No', 1: 'Buy', 2: 'Sell', 3: 'Both'}[prediction[-1]])
+                            self.set_pred({0: 'buy_large', 1: 'buy_small', 2: 'sell_large', 3: 'sell_small', -1:'no'}[prediction[-1]])
                         else:
                             print('prediction length==0!', prediction)
                             LineNotification.send_error('LgbModel:'+'prediction length==0!')
@@ -110,14 +109,12 @@ class LgbModel:
             model_sell = pickle.load(f)
         return model_buy, model_sell
 
-
     def bpsp_prediction(self, model, test_x, uppder_kijun):
         prediction = []
         pval = model.predict(test_x.values.astype(np.float32), num_iteration=model.best_iteration)
         for p in pval:
             res = list(map(lambda x: 1.0 if x >= uppder_kijun else 0, p))
-            if (res[0] == 1 and res[1] == 0 and res[2] == 0 and res[3] == 0) or (
-                    res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 0):
+            if (res[0] == 1 and res[1] == 0 and res[2] == 0 and res[3] == 0):
                 prediction.append(0)
             elif res[0] == 0 and res[1] == 1 and res[2] == 0 and res[3] == 0:
                 prediction.append(1)
@@ -125,8 +122,12 @@ class LgbModel:
                 prediction.append(2)
             elif res[0] == 0 and res[1] == 0 and res[2] == 0 and res[3] == 1:
                 prediction.append(3)
+            elif res[0] == 1 and res[1] == 1 and res[2] == 0 and res[3] == 1:
+                prediction.append(0)
+            elif res[0] == 0 and res[1] == 0 and res[2] == 1 and res[3] == 1:
+                prediction.append(2)
             else:
-                prediction.append(0)  # 複数は発火した時は0にする
+                prediction.append(-1)  # 複数は発火した時は0にする
         return prediction
 
     def bpsp_prediction2(self, model, test_x):

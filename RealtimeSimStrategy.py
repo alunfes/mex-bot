@@ -11,17 +11,22 @@ current ac holding
 
 class RealtimeSimStrategy:
     @classmethod
-    def model_prediction_onemin(cls, prediction, lc_ratio, amount, ac:RealtimeSimAccount, ltp):
+    def model_prediction_onemin(cls, prediction, lc_ratio, amount, ac:RealtimeSimAccount, ltp, flg_only_large):
         ds = StateData()
         lc_price = int(round(ac.holding_price * (1.0 - lc_ratio))) if ac.holding_side == 'Buy' else int(round(ac.holding_price * (1.0 + lc_ratio)))
+
         if (ac.holding_side == 'Buy' and ltp <= lc_price) or (ac.holding_side == 'Sell' and ltp >= lc_price):
             ds.set_state(False, '', 0, '', 0, 0, 'LC')  # do losscut
-        elif prediction == 'Buy' or prediction == 'Sell':  # prediction通りのposi_sideにしてpt orderを出す
-            ds.set_state(False, prediction, amount, 'Buy' if prediction == 'Sell' else 'Sell', 0, 0, 'PT')
-        elif (prediction != 'Buy' and prediction != 'Sell') and (ac.holding_side != prediction):
-            ds.set_state(True, '', 0, '', 0, 0, '')  # for zero three
-        else:
-            ds.set_state(True, '', 0, '', 0, 0, '')
+        else: #not losscut
+            if flg_only_large:
+                if prediction == 'buy_large' or prediction == 'sell_large':
+                    side = 'Buy' if prediction == 'buy_large' else 'Sell'
+                    ds.set_state(False, side, amount, 'Buy' if prediction == 'Sell' else 'Sell', 0, 0, 'PT')
+                else:
+                    ds.set_state(True, '', 0, '', 0,0, '')
+            else:
+                side = 'Buy' if (prediction == 'buy_large' or prediction == 'buy_small') else 'Sell'
+                ds.set_state(False, side, amount, 'Buy' if prediction == 'Sell' else 'Sell', 0, 0, 'PT')
         return ds
 
 
